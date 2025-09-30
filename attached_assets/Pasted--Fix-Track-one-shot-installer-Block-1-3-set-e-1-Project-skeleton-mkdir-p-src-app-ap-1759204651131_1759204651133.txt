@@ -1,0 +1,107 @@
+# === Fix-Track one-shot installer (Block 1/3) ===
+set -e
+
+# 1) Project skeleton
+mkdir -p src/app/api src/app/tools src/app src/lib prisma scripts public
+mkdir -p src/app/api/auth/signin src/app/api/auth/signout
+mkdir -p src/app/api/identifiers/batch src/app/api/identifiers/claim
+mkdir -p src/app/api/properties/master src/app/api/uploads
+mkdir -p src/app/api/reports/home-health src/app/api/inspections/append
+mkdir -p src/app/api/cron/reminders src/app/api/stripe/checkout
+mkdir -p src/app/api/stripe/portal src/app/api/webhooks/stripe
+mkdir -p src/app/scan src/app/tools/identifiers src/app/tools/assets
+mkdir -p src/app/tools/documents src/app/tools/reports src/app/tools/inspections
+mkdir -p src/app/tools/reminders
+mkdir -p public/qrcodes public/uploads public/reports
+
+# 2) package.json
+cat > package.json <<'EOF'
+{
+  "name": "fixtrack-pro",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "seed": "tsx scripts/seed.ts",
+    "webhook": "stripe listen --forward-to localhost:3000/api/webhooks/stripe"
+  },
+  "dependencies": {
+    "@prisma/client": "5.19.1",
+    "@stripe/stripe-js": "3.4.1",
+    "bcryptjs": "2.4.3",
+    "date-fns": "3.6.0",
+    "jsonwebtoken": "9.0.2",
+    "next": "14.2.5",
+    "pdfkit": "0.15.0",
+    "qrcode": "1.5.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "stripe": "14.25.0",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "prisma": "5.19.1",
+    "typescript": "5.6.2",
+    "tsx": "4.17.0",
+    "@types/jsonwebtoken": "9.0.6",
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@types/pdfkit": "0.13.5"
+  }
+}
+EOF
+
+# 3) tsconfig
+cat > tsconfig.json <<'EOF'
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+EOF
+
+# 4) next config
+cat > next.config.mjs <<'EOF'
+/** @type {import('next').NextConfig} */
+const nextConfig = { experimental: { serverActions: true } };
+export default nextConfig;
+EOF
+
+# 5) .env.example with dummy Stripe (auto-stubs)
+cat > .env.example <<'EOF'
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="replace-with-strong-secret"
+
+# Stripe keys (FAKE triggers safe stubs)
+STRIPE_SECRET_KEY="sk_test_FAKE"
+STRIPE_WEBHOOK_SECRET="whsec_FAKE"
+
+# Contractor plans
+STRIPE_PRICE_CONTRACTOR_50="price_FAKE_19_month"
+STRIPE_PRICE_CONTRACTOR_100="price_FAKE_29_month"
+
+# Homeowner: lifetime + annual maintenance
+STRIPE_PRICE_HOME_LIFETIME="price_FAKE_100_onetime"
+STRIPE_PRICE_HOME_ANNUAL="price_FAKE_15_year"
+EOF

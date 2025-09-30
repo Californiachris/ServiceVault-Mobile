@@ -1,0 +1,298 @@
+# === Fix-Track installer (Block 2/3) ===
+
+# 6) Prisma schema (SQLite dev)
+cat > prisma/schema.prisma <<'EOF'
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "sqlite"; url = env("DATABASE_URL") }
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  passwordHash    String
+  role            Role     @default(HOMEOWNER)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  contractor      Contractor?
+  properties      Property[]
+  inspections     Inspection[]
+  subscriptions   Subscription[]
+  stripeCustomerId String?
+}
+
+enum Role { HOMEOWNER CONTRACTOR INSPECTOR ADMIN }
+
+model Contractor {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  companyName String
+  logoUrl     String?
+  plan        String?
+  identifiers Identifier[]
+  installs    Asset[] @relation("InstallerAssets")
+}
+
+model Property {
+  id                 String   @id @default(cuid())
+  ownerId            String
+  owner              User     @relation(fields: [ownerId], references: [id])
+  name               String?
+  addressLine1       String?
+  city               String?
+  state              String?
+  postalCode         String?
+  country            String?
+  masterIdentifier   Identifier? @relation("MasterIdentifier", fields: [masterIdentifierId], references: [id])
+  masterIdentifierId String?
+  assets             Asset[]
+  documents          Document[]
+  reminders          Reminder[]
+  inspections        Inspection[]
+  transfers          Transfer[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  homePlan           String?
+  homeStatus         String?
+}
+
+model Identifier {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  type          IdentifierType
+  contractorId  String?
+  contractor    Contractor? @relation(fields: [contractorId], references: [id])
+  claimedAt     DateTime?
+  qrPath        String?
+  brandLabel    String?
+  deactivatedAt DateTime?
+  asset         Asset?
+  property      Property? @relation("MasterIdentifier")
+  createdAt     DateTime  @default(now())
+}
+
+enum IdentifierType { ASSET MASTER }
+
+model Asset {
+  id            String   @id @default(cuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id])
+  name          String
+  category      AssetCategory
+  brand         String?
+  model         String?
+  serial        String?
+  installedAt   DateTime?
+  identifierId  String? @unique
+  identifier    Identifier? @relation(fields: [identifierId], references: [id])
+  installerId   String?
+  installer     Contractor? @relation("InstallerAssets", fields: [installerId], references: [id])
+  status        String?
+  events        Event[]
+  documents     Document[]
+  reminders     Reminder[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum AssetCategory { PLUMBING ELECTRICAL HVAC APPLIANCE FURNITURE STRUCTURAL VEHICLE HEAVY_EQUIPMENT OTHER }
+
+model Event {
+  id        String   @id @default(cuid())
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id])
+  type      EventType
+  data      Json
+  createdBy String?
+  createdAt DateTime @default(now())
+}
+
+enum EventType { INSTALL SERVICE INSPECTION TRANSFER WARRANTY_UPLOAD MANUAL_UPLOAD NOTE }
+
+model Document {
+  id         String   @id @default(cuid())
+  assetId    String?
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  type       DocumentType
+  title      String
+  path       String
+  uploadedAt DateTime @default(now())
+}
+
+enum DocumentType { RECEIPT WARRANTY MANUAL INSPECTION QUOTE INVOICE OTHER }
+
+model Reminder {
+  id         String   @id @default(cuid())
+  assetId    String?
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  dueAt      DateTime
+  type       String
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  completedAt DateTime?
+}
+
+model Transfer {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  fromUserId  String
+  toUserId    String
+  status      String   @default("ESCROW")
+  initiatedAt DateTime @default(now())
+  completedAt DateTime?
+  signature   String?
+}
+
+model Inspection {
+  id           String   @id @default(cuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id])
+  inspectorId  String
+  inspector    User     @relation(fields: [inspectorId], references: [id])
+  jurisdiction String?
+  checklist    Json?
+  result       String?
+  signedAt     DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  stripeCustomerId String?
+  stripeSubId      String?
+  priceId          String?
+  plan             String?
+  status           String?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+EOF
+
+# 7) Global styles
+mkdir -p src/app
+cat > src/app/globals.css <<'EOF'
+:root { --bg:#0b1220; --card:#101a2e; --text:#eaf2ff; --muted:#b9c6e0; --brand:#66e2d5; }
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+a{color:var(--brand);text-decoration:none}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.card{background:var(--card);border:1px solid #223150;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25);margin-bottom:16px}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid #2b3c5e;background:#0f1729;color:#eaf2ff}
+.button{background:var(--brand);color:#062e2a;padding:10px 16px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#11233d;color:#a4c7ff;border:1px solid #2b3c5e}
+h1,h2,h3{margin:8px 0}
+small{color:var(--muted)}
+hr{border:none;border-top:1px solid #223150;opacity:.4;margin:16px 0}
+EOF
+
+# 8) Layout + Landing + Dashboard
+cat > src/app/layout.tsx <<'EOF'
+import "./globals.css";
+import Link from "next/link";
+export const metadata = { title: "Fix-Track", description: "One scan, the whole history." };
+export default function RootLayout({ children }: { children: React.ReactNode }){
+  return (
+    <html lang="en"><body>
+      <div className="container">
+        <header style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <Link href="/"><h2>Fix-Track</h2></Link>
+          <nav style={{display:'flex',gap:12}}>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/scan">Scan</Link>
+            <Link href="/signin">Sign in</Link>
+          </nav>
+        </header>
+        {children}
+      </div>
+    </body></html>
+  );
+}
+EOF
+
+cat > src/app/page.tsx <<'EOF'
+export default function Home(){
+  return (<div className="card"><h1>Fix-Track</h1><p>Carfax-style history for installs, services, warranties, inspections, recalls, transfers — across homes, fleets, farms, and more.</p></div>);
+}
+EOF
+
+cat > src/app/dashboard/page.tsx <<'EOF'
+import Link from "next/link";
+export default function Dashboard(){
+  return (
+    <div className="grid">
+      <div className="card"><h3>Identifiers</h3><p>Batch generate QR/NFC codes with branding.</p><Link className="button" href="/tools/identifiers">Open</Link></div>
+      <div className="card"><h3>Properties & Assets</h3><p>Create master code and bind assets.</p><Link className="button" href="/tools/assets">Open</Link></div>
+      <div className="card"><h3>Documents</h3><p>Upload receipts/warranties/manuals.</p><Link className="button" href="/tools/documents">Open</Link></div>
+      <div className="card"><h3>Reports</h3><p>Generate a Home Health Certificate™.</p><Link className="button" href="/tools/reports">Open</Link></div>
+      <div className="card"><h3>Inspections</h3><p>Append checklist results.</p><Link className="button" href="/tools/inspections">Open</Link></div>
+      <div className="card"><h3>Reminders</h3><p>Run reminder cron.</p><Link className="button" href="/tools/reminders">Open</Link></div>
+      <div className="card"><h3>Subscriptions</h3><p>Manage contractor & homeowner plans.</p><Link className="button" href="/pricing">Open</Link></div>
+    </div>
+  );
+}
+EOF
+
+# 9) DB & session utils
+mkdir -p src/lib
+cat > src/lib/db.ts <<'EOF'
+import { PrismaClient } from "@prisma/client";
+const g = global as unknown as { prisma?: PrismaClient };
+export const prisma = g.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") g.prisma = prisma;
+EOF
+
+cat > src/lib/session.ts <<'EOF'
+import { cookies } from 'next/headers';
+export function setSession(val: string){ cookies().set('fixtrack_session', val, { httpOnly: false, sameSite:'lax', path:'/' }); }
+export function clearSession(){ cookies().delete('fixtrack_session'); }
+export function getSession(){ return cookies().get('fixtrack_session')?.value || null; }
+EOF
+
+cat > src/lib/utils.ts <<'EOF'
+export function code(n=10){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = ""; for(let i=0;i<n;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+EOF
+
+# 10) Seed script
+cat > scripts/seed.ts <<'EOF'
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+const prisma = new PrismaClient();
+async function main(){
+  const admin = await prisma.user.upsert({
+    where:{ email:"admin@fixtrack.app" },
+    update:{},
+    create:{ email:"admin@fixtrack.app", name:"Admin", role:"CONTRACTOR", passwordHash: await bcrypt.hash("password123", 10) }
+  });
+  await prisma.contractor.upsert({
+    where:{ userId: admin.id },
+    update:{ companyName: "Demo Contractor" },
+    create:{ userId: admin.id, companyName: "Demo Contractor" }
+  });
+  const owner = await prisma.user.upsert({
+    where:{ email:"owner@example.com" },
+    update:{},
+    create:{ email:"owner@example.com", name:"Demo Owner", role:"HOMEOWNER", passwordHash: await bcrypt.hash("password123", 10) }
+  });
+  await prisma.property.upsert({
+    where:{ id: "seed-prop-1" },
+    update:{},
+    create:{ id:"seed-prop-1", ownerId: owner.id, name: "Main Residence", addressLine1:"123 Main St", city:"Anytown", state:"CA", postalCode:"90000", country:"USA" }
+  });
+  console.log("Seeded users, contractor, property");
+}
+main().finally(()=>prisma.$disconnect());
+EOF

@@ -1,0 +1,280 @@
+# === Fix-Track installer (Block 3/3) ===
+
+# 11) Sign in page + API
+mkdir -p src/app/api/auth/signin src/app/api/auth/signout
+cat > src/app/signin/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+export default function SignIn(){
+  const [email,setEmail]=useState('admin@fixtrack.app');
+  const [password,setPassword]=useState('password123');
+  const [msg,setMsg]=useState('');
+  async function submit(e:any){
+    e.preventDefault();
+    const r = await fetch('/api/auth/signin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    if(r.ok) location.href='/dashboard'; else setMsg((await r.json()).error||'Failed');
+  }
+  return (<div className="card" style={{maxWidth:420}}>
+    <h2>Sign in</h2>
+    <form onSubmit={submit} className="grid">
+      <input className="input" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)}/>
+      <input className="input" type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)}/>
+      <button className="button" type="submit">Sign in</button>
+    </form>
+    <p style={{color:'salmon'}}>{msg}</p><small>Demo creds are seeded.</small>
+  </div>);
+}
+EOF
+
+cat > src/app/api/auth/signin/route.ts <<'EOF'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import { setSession } from "@/lib/session";
+export async function POST(req: NextRequest){
+  const { email, password } = await req.json();
+  const user = await prisma.user.findUnique({ where: { email } });
+  if(!user) return NextResponse.json({error:"User not found"},{status:404});
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if(!ok) return NextResponse.json({error:"Invalid credentials"},{status:401});
+  setSession(user.id);
+  return NextResponse.json({ok:true});
+}
+EOF
+
+cat > src/app/api/auth/signout/route.ts <<'EOF'
+import { NextResponse } from "next/server";
+import { clearSession } from "@/lib/session";
+export async function POST(){ clearSession(); return NextResponse.json({ok:true}); }
+EOF
+
+# 12) Scan page
+cat > src/app/scan/page.tsx <<'EOF'
+'use client';
+import { useEffect, useState } from 'react';
+export default function ScanPage(){
+  const [code,setCode]=useState<string|undefined>(undefined);
+  useEffect(()=>{ const p = new URLSearchParams(window.location.search); const c = p.get('code')||''; if(c) setCode(c); },[]);
+  return (<div className="card"><h2>Scan Result</h2>{code?<p>Identifier code: <b>{code}</b></p>:<p>No code in URL. Use a generated QR.</p>}<p>Next: claim and bind inside <a href="/tools/assets">Assets Tool</a>.</p></div>);
+}
+EOF
+
+# 13) Tools (Identifiers, Assets, Docs, Reports, Inspections, Reminders)
+# Identifiers Tool
+cat > src/app/tools/identifiers/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+export default function IdentifiersTool(){
+  const [count,setCount]=useState(10);
+  const [brand,setBrand]=useState('Your Company');
+  const [type,setType]=useState<'ASSET'|'MASTER'>('ASSET');
+  const [res,setRes]=useState<any>(null);
+  async function generate(){
+    const r = await fetch('/api/identifiers/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count, type, brandLabel:brand})});
+    setRes(await r.json());
+  }
+  return (<div className="card">
+    <h2>Batch Generate Identifiers</h2>
+    <div className="grid">
+      <label>Count <input className="input" type="number" value={count} onChange={e=>setCount(parseInt(e.target.value||'0'))}/></label>
+      <label>Type <select className="input" value={type} onChange={e=>setType(e.target.value as any)}><option>ASSET</option><option>MASTER</option></select></label>
+      <label>Brand Label <input className="input" value={brand} onChange={e=>setBrand(e.target.value)}/></label>
+    </div>
+    <button className="button" style={{marginTop:12}} onClick={generate}>Generate</button>
+    {res?.created && <div style={{marginTop:16}}>
+      <h3>Created {res.created.length} identifiers</h3>
+      <div className="grid">{res.created.map((id:any)=>(<div key={id.id} className="card"><div className="badge">{id.type}</div><p><b>{id.code}</b></p>{id.qrPath && <img src={id.qrPath} style={{width:160}}/>}<small>{id.brandLabel}</small></div>))}</div>
+    </div>}
+  </div>);
+}
+EOF
+
+# Assets Tool
+cat > src/app/tools/assets/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+export default function AssetsTool(){
+  const [code,setCode]=useState('');
+  const [name,setName]=useState('Water Heater');
+  const [category,setCategory]=useState('PLUMBING');
+  const [propertyName,setPropertyName]=useState('Main Residence');
+  const [master,setMaster]=useState('');
+  async function claim(){
+    const r = await fetch('/api/identifiers/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code, asset:{name, category}, property:{name:propertyName}})});
+    alert(JSON.stringify(await r.json(),null,2));
+  }
+  async function setMasterCode(){
+    const r = await fetch('/api/properties/master',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyName, code: master})});
+    alert(JSON.stringify(await r.json(),null,2));
+  }
+  return (<div className="card">
+    <h2>Assets & Master Code</h2>
+    <div className="grid">
+      <label>Identifier Code <input className="input" value={code} onChange={e=>setCode(e.target.value)}/></label>
+      <label>Asset Name <input className="input" value={name} onChange={e=>setName(e.target.value)}/></label>
+      <label>Category
+        <select className="input" value={category} onChange={e=>setCategory(e.target.value)}>
+          <option>PLUMBING</option><option>ELECTRICAL</option><option>HVAC</option>
+          <option>APPLIANCE</option><option>FURNITURE</option><option>STRUCTURAL</option>
+          <option>VEHICLE</option><option>HEAVY_EQUIPMENT</option><option>OTHER</option>
+        </select>
+      </label>
+      <label>Property Name <input className="input" value={propertyName} onChange={e=>setPropertyName(e.target.value)}/></label>
+    </div>
+    <button className="button" style={{marginTop:12}} onClick={claim}>Claim & Bind Asset</button>
+    <hr/>
+    <h3>Set Master Code for Property</h3>
+    <div className="grid">
+      <label>Property Name <input className="input" value={propertyName} onChange={e=>setPropertyName(e.target.value)}/></label>
+      <label>Master Identifier Code <input className="input" value={master} onChange={e=>setMaster(e.target.value)}/></label>
+    </div>
+    <button className="button" style={{marginTop:12}} onClick={setMasterCode}>Assign Master Code</button>
+  </div>);
+}
+EOF
+
+# Documents Tool
+cat > src/app/tools/documents/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+export default function DocumentsTool(){
+  const [assetId,setAssetId]=useState('');
+  const [title,setTitle]=useState('Warranty');
+  const [type,setType]=useState('WARRANTY');
+  const [file,setFile]=useState<File|null>(null);
+  async function upload(){
+    if(!file) return alert('Choose a file');
+    const fd = new FormData();
+    fd.set('assetId', assetId);
+    fd.set('type', type);
+    fd.set('title', title);
+    fd.set('file', file);
+    const r = await fetch('/api/uploads', { method:'POST', body: fd });
+    alert(JSON.stringify(await r.json(),null,2));
+  }
+  return (<div className="card">
+    <h2>Upload Document</h2>
+    <div className="grid">
+      <label>Asset ID <input className="input" value={assetId} onChange={e=>setAssetId(e.target.value)}/></label>
+      <label>Title <input className="input" value={title} onChange={e=>setTitle(e.target.value)}/></label>
+      <label>Type
+        <select className="input" value={type} onChange={e=>setType(e.target.value)}>
+          <option>RECEIPT</option><option>WARRANTY</option><option>MANUAL</option>
+          <option>INSPECTION</option><option>QUOTE</option><option>INVOICE</option><option>OTHER</option>
+        </select>
+      </label>
+      <label>File <input className="input" type="file" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+    </div>
+    <button className="button" style={{marginTop:12}} onClick={upload}>Upload</button>
+  </div>);
+}
+EOF
+
+# Reports Tool
+cat > src/app/tools/reports/page.tsx <<'EOF'
+'use client';
+export default function ReportsTool(){
+  async function gen(){
+    const r = await fetch('/api/reports/home-health',{method:'POST'});
+    const data = await r.json();
+    if(data.url) window.open(data.url, '_blank'); else alert('Failed');
+  }
+  return (<div className="card"><h2>Home Health Certificate™</h2><p>Generate a summary report for a property.</p><button className="button" onClick={gen}>Generate Report</button></div>);
+}
+EOF
+
+# Inspections Tool
+cat > src/app/tools/inspections/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+export default function InspectionsTool(){
+  const [propertyName,setPropertyName]=useState('Main Residence');
+  const [result,setResult]=useState('PASS');
+  async function submit(){
+    const r = await fetch('/api/inspections/append',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({propertyName,result,checklist:{panel:'OK',gfci:'OK',bonding:'OK'}})});
+    alert(JSON.stringify(await r.json(),null,2));
+  }
+  return (<div className="card"><h2>Append Inspection</h2><div className="grid"><label>Property Name <input className="input" value={propertyName} onChange={e=>setPropertyName(e.target.value)}/></label><label>Result <select className="input" value={result} onChange={e=>setResult(e.target.value)}><option>PASS</option><option>FAIL</option><option>NOTES</option></select></label></div><button className="button" style={{marginTop:12}} onClick={submit}>Append</button></div>);
+}
+EOF
+
+# Reminders Tool
+cat > src/app/tools/reminders/page.tsx <<'EOF'
+'use client';
+export default function RemindersTool(){
+  async function run(){ const r = await fetch('/api/cron/reminders'); alert(JSON.stringify(await r.json(),null,2)); }
+  return (<div className="card"><h2>Reminders</h2><p>Run due reminders job.</p><button className="button" onClick={run}>Run Now</button></div>);
+}
+EOF
+
+# 14) Pricing page + Stripe stubs
+cat > src/app/pricing/page.tsx <<'EOF'
+'use client';
+import { useState } from 'react';
+type Plan = 'contractor_50' | 'contractor_100' | 'home_lifetime' | 'home_annual';
+export default function Pricing(){
+  const [plan,setPlan] = useState<Plan>('contractor_50');
+  async function checkout(){
+    const r = await fetch('/api/stripe/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ plan }) });
+    const data = await r.json();
+    if(data.url) window.location.href = data.url; else alert(data.error || 'Checkout failed');
+  }
+  async function portal(){
+    const r = await fetch('/api/stripe/portal', { method:'POST' });
+    const data = await r.json();
+    if(data.url) window.location.href = data.url; else alert(data.error || 'Portal failed');
+  }
+  return (
+    <div className="card">
+      <h2>Choose a plan</h2>
+      <div className="grid">
+        <div className="card"><h3>Contractor — 50 QR/mo</h3><p>$19/month</p></div>
+        <div className="card"><h3>Contractor — 100 QR/mo</h3><p>$29/month</p></div>
+        <div className="card"><h3>Homeowner — Lifetime House Code</h3><p>$100 one-time</p></div>
+        <div className="card"><h3>Homeowner — Annual Hosting</h3><p>$15/year</p></div>
+      </div>
+      <div style={{display:'flex', gap:12, marginTop:16}}>
+        <button className="button" onClick={checkout}>Continue to Checkout</button>
+        <button className="button" onClick={portal}>Manage Subscription</button>
+      </div>
+      <small>Dummy Stripe stubs are active. Add real keys later in .env.</small>
+    </div>
+  );
+}
+EOF
+
+# 15) README
+cat > README.md <<'EOF'
+# Fix-Track — One scan, the whole history.
+
+**Mission:** Carfax-style histories for anything installed, serviced, or owned. Contractors place small branded QR/NFC stickers on assets and an optional master "House History" code. Anyone can scan to see trusted history; owners and pros can append events, docs, and inspections.
+
+## Features
+- Auth (seeded demo)
+- QR identifiers (asset & master)
+- Claim & bind flow
+- Upload documents (warranties/receipts/manuals)
+- Generate Home Health Certificate™ PDF
+- Inspections append
+- Reminders cron
+- Stripe plans (Contractor $19/$29, Homeowner $100 lifetime + $15 annual) with FAKE stubs
+
+## Setup
+1. `cp .env.example .env`  
+2. `npm install`  
+3. `npx prisma generate && npx prisma migrate dev --name init`  
+4. `npm run seed`  
+5. `npm run dev`  
+
+## Demo Login
+- admin@fixtrack.app / password123
+EOF
+
+# 16) Finalize
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma migrate dev --name init
+npm run seed
+
+echo "✅ Fix-Track ready. Run: npm run dev"
