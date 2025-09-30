@@ -155,6 +155,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/identifiers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const contractor = await storage.getContractor(userId);
+      
+      if (!contractor) {
+        return res.json([]);
+      }
+
+      const identifiers = await storage.getContractorIdentifiers(contractor.id);
+      res.json(identifiers);
+    } catch (error) {
+      console.error("Error fetching identifiers:", error);
+      res.status(500).json({ error: "Failed to fetch identifiers" });
+    }
+  });
+
   app.post('/api/identifiers/claim', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -293,6 +310,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching asset details:", error);
       res.status(500).json({ error: "Failed to fetch asset details" });
+    }
+  });
+
+  app.post('/api/assets', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId, name, category, brand, model, serial, installedAt, installerId } = req.body;
+
+      if (!propertyId || !name || !category) {
+        return res.status(400).json({ error: "Property ID, name, and category are required" });
+      }
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const asset = await storage.createAsset({
+        propertyId,
+        name,
+        category,
+        brand,
+        model,
+        serial,
+        installedAt: installedAt ? new Date(installedAt) : undefined,
+        installerId,
+      });
+
+      // Log installation event
+      await storage.createEvent({
+        assetId: asset.id,
+        type: 'INSTALL',
+        data: { installedAt: asset.installedAt, brand, model, serial },
+        createdBy: userId,
+      });
+
+      res.json({ asset });
+    } catch (error) {
+      console.error("Error creating asset:", error);
+      res.status(500).json({ error: "Failed to create asset" });
+    }
+  });
+
+  // Document routes
+  app.get('/api/documents/asset/:assetId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId } = req.params;
+
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+
+      const property = await storage.getProperty(asset.propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const documents = await storage.getAssetDocuments(assetId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching asset documents:", error);
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.get('/api/documents/property/:propertyId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId } = req.params;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const documents = await storage.getPropertyDocuments(propertyId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching property documents:", error);
+      res.status(500).json({ error: "Failed to fetch documents" });
     }
   });
 
@@ -462,6 +561,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing reminders:", error);
       res.status(500).json({ error: "Failed to process reminders" });
+    }
+  });
+
+  app.post('/api/reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId, propertyId, dueAt, type } = req.body;
+
+      if (!dueAt || !type) {
+        return res.status(400).json({ error: "Due date and type are required" });
+      }
+
+      // Verify ownership
+      if (assetId) {
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          return res.status(404).json({ error: "Asset not found" });
+        }
+        const property = await storage.getProperty(asset.propertyId);
+        if (!property || property.ownerId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      } else if (propertyId) {
+        const property = await storage.getProperty(propertyId);
+        if (!property || property.ownerId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      const reminder = await storage.createReminder({
+        assetId,
+        propertyId,
+        dueAt: new Date(dueAt),
+        type,
+      });
+
+      res.json({ reminder });
+    } catch (error) {
+      console.error("Error creating reminder:", error);
+      res.status(500).json({ error: "Failed to create reminder" });
     }
   });
 
