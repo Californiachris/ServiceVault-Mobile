@@ -483,7 +483,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.send(pdfBuffer);
       });
 
-      // PDF Content
+      // PDF Content - Add logo at top
+      const logoPath = path.join(process.cwd(), 'attached_assets', 'file_00000000f2ec61fda4cfe77e901310b1_1759209650761.png');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, {
+          fit: [150, 60],
+          align: 'center'
+        });
+        doc.moveDown();
+      }
+      
       doc.fontSize(18).text('Fix-Track — Home Health Certificate™', { align: 'center' });
       doc.moveDown();
       

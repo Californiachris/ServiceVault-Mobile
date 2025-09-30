@@ -10,6 +10,7 @@ import {
   X 
 } from "lucide-react";
 import { useState } from "react";
+import logoImage from "@assets/file_00000000f2ec61fda4cfe77e901310b1_1759209650761.png";
 
 export default function Navigation() {
   const { user, isAuthenticated } = useAuth();
@@ -33,12 +34,12 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-4" data-testid="link-home">
-            <div className="brand-logo">FT</div>
-            <div>
-              <h1 className="text-xl font-bold text-primary">Fix-Track</h1>
-              <p className="text-xs text-muted-foreground">One scan, the whole history</p>
-            </div>
+          <Link href="/" className="flex items-center" data-testid="link-home">
+            <img 
+              src={logoImage} 
+              alt="Fix Track App" 
+              className="h-10 w-auto object-contain hover:opacity-90 transition-opacity"
+            />
           </Link>
           
           {/* Desktop Navigation */}
