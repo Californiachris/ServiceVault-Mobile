@@ -62,7 +62,7 @@ export const properties = pgTable("properties", {
   state: varchar("state"),
   postalCode: varchar("postal_code"),
   country: varchar("country"),
-  masterIdentifierId: uuid("master_identifier_id"),
+  masterIdentifierId: uuid("master_identifier_id").references(() => identifiers.id),
   homePlan: varchar("home_plan"), // home_lifetime, home_annual
   homeStatus: varchar("home_status").default("ACTIVE"),
   createdAt: timestamp("created_at").defaultNow(),

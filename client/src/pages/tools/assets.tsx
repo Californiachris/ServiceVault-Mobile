@@ -149,7 +149,7 @@ export default function AssetsPage() {
     claimMutation.mutate(claimForm);
   };
 
-  const filteredAssets = assets?.filter((asset: any) => {
+  const filteredAssets = (Array.isArray(assets) ? assets : []).filter((asset: any) => {
     const matchesSearch = searchTerm === '' || 
       asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,7 +158,7 @@ export default function AssetsPage() {
     const matchesCategory = categoryFilter === 'ALL' || asset.category === categoryFilter;
     
     return matchesSearch && matchesCategory;
-  }) || [];
+  });
 
   if (!isAuthenticated) {
     return (
@@ -222,7 +222,7 @@ export default function AssetsPage() {
               <CardContent>
                 {propertiesLoading ? (
                   <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
-                ) : properties && properties.length > 0 ? (
+                ) : properties && Array.isArray(properties) && properties.length > 0 ? (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {properties.map((property: any) => (
                       <Card 

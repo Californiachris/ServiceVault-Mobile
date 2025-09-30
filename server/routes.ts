@@ -17,7 +17,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-08-27.basil",
 }) : null;
 
 // Utility function to generate QR codes
@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object storage routes for file uploads
   const objectStorageService = new ObjectStorageService();
 
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
@@ -512,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           doc.moveDown(0.5)
              .text(`• ${inspection.jurisdiction || 'General'} Inspection`)
              .text(`  Result: ${inspection.result || 'Pending'}`)
-             .text(`  Date: ${inspection.createdAt.toLocaleDateString()}`);
+             .text(`  Date: ${inspection.createdAt ? inspection.createdAt.toLocaleDateString() : 'N/A'}`);
         }
       }
 
@@ -755,10 +755,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           case 'customer.subscription.updated':
           case 'customer.subscription.deleted': {
-            const subscription = event.data.object as Stripe.Subscription;
+            const subscription = event.data.object as any;
             const userSub = await storage.getUserSubscription(subscription.metadata?.userId || '');
             
-            if (userSub) {
+            if (userSub && subscription.current_period_end) {
               await storage.updateSubscription(userSub.id, {
                 status: subscription.status,
                 currentPeriodEnd: new Date(subscription.current_period_end * 1000),
