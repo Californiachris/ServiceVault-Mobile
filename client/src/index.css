@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(216 65% 9%);
+  --foreground: hsl(215 100% 95%);
+  --card: hsl(216 48% 12%);
+  --card-foreground: hsl(215 100% 95%);
+  --popover: hsl(216 48% 12%);
+  --popover-foreground: hsl(215 100% 95%);
+  --primary: hsl(185 92% 71%);
+  --primary-foreground: hsl(185 92% 15%);
+  --secondary: hsl(215 27% 18%);
+  --secondary-foreground: hsl(215 100% 95%);
+  --muted: hsl(215 27% 18%);
+  --muted-foreground: hsl(215 20% 75%);
+  --accent: hsl(215 27% 18%);
+  --accent-foreground: hsl(215 100% 95%);
+  --destructive: hsl(0 62% 50%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(215 27% 18%);
+  --input: hsl(215 27% 18%);
+  --ring: hsl(185 92% 71%);
+  --radius: 12px;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dark {
+  --background: hsl(216 65% 9%);
+  --foreground: hsl(215 100% 95%);
+  --card: hsl(216 48% 12%);
+  --card-foreground: hsl(215 100% 95%);
+  --popover: hsl(216 48% 12%);
+  --popover-foreground: hsl(215 100% 95%);
+  --primary: hsl(185 92% 71%);
+  --primary-foreground: hsl(185 92% 15%);
+  --secondary: hsl(215 27% 18%);
+  --secondary-foreground: hsl(215 100% 95%);
+  --muted: hsl(215 27% 18%);
+  --muted-foreground: hsl(215 20% 75%);
+  --accent: hsl(215 27% 18%);
+  --accent-foreground: hsl(215 100% 95%);
+  --destructive: hsl(0 62% 50%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(215 27% 18%);
+  --input: hsl(215 27% 18%);
+  --ring: hsl(185 92% 71%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .scan-camera {
+    background: linear-gradient(45deg, hsl(216 65% 9%), hsl(216 48% 12%));
+    border: 2px dashed var(--primary);
+  }
+
+  .qr-code-preview {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--primary-foreground);
+  }
+
+  .hero-gradient {
+    background: linear-gradient(45deg, hsl(185 92% 71% / 0.1) 0%, hsl(216 65% 9%) 50%, hsl(216 65% 9%) 100%);
+  }
+
+  .cta-gradient {
+    background: linear-gradient(45deg, hsl(185 92% 71% / 0.1) 0%, hsl(216 65% 9%) 50%, hsl(185 92% 71% / 0.1) 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

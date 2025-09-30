@@ -1,0 +1,355 @@
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { Link } from "wouter";
+import Navigation from "@/components/ui/navigation";
+import StatsCard from "@/components/ui/stats-card";
+import ToolCard from "@/components/ui/tool-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  QrCode, 
+  Wrench, 
+  Upload, 
+  BarChart3, 
+  CheckCircle2, 
+  Bell,
+  Download,
+  Plus,
+  TrendingUp,
+  Calendar,
+  AlertTriangle
+} from "lucide-react";
+
+export default function Dashboard() {
+  const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["/api/dashboard/stats"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  const { data: properties } = useQuery({
+    queryKey: ["/api/properties"],
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  const dashboardStats = [
+    { 
+      label: "Active Assets", 
+      value: stats?.activeAssets?.toString() || "0", 
+      change: "+12%", 
+      icon: Wrench,
+      trend: "up"
+    },
+    { 
+      label: "QR Codes Generated", 
+      value: stats?.qrCodesGenerated?.toString() || "0", 
+      change: "+8%", 
+      icon: QrCode,
+      trend: "up"
+    },
+    { 
+      label: "Properties Managed", 
+      value: stats?.propertiesManaged?.toString() || "0", 
+      change: "+5%", 
+      icon: BarChart3,
+      trend: "up"
+    },
+    { 
+      label: "Active Subscriptions", 
+      value: stats?.activeSubscriptions?.toString() || "0", 
+      change: "+15%", 
+      icon: TrendingUp,
+      trend: "up"
+    },
+  ];
+
+  const tools = [
+    {
+      title: "QR Code Generator",
+      description: "Batch generate branded QR/NFC codes for assets and properties. Print stickers with your company branding.",
+      icon: QrCode,
+      status: "Active",
+      statusColor: "green" as const,
+      href: "/tools/identifiers",
+    },
+    {
+      title: "Asset Management",
+      description: "Create master property codes and bind assets. Manage installation records and contractor assignments.",
+      icon: Wrench,
+      status: "Core",
+      statusColor: "blue" as const,
+      href: "/tools/assets",
+    },
+    {
+      title: "Document Storage",
+      description: "Upload and organize warranties, receipts, manuals, and inspection reports for easy access.",
+      icon: Upload,
+      status: "Essential",
+      statusColor: "purple" as const,
+      href: "/tools/documents",
+    },
+    {
+      title: "Health Reports",
+      description: "Generate professional Home Health Certificate™ PDFs with complete property and asset timelines.",
+      icon: BarChart3,
+      status: "Premium",
+      statusColor: "orange" as const,
+      href: "/tools/reports",
+    },
+    {
+      title: "Inspection Logs",
+      description: "Record inspection results with digital checklists and inspector signatures for compliance tracking.",
+      icon: CheckCircle2,
+      status: "Professional",
+      statusColor: "cyan" as const,
+      href: "/tools/inspections",
+    },
+    {
+      title: "Smart Reminders",
+      description: "Automatic notifications for warranty expirations, maintenance schedules, and service intervals.",
+      icon: Bell,
+      status: "Automated",
+      statusColor: "red" as const,
+      href: "/tools/reminders",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back! Here's what's happening with your properties and assets.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button variant="outline" data-testid="button-export-data">
+              <Download className="mr-2 h-4 w-4" />
+              Export Data
+            </Button>
+            <Button asChild data-testid="button-scan-qr">
+              <Link href="/scan">
+                <QrCode className="mr-2 h-4 w-4" />
+                Scan QR Code
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {dashboardStats.map((stat, index) => (
+            <StatsCard 
+              key={index} 
+              {...stat} 
+              isLoading={statsLoading}
+            />
+          ))}
+        </div>
+
+        {/* Recent Activity & Quick Actions */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <QrCode className="h-5 w-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">QR Code Generated</p>
+                      <p className="text-xs text-muted-foreground">Created 50 asset identifiers for Main Residence</p>
+                      <p className="text-xs text-muted-foreground">2 hours ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Asset Claimed</p>
+                      <p className="text-xs text-muted-foreground">HVAC System bound to property via QR scan</p>
+                      <p className="text-xs text-muted-foreground">5 hours ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Upload className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Document Uploaded</p>
+                      <p className="text-xs text-muted-foreground">Warranty certificate for Water Heater</p>
+                      <p className="text-xs text-muted-foreground">1 day ago</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                    <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Reminder Due</p>
+                      <p className="text-xs text-muted-foreground">Electrical panel inspection overdue</p>
+                      <p className="text-xs text-muted-foreground">3 days overdue</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    asChild
+                    data-testid="button-generate-qr"
+                  >
+                    <Link href="/tools/identifiers">
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Generate QR Codes
+                    </Link>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    asChild
+                    data-testid="button-upload-document"
+                  >
+                    <Link href="/tools/documents">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Document
+                    </Link>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    asChild
+                    data-testid="button-generate-report"
+                  >
+                    <Link href="/tools/reports">
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      Generate Report
+                    </Link>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    asChild
+                    data-testid="button-manage-assets"
+                  >
+                    <Link href="/tools/assets">
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Manage Assets
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Tools Grid */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Management Tools</h2>
+            <Button variant="outline" size="sm" data-testid="button-view-all-tools">
+              View All Tools
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tools.map((tool, index) => (
+              <ToolCard key={index} {...tool} />
+            ))}
+          </div>
+        </div>
+
+        {/* Properties Summary */}
+        {properties && properties.length > 0 && (
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Your Properties</span>
+                  <Button size="sm" asChild data-testid="button-add-property">
+                    <Link href="/tools/assets">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Property
+                    </Link>
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {properties.slice(0, 6).map((property: any) => (
+                    <div 
+                      key={property.id} 
+                      className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      data-testid={`property-card-${property.id}`}
+                    >
+                      <h3 className="font-semibold mb-1">{property.name || 'Unnamed Property'}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {property.addressLine1 ? `${property.addressLine1}, ${property.city || ''}` : 'No address'}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>Status: {property.homeStatus || 'Active'}</span>
+                        <span>Plan: {property.homePlan || 'None'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
