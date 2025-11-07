@@ -246,6 +246,13 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Added automatic scroll-to-top behavior on all page navigation
   - Uses wouter's `useLocation` hook to detect route changes
   - Ensures users always see the top of new pages when navigating
+- **Contractor Pricing Value Proposition (client/src/pages/pricing.tsx):**
+  - Updated card description to "Turn every install into guaranteed future work"
+  - Added highlighted value proposition section explaining:
+    - Installation records (date, installer, warranty) are permanently preserved and visible to anyone scanning
+    - AI automatically extracts warranty dates and creates predictive maintenance reminders
+    - System turns every install into recurring revenue through automatic service notifications
+  - Refined feature list to emphasize permanent install history and AI-powered future work generation
 
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
