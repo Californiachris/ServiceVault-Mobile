@@ -261,6 +261,8 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
     - Support: Real contact information (phone (760) 269-5750, email trackfixes@gmail.com)
   - All claims verified against actual implementation (no marketing fluff)
   - Phone number is clickable with proper tel: link format for mobile calls
+  - Dialog UX improved: added max-height scrolling (85vh) and orange hover effects to trust badges for better visibility
+  - Trust badges styled with `hover:text-orange-500`, `hover:scale-105`, and animated underline to signal interactivity
 
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
