@@ -108,31 +108,31 @@ export default function Landing() {
           </Button>
         </div>
 
-        {/* Trust Signals - Now Clickable */}
-        <div className="flex flex-wrap justify-center gap-8 items-center text-sm text-muted-foreground">
+        {/* Trust Signals - Now Clickable with Orange Styling */}
+        <div className="flex flex-wrap justify-center gap-8 items-center text-sm">
           <button 
             onClick={() => setSecurityDialogOpen(true)}
-            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
             data-testid="button-info-security"
           >
             <Shield className="h-4 w-4" />
-            <span>Bank-Level Security</span>
+            <span className="font-medium">Bank-Level Security</span>
           </button>
           <button 
             onClick={() => setSetupDialogOpen(true)}
-            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
             data-testid="button-info-setup"
           >
             <Zap className="h-4 w-4" />
-            <span>Instant Setup</span>
+            <span className="font-medium">Instant Setup</span>
           </button>
           <button 
             onClick={() => setSupportDialogOpen(true)}
-            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
             data-testid="button-info-support"
           >
             <Phone className="h-4 w-4" />
-            <span>24/7 Support</span>
+            <span className="font-medium">24/7 Support</span>
           </button>
         </div>
       </div>
@@ -304,7 +304,7 @@ export default function Landing() {
 
       {/* Security Dialog */}
       <Dialog open={securityDialogOpen} onOpenChange={setSecurityDialogOpen}>
-        <DialogContent className="max-w-2xl" data-testid="dialog-security">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="dialog-security">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <Shield className="h-6 w-6 text-primary" />
@@ -376,7 +376,7 @@ export default function Landing() {
 
       {/* Setup Dialog */}
       <Dialog open={setupDialogOpen} onOpenChange={setSetupDialogOpen}>
-        <DialogContent className="max-w-2xl" data-testid="dialog-setup">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="dialog-setup">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <Zap className="h-6 w-6 text-primary" />
@@ -462,7 +462,7 @@ export default function Landing() {
 
       {/* Support Dialog */}
       <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
-        <DialogContent className="max-w-2xl" data-testid="dialog-support">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="dialog-support">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <Phone className="h-6 w-6 text-primary" />
