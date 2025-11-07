@@ -96,6 +96,7 @@ export const assets = pgTable("assets", {
   brand: varchar("brand"),
   model: varchar("model"),
   serial: varchar("serial"),
+  notes: text("notes"), // Installer notes from initial install
   installedAt: timestamp("installed_at"),
   identifierId: uuid("identifier_id").unique().references(() => identifiers.id),
   installerId: uuid("installer_id").references(() => contractors.id),

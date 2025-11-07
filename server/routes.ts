@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/identifiers/claim', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { code, asset, property } = req.body;
+      const { code, asset, property, photos } = req.body;
 
       if (!code) {
         return res.status(400).json({ error: "Code is required" });
@@ -231,9 +231,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create or find property
-      let propertyRecord = await storage.getPropertyByName(property?.name || "Property", userId);
-      if (!propertyRecord) {
+      // Handle property - either get existing by ID or create new
+      let propertyRecord;
+      if (property?.id) {
+        // User selected existing property
+        propertyRecord = await storage.getProperty(property.id);
+        if (!propertyRecord || propertyRecord.ownerId !== userId) {
+          return res.status(404).json({ error: "Property not found or access denied" });
+        }
+      } else {
+        // Create new property
         propertyRecord = await storage.createProperty({
           ownerId: userId,
           name: property?.name || "Property",
@@ -253,8 +260,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         brand: asset?.brand,
         model: asset?.model,
         serial: asset?.serial,
+        notes: asset?.notes,
         identifierId: identifier.id,
-        installedAt: new Date(),
+        installedAt: asset?.installedAt ? new Date(asset.installedAt) : new Date(),
         status: "ACTIVE",
       });
 
@@ -271,11 +279,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create installation event
+      // Create installation event with photos
       await storage.createEvent({
         assetId: assetRecord.id,
         type: "INSTALL",
-        data: { note: "Initial claim and installation" },
+        data: { 
+          note: asset?.notes || "Initial claim and installation",
+          installDate: asset?.installedAt || new Date().toISOString(),
+        },
+        photoUrls: photos && photos.length > 0 ? photos : null,
         createdBy: userId,
       });
 

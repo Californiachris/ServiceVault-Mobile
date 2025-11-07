@@ -1,12 +1,38 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Navigation from "@/components/ui/navigation";
 import QRScanner from "@/components/scanner/qr-scanner";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   QrCode, 
   CheckCircle2, 
@@ -18,14 +44,60 @@ import {
   Wrench,
   Upload,
   Eye,
-  FileText
+  FileText,
+  CalendarIcon,
+  X,
+  ImageIcon,
+  Plus
 } from "lucide-react";
+
+// Form schema for install workflow
+const installFormSchema = z.object({
+  assetName: z.string().min(1, "Asset name is required"),
+  category: z.enum(["PLUMBING", "HVAC", "ELECTRICAL", "ROOFING", "APPLIANCE", "OTHER"]),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  serial: z.string().optional(),
+  installDate: z.date(),
+  installerNotes: z.string().optional(),
+  propertyId: z.string().min(1, "Property is required"),
+  // New property fields (when creating new)
+  newPropertyName: z.string().optional(),
+  newPropertyAddress: z.string().optional(),
+  newPropertyCity: z.string().optional(),
+  newPropertyState: z.string().optional(),
+  newPropertyZip: z.string().optional(),
+}).refine((data) => {
+  // If creating a new property, require name and address
+  if (data.propertyId === "new") {
+    return !!data.newPropertyName && !!data.newPropertyAddress;
+  }
+  return true;
+}, {
+  message: "Property name and address are required when creating a new property",
+  path: ["newPropertyName"],
+});
+
+type InstallFormData = z.infer<typeof installFormSchema>;
+
+interface UploadedPhoto {
+  id: string;
+  file: File;
+  preview: string;
+  uploadURL?: string;
+  uploading: boolean;
+  progress: number;
+}
 
 export default function Scan() {
   const [, setLocation] = useLocation();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showInstallForm, setShowInstallForm] = useState(false);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [claimSuccess, setClaimSuccess] = useState<any>(null);
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   // Check URL for code parameter
   useEffect(() => {
@@ -47,15 +119,147 @@ export default function Scan() {
     retry: false,
   });
 
+  // Initialize form
+  const form = useForm<InstallFormData>({
+    resolver: zodResolver(installFormSchema),
+    defaultValues: {
+      assetName: "",
+      category: "OTHER",
+      brand: "",
+      model: "",
+      serial: "",
+      installDate: new Date(),
+      installerNotes: "",
+      propertyId: "",
+      newPropertyName: "",
+      newPropertyAddress: "",
+      newPropertyCity: "",
+      newPropertyState: "",
+      newPropertyZip: "",
+    },
+  });
+
+  // Fetch user's properties
+  const { data: properties = [] } = useQuery<Array<{ id: string; name: string; addressLine1?: string }>>({
+    queryKey: ["/api/properties"],
+    enabled: isAuthenticated && showInstallForm,
+  });
+
+  // Claim mutation
+  const claimMutation = useMutation({
+    mutationFn: async (data: InstallFormData) => {
+      // Upload photos first
+      const photoUrls: string[] = [];
+      for (const photo of photos) {
+        if (!photo.uploadURL) {
+          // Get upload URL
+          const uploadRes = await apiRequest("POST", "/api/objects/upload");
+          const { uploadURL } = await uploadRes.json();
+          
+          // Upload file
+          await fetch(uploadURL, {
+            method: "PUT",
+            headers: { "Content-Type": photo.file.type },
+            body: photo.file,
+          });
+          
+          // Extract path from uploadURL
+          const url = new URL(uploadURL);
+          photoUrls.push(url.pathname);
+        }
+      }
+
+      // Prepare asset data
+      const assetData = {
+        name: data.assetName,
+        category: data.category,
+        brand: data.brand,
+        model: data.model,
+        serial: data.serial,
+        installedAt: data.installDate,
+        notes: data.installerNotes,
+      };
+
+      // Prepare property data
+      let propertyData: any = null;
+      if (data.propertyId === "new") {
+        propertyData = {
+          name: data.newPropertyName,
+          addressLine1: data.newPropertyAddress,
+          city: data.newPropertyCity,
+          state: data.newPropertyState,
+          postalCode: data.newPropertyZip,
+        };
+      } else {
+        propertyData = { id: data.propertyId };
+      }
+
+      // Submit claim
+      const res = await apiRequest("POST", "/api/identifiers/claim", {
+        code: scannedCode,
+        asset: assetData,
+        property: propertyData,
+        photos: photoUrls,
+      });
+
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setClaimSuccess(data);
+      setShowInstallForm(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Asset claimed successfully!",
+        description: "The asset has been bound and installation recorded.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to claim asset",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleScan = (code: string) => {
     setScannedCode(code);
     setIsScanning(false);
+    setShowInstallForm(false);
+    setClaimSuccess(null);
   };
 
   const handleClaimAsset = () => {
-    if (scannedCode) {
-      setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`);
+    setShowInstallForm(true);
+    setClaimSuccess(null);
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPhotos: UploadedPhoto[] = [];
+    for (let i = 0; i < Math.min(files.length, 5 - photos.length); i++) {
+      const file = files[i];
+      newPhotos.push({
+        id: `${Date.now()}-${i}`,
+        file,
+        preview: URL.createObjectURL(file),
+        uploading: false,
+        progress: 0,
+      });
     }
+
+    setPhotos([...photos, ...newPhotos]);
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos(photos.filter(p => p.id !== id));
+  };
+
+  const onSubmit = (data: InstallFormData) => {
+    claimMutation.mutate(data);
   };
 
   const recentScans = [
@@ -239,31 +443,438 @@ export default function Scan() {
                         </div>
                       </div>
 
-                      {/* Role-Based Action Buttons */}
-                      <div className="space-y-2">
-                        {!scanResult.claimed ? (
-                          <>
-                            {isAuthenticated ? (
-                              <Button 
-                                className="w-full" 
-                                onClick={handleClaimAsset}
-                                data-testid="button-claim-asset"
+                      {/* Install Form or Action Buttons */}
+                      {!scanResult.claimed && !claimSuccess && showInstallForm ? (
+                        /* Install Workflow Form */
+                        <Form {...form}>
+                          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            {/* Asset Information Section */}
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-semibold">Asset Information</h3>
+                              
+                              <FormField
+                                control={form.control}
+                                name="assetName"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Asset Name *</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="e.g., Water Heater, HVAC Unit" 
+                                        data-testid="input-asset-name"
+                                        {...field} 
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="category"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Category *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger data-testid="select-category">
+                                          <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="PLUMBING">Plumbing</SelectItem>
+                                        <SelectItem value="HVAC">HVAC</SelectItem>
+                                        <SelectItem value="ELECTRICAL">Electrical</SelectItem>
+                                        <SelectItem value="ROOFING">Roofing</SelectItem>
+                                        <SelectItem value="APPLIANCE">Appliance</SelectItem>
+                                        <SelectItem value="OTHER">Other</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name="brand"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Brand</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          placeholder="e.g., Rheem, Carrier" 
+                                          data-testid="input-brand"
+                                          {...field} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name="model"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Model</FormLabel>
+                                      <FormControl>
+                                        <Input 
+                                          placeholder="Model number" 
+                                          data-testid="input-model"
+                                          {...field} 
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <FormField
+                                control={form.control}
+                                name="serial"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Serial Number</FormLabel>
+                                    <FormControl>
+                                      <Input 
+                                        placeholder="Serial number" 
+                                        data-testid="input-serial"
+                                        {...field} 
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="installDate"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-col">
+                                    <FormLabel>Install Date *</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button
+                                            variant="outline"
+                                            className="w-full pl-3 text-left font-normal"
+                                            data-testid="button-install-date"
+                                          >
+                                            {field.value ? (
+                                              format(field.value, "PPP")
+                                            ) : (
+                                              <span>Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                          mode="single"
+                                          selected={field.value}
+                                          onSelect={field.onChange}
+                                          disabled={(date) =>
+                                            date > new Date() || date < new Date("1900-01-01")
+                                          }
+                                          initialFocus
+                                        />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="installerNotes"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Installer Notes</FormLabel>
+                                    <FormControl>
+                                      <Textarea 
+                                        placeholder="Installation details, warranty info, special notes..." 
+                                        className="min-h-[100px]"
+                                        data-testid="textarea-installer-notes"
+                                        {...field} 
+                                      />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Any important details about the installation
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            {/* Property Selection Section */}
+                            <div className="space-y-4 pt-4 border-t">
+                              <h3 className="text-lg font-semibold">Property</h3>
+                              
+                              <FormField
+                                control={form.control}
+                                name="propertyId"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Select Property *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger data-testid="select-property">
+                                          <SelectValue placeholder="Select property" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {properties.map((property) => (
+                                          <SelectItem key={property.id} value={property.id}>
+                                            {property.name}
+                                            {property.addressLine1 && ` - ${property.addressLine1}`}
+                                          </SelectItem>
+                                        ))}
+                                        <SelectItem value="new">
+                                          <div className="flex items-center">
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Create New Property
+                                          </div>
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* New Property Fields (shown when "new" is selected) */}
+                              {form.watch("propertyId") === "new" && (
+                                <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                                  <FormField
+                                    control={form.control}
+                                    name="newPropertyName"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Property Name *</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            placeholder="e.g., Main Street Residence" 
+                                            data-testid="input-new-property-name"
+                                            {...field} 
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <FormField
+                                    control={form.control}
+                                    name="newPropertyAddress"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Address *</FormLabel>
+                                        <FormControl>
+                                          <Input 
+                                            placeholder="Street address" 
+                                            data-testid="input-new-property-address"
+                                            {...field} 
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <FormField
+                                      control={form.control}
+                                      name="newPropertyCity"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>City</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              placeholder="City" 
+                                              data-testid="input-new-property-city"
+                                              {...field} 
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={form.control}
+                                      name="newPropertyState"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>State</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              placeholder="State" 
+                                              data-testid="input-new-property-state"
+                                              {...field} 
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+
+                                    <FormField
+                                      control={form.control}
+                                      name="newPropertyZip"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>ZIP</FormLabel>
+                                          <FormControl>
+                                            <Input 
+                                              placeholder="ZIP" 
+                                              data-testid="input-new-property-zip"
+                                              {...field} 
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Photo Upload Section */}
+                            <div className="space-y-4 pt-4 border-t">
+                              <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <ImageIcon className="h-5 w-5" />
+                                Installation Photos (Optional)
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                Upload up to 5 photos of the installation
+                              </p>
+
+                              {/* Photo Previews */}
+                              {photos.length > 0 && (
+                                <div className="grid grid-cols-3 gap-4">
+                                  {photos.map((photo) => (
+                                    <div key={photo.id} className="relative group">
+                                      <img
+                                        src={photo.preview}
+                                        alt="Installation photo"
+                                        className="w-full h-24 object-cover rounded-lg border"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => removePhoto(photo.id)}
+                                        data-testid={`button-remove-photo-${photo.id}`}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Upload Button */}
+                              {photos.length < 5 && (
+                                <div>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handlePhotoSelect}
+                                    className="hidden"
+                                    id="photo-upload"
+                                    data-testid="input-photo-upload"
+                                  />
+                                  <label htmlFor="photo-upload">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="w-full"
+                                      onClick={() => document.getElementById('photo-upload')?.click()}
+                                      data-testid="button-add-photos"
+                                    >
+                                      <Upload className="mr-2 h-4 w-4" />
+                                      Add Photos ({photos.length}/5)
+                                    </Button>
+                                  </label>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Form Actions */}
+                            <div className="flex gap-2 pt-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => {
+                                  setShowInstallForm(false);
+                                  setPhotos([]);
+                                  form.reset();
+                                }}
+                                disabled={claimMutation.isPending}
+                                data-testid="button-cancel-install"
                               >
-                                <Link className="mr-2 h-4 w-4" />
-                                Claim & Bind {scanResult.type === 'MASTER' ? 'Property' : 'Asset'}
+                                Cancel
                               </Button>
-                            ) : (
-                              <Button 
-                                className="w-full" 
-                                onClick={() => setLocation('/pricing')}
-                                data-testid="button-sign-up"
+                              <Button
+                                type="submit"
+                                className="flex-1"
+                                disabled={claimMutation.isPending}
+                                data-testid="button-submit-install"
                               >
-                                <Link className="mr-2 h-4 w-4" />
-                                Sign Up to Claim
+                                {claimMutation.isPending ? (
+                                  <>
+                                    <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Complete Installation
+                                  </>
+                                )}
                               </Button>
-                            )}
-                          </>
-                        ) : (
+                            </div>
+                          </form>
+                        </Form>
+                      ) : !claimSuccess ? (
+                        /* Action Buttons */
+                        <div className="space-y-2">
+                          {!scanResult.claimed ? (
+                            <>
+                              {isAuthenticated ? (
+                                <Button 
+                                  className="w-full" 
+                                  onClick={handleClaimAsset}
+                                  data-testid="button-claim-asset"
+                                >
+                                  <Link className="mr-2 h-4 w-4" />
+                                  Claim & Bind {scanResult.type === 'MASTER' ? 'Property' : 'Asset'}
+                                </Button>
+                              ) : (
+                                <Button 
+                                  className="w-full" 
+                                  onClick={() => setLocation('/pricing')}
+                                  data-testid="button-sign-up"
+                                >
+                                  <Link className="mr-2 h-4 w-4" />
+                                  Sign Up to Claim
+                                </Button>
+                              )}
+                            </>
+                          ) : (
                           <>
                             {isAuthenticated && user ? (
                               <>
@@ -343,6 +954,64 @@ export default function Scan() {
                           Scan Another Code
                         </Button>
                       </div>
+                      ) : (
+                        /* Success State */
+                        <div className="space-y-4">
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6 text-center">
+                            <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold mb-2">Installation Complete!</h3>
+                            <p className="text-muted-foreground mb-4">
+                              The asset has been successfully claimed and bound to your property.
+                            </p>
+                            
+                            {claimSuccess && (
+                              <div className="bg-muted/30 rounded-lg p-4 text-sm space-y-2 text-left">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Asset:</span>
+                                  <span className="font-medium">{claimSuccess.asset?.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Property:</span>
+                                  <span className="font-medium">{claimSuccess.property?.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Category:</span>
+                                  <Badge variant="outline">{claimSuccess.asset?.category}</Badge>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setScannedCode(null);
+                                setClaimSuccess(null);
+                                setPhotos([]);
+                                form.reset();
+                              }}
+                              data-testid="button-scan-another-success"
+                            >
+                              <QrCode className="mr-2 h-4 w-4" />
+                              Scan Another
+                            </Button>
+                            <Button 
+                              className="flex-1"
+                              onClick={() => {
+                                if (claimSuccess?.asset?.id) {
+                                  setLocation(`/tools/assets?id=${claimSuccess.asset.id}`);
+                                }
+                              }}
+                              data-testid="button-view-asset"
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Asset
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Information */}
                       <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
