@@ -13,6 +13,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -80,6 +87,14 @@ const installFormSchema = z.object({
 
 type InstallFormData = z.infer<typeof installFormSchema>;
 
+// Service event form schema
+const serviceEventSchema = z.object({
+  eventType: z.enum(["SERVICE", "REPAIR", "INSPECTION", "WARRANTY", "NOTE"]),
+  notes: z.string().min(1, "Notes are required"),
+});
+
+type ServiceEventFormData = z.infer<typeof serviceEventSchema>;
+
 interface UploadedPhoto {
   id: string;
   file: File;
@@ -94,7 +109,9 @@ export default function Scan() {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showInstallForm, setShowInstallForm] = useState(false);
+  const [showServiceEventDialog, setShowServiceEventDialog] = useState(false);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [servicePhotos, setServicePhotos] = useState<UploadedPhoto[]>([]);
   const [claimSuccess, setClaimSuccess] = useState<any>(null);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -232,6 +249,68 @@ export default function Scan() {
     },
   });
 
+  // Service event form
+  const serviceEventForm = useForm<ServiceEventFormData>({
+    resolver: zodResolver(serviceEventSchema),
+    defaultValues: {
+      eventType: "SERVICE",
+      notes: "",
+    },
+  });
+
+  // Service event mutation
+  const serviceEventMutation = useMutation({
+    mutationFn: async (data: ServiceEventFormData) => {
+      if (!scanResult?.asset?.id) {
+        throw new Error("No asset ID found");
+      }
+
+      // Upload service photos first
+      const photoUrls: string[] = [];
+      for (const photo of servicePhotos) {
+        if (!photo.uploadURL) {
+          const uploadRes = await apiRequest("POST", "/api/objects/upload");
+          const { uploadURL } = await uploadRes.json();
+          
+          await fetch(uploadURL, {
+            method: "PUT",
+            headers: { "Content-Type": photo.file.type },
+            body: photo.file,
+          });
+          
+          const url = new URL(uploadURL);
+          photoUrls.push(url.pathname);
+        }
+      }
+
+      // Create service event
+      const res = await apiRequest("POST", `/api/assets/${scanResult.asset.id}/events`, {
+        type: data.eventType,
+        note: data.notes,
+        photos: photoUrls,
+      });
+
+      return res.json();
+    },
+    onSuccess: () => {
+      setShowServiceEventDialog(false);
+      setServicePhotos([]);
+      serviceEventForm.reset();
+      queryClient.invalidateQueries({ queryKey: [`/api/public/asset/${scanResult?.asset?.id}`] });
+      toast({
+        title: "Service event logged!",
+        description: "The event has been added to the asset history.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to log service event",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleScan = (code: string) => {
     setScannedCode(code);
     setIsScanning(false);
@@ -267,8 +346,35 @@ export default function Scan() {
     setPhotos(photos.filter(p => p.id !== id));
   };
 
+  const handleServicePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPhotos: UploadedPhoto[] = [];
+    for (let i = 0; i < Math.min(files.length, 5 - servicePhotos.length); i++) {
+      const file = files[i];
+      newPhotos.push({
+        id: `${Date.now()}-${i}`,
+        file,
+        preview: URL.createObjectURL(file),
+        uploading: false,
+        progress: 0,
+      });
+    }
+
+    setServicePhotos([...servicePhotos, ...newPhotos]);
+  };
+
+  const removeServicePhoto = (id: string) => {
+    setServicePhotos(servicePhotos.filter(p => p.id !== id));
+  };
+
   const onSubmit = (data: InstallFormData) => {
     claimMutation.mutate(data);
+  };
+
+  const onServiceEventSubmit = (data: ServiceEventFormData) => {
+    serviceEventMutation.mutate(data);
   };
 
   const recentScans = [
@@ -905,7 +1011,7 @@ export default function Scan() {
                                     <Button 
                                       variant="outline"
                                       className="w-full" 
-                                      onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
+                                      onClick={() => setShowServiceEventDialog(true)}
                                       data-testid="button-log-service"
                                     >
                                       <Wrench className="mr-2 h-4 w-4" />
@@ -1037,6 +1143,137 @@ export default function Scan() {
           </div>
         </div>
       </div>
+
+      {/* Service Event Dialog */}
+      <Dialog open={showServiceEventDialog} onOpenChange={setShowServiceEventDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Log Service Event</DialogTitle>
+            <DialogDescription>
+              Record a service or repair event for this asset
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...serviceEventForm}>
+            <form onSubmit={serviceEventForm.handleSubmit(onServiceEventSubmit)} className="space-y-6">
+              {/* Event Type */}
+              <FormField
+                control={serviceEventForm.control}
+                name="eventType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Type *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-event-type">
+                          <SelectValue placeholder="Select event type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SERVICE">Service / Maintenance</SelectItem>
+                        <SelectItem value="REPAIR">Repair</SelectItem>
+                        <SelectItem value="INSPECTION">Inspection</SelectItem>
+                        <SelectItem value="WARRANTY">Warranty Claim</SelectItem>
+                        <SelectItem value="NOTE">General Note</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Notes */}
+              <FormField
+                control={serviceEventForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe the work performed, parts replaced, issues found..." 
+                        className="min-h-[120px]"
+                        data-testid="textarea-service-notes"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Detailed notes about the service event
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Photos */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Service Photos (optional)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {servicePhotos.map((photo) => (
+                    <div key={photo.id} className="relative aspect-square">
+                      <img
+                        src={photo.preview}
+                        alt="Service photo"
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeServicePhoto(photo.id)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 rounded-full"
+                        data-testid={`button-remove-service-photo-${photo.id}`}
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                  {servicePhotos.length < 5 && (
+                    <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleServicePhotoSelect}
+                        className="hidden"
+                        data-testid="input-service-photos"
+                      />
+                      <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
+                      <span className="text-xs text-muted-foreground">Add Photo</span>
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upload up to 5 photos ({servicePhotos.length}/5)
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowServiceEventDialog(false);
+                    setServicePhotos([]);
+                    serviceEventForm.reset();
+                  }}
+                  data-testid="button-cancel-service-event"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={serviceEventMutation.isPending}
+                  data-testid="button-submit-service-event"
+                >
+                  {serviceEventMutation.isPending ? "Logging..." : "Log Event"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

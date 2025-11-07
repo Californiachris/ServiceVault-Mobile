@@ -446,6 +446,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/assets/:assetId/events', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId } = req.params;
+      const { type, note, photos } = req.body;
+
+      // Validate event type
+      const validTypes = ['SERVICE', 'REPAIR', 'INSPECTION', 'WARRANTY', 'RECALL', 'NOTE'];
+      if (!type || !validTypes.includes(type)) {
+        return res.status(400).json({ 
+          error: "Invalid event type", 
+          validTypes 
+        });
+      }
+
+      // Get asset and verify access
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+
+      // For contractors: verify they have an active subscription
+      const user = await storage.getUser(userId);
+      if (user?.role === 'CONTRACTOR') {
+        const subscription = await storage.getUserSubscription(userId);
+        if (!subscription || subscription.status !== 'ACTIVE') {
+          return res.status(403).json({ 
+            error: "Active subscription required to log service events" 
+          });
+        }
+      } else {
+        // For non-contractors, verify property ownership
+        const property = await storage.getProperty(asset.propertyId);
+        if (!property || property.ownerId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      // Create the event
+      const event = await storage.createEvent({
+        assetId,
+        type,
+        data: { 
+          note: note || `${type} event logged`,
+          timestamp: new Date().toISOString(),
+        },
+        photoUrls: photos && photos.length > 0 ? photos : null,
+        createdBy: userId,
+      });
+
+      res.json({ event });
+    } catch (error) {
+      console.error("Error creating service event:", error);
+      res.status(500).json({ error: "Failed to create service event" });
+    }
+  });
+
   // Document routes
   app.get('/api/documents/asset/:assetId', isAuthenticated, async (req: any, res) => {
     try {
