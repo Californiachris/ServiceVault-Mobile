@@ -73,11 +73,12 @@ export const properties = pgTable("properties", {
 export const identifiers = pgTable("identifiers", {
   id: uuid("id").primaryKey().defaultRandom(),
   code: varchar("code").unique().notNull(),
-  type: varchar("type").notNull(), // ASSET, MASTER
+  kind: varchar("kind").notNull(), // HOUSE, ASSET, THEFT_TAG
   contractorId: uuid("contractor_id").references(() => contractors.id),
   claimedAt: timestamp("claimed_at"),
   qrPath: varchar("qr_path"),
   brandLabel: varchar("brand_label"),
+  tamperState: varchar("tamper_state").default("OK"), // OK, TRIPPED
   deactivatedAt: timestamp("deactivated_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -103,8 +104,11 @@ export const assets = pgTable("assets", {
 export const events = pgTable("events", {
   id: uuid("id").primaryKey().defaultRandom(),
   assetId: uuid("asset_id").notNull().references(() => assets.id),
-  type: varchar("type").notNull(), // INSTALL, SERVICE, INSPECTION, TRANSFER, etc.
+  type: varchar("type").notNull(), // INSTALL, SERVICE, INSPECTION, TRANSFER, WARRANTY, RECALL, NOTE
   data: jsonb("data"),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  prevHash: varchar("prev_hash"),
+  hash: varchar("hash"),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -135,10 +139,11 @@ export const reminders = pgTable("reminders", {
 // Transfers
 export const transfers = pgTable("transfers", {
   id: uuid("id").primaryKey().defaultRandom(),
-  propertyId: uuid("property_id").notNull().references(() => properties.id),
+  assetId: uuid("asset_id").notNull().references(() => assets.id),
   fromUserId: varchar("from_user_id").notNull().references(() => users.id),
   toUserId: varchar("to_user_id").notNull().references(() => users.id),
-  status: varchar("status").default("ESCROW"),
+  method: varchar("method").default("DIGITAL"), // DIGITAL, NOTARY
+  status: varchar("status").default("PENDING"), // PENDING, COMPLETED
   initiatedAt: timestamp("initiated_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   signature: text("signature"),
@@ -163,8 +168,10 @@ export const subscriptions = pgTable("subscriptions", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubId: varchar("stripe_sub_id"),
   priceId: varchar("price_id"),
-  plan: varchar("plan"),
+  plan: varchar("plan"), // C50, C100, HOUSE
   status: varchar("status"),
+  quotaTotal: integer("quota_total").default(0),
+  quotaUsed: integer("quota_used").default(0),
   currentPeriodEnd: timestamp("current_period_end"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

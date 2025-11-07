@@ -1,14 +1,22 @@
-# Fix-Track Pro
+# FixTrack Pro
 
 ## Overview
 
-Fix-Track Pro is a full-stack asset tracking and property management platform that enables homeowners and contractors to track, manage, and maintain assets through QR code and NFC technology. The system provides comprehensive tracking of asset history, maintenance schedules, documents, and inspections with subscription-based access control.
+FixTrack Pro is a billion-dollar premium asset tracking platform that enables contractors and homeowners to scan pre-printed QR/NFC stickers for tamper-resistant asset logging. The system uses AI-powered warranty parsing, predictive maintenance reminders, hash-chain event logging, and subscription-based quota enforcement.
 
-The application follows a monorepo structure with a React frontend (Vite + TypeScript), Express backend, and PostgreSQL database managed through Drizzle ORM. It integrates with Stripe for payments, Google Cloud Storage for file management, and includes Replit authentication.
+**Core Value Proposition:**
+- Contractors scan pre-printed Fix Track stickers (NOT self-generated) to log installs/service with photos
+- Homeowners scan Whole-House master QR to view complete property history and upload warranties/receipts  
+- AI automatically extracts warranty dates and creates maintenance reminders for both parties
+- Blockchain-inspired hash chain ensures tamper-proof asset history
+- Quota-enforced subscription plans with admin fulfillment system for physical sticker orders
+
+The application follows enterprise SaaS quality standards with React frontend (Vite + TypeScript), Express backend, PostgreSQL database (Drizzle ORM), Stripe payments, Google Cloud Storage, Replit Auth, and OpenAI Vision API for document parsing.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notion quality.
 
 ## System Architecture
 
