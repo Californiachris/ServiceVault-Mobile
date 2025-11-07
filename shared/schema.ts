@@ -37,6 +37,11 @@ export const users = pgTable("users", {
   role: varchar("role").default("HOMEOWNER"), // HOMEOWNER, CONTRACTOR, FLEET, INSPECTOR, ADMIN
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
+  
+  // Family branding for homeowners
+  familyName: varchar("family_name"),
+  familyLogoUrl: varchar("family_logo_url"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -69,6 +74,7 @@ export const properties = pgTable("properties", {
   masterIdentifierId: uuid("master_identifier_id").references(() => identifiers.id),
   homePlan: varchar("home_plan"), // home_lifetime, home_annual
   homeStatus: varchar("home_status").default("ACTIVE"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -101,6 +107,11 @@ export const assets = pgTable("assets", {
   identifierId: uuid("identifier_id").unique().references(() => identifiers.id),
   installerId: uuid("installer_id").references(() => contractors.id),
   status: varchar("status").default("ACTIVE"),
+  
+  // Privacy model: INFRASTRUCTURE (public on property view) vs PERSONAL (owner-only)
+  assetType: varchar("asset_type").default("INFRASTRUCTURE"), // INFRASTRUCTURE, PERSONAL
+  
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -123,9 +134,11 @@ export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   assetId: uuid("asset_id").references(() => assets.id),
   propertyId: uuid("property_id").references(() => properties.id),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
   type: varchar("type").notNull(), // RECEIPT, WARRANTY, MANUAL, INSPECTION, etc.
   title: varchar("title").notNull(),
   path: varchar("path").notNull(),
+  deletedAt: timestamp("deleted_at"),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
@@ -211,6 +224,7 @@ export const subscriptions = pgTable("subscriptions", {
   featureServiceSessions: boolean("feature_service_sessions").default(false),
   featureNanoTag: boolean("feature_nanotag").default(false),
   featureCrewClockIn: boolean("feature_crew_clockin").default(false),
+  featureFamilyBranding: boolean("feature_family_branding").default(false), // $5 add-on for homeowners
   featureRealtimeTracking: boolean("feature_realtime_tracking").default(false),
   featureTheftRecovery: boolean("feature_theft_recovery").default(false),
   featureDriverAccountability: boolean("feature_driver_accountability").default(false),
