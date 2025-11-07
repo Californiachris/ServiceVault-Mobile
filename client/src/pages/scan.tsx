@@ -36,7 +36,12 @@ export default function Scan() {
     }
   }, []);
 
-  const { data: scanResult, isLoading: scanLoading, error: scanError } = useQuery({
+  const { data: scanResult, isLoading: scanLoading, error: scanError } = useQuery<{
+    code: string;
+    type: 'MASTER' | 'ASSET';
+    brandLabel?: string;
+    claimed: boolean;
+  }>({
     queryKey: ["/api/scan", scannedCode],
     enabled: !!scannedCode,
     retry: false,

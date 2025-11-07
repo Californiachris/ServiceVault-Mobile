@@ -211,6 +211,38 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - "How It Works" 3-step process
   - Full data-testid coverage (in progress)
 
+**November 7, 2025 - Role-Based UI & Logo Updates:**
+- **Logo & Branding:**
+  - Replaced placeholder lightning bolt icon with FixTrack shield logo (/logo.png) across all pages
+  - Styled "FixTrack Pro" text with cyan-to-orange gradient matching logo colors (text-lg, bold, whitespace-nowrap)
+  - Applied consistently to landing page, pricing page, and navigation header
+- **Role-Based Dashboard (client/src/pages/dashboard.tsx):**
+  - Implemented role-specific dashboard stats for HOMEOWNER, CONTRACTOR, and FLEET users
+  - Homeowners see: My Assets, Active Warranties, Properties, Upcoming Reminders
+  - Contractors see: Quota Used (X/50), Active Jobs, Assets Installed, Active Reminders
+  - Fleet managers see: Fleet Assets, Active Service, Maintenance Due, Total Properties
+  - Added role badges (Homeowner/Contractor/Fleet Manager) next to Dashboard heading
+  - Added role-specific welcome messages
+  - Added "AI Predictive Maintenance — FREE" badge for all authenticated users
+  - Fixed authentication check to show loading spinner until user data is loaded
+- **Role-Aware Navigation (client/src/components/ui/navigation.tsx):**
+  - Implemented role-specific menu items:
+    - Homeowners: Dashboard, Scan, My Assets, Reminders
+    - Contractors: Dashboard, Scan, My Jobs, Reminders, Quota & Billing
+    - Fleet: Dashboard, Scan, Fleet Assets, Maintenance, Billing
+  - Unauthenticated users only see: Scan, Pricing
+  - Updated logo and branding to match landing/pricing pages
+- **Scan Experience (client/src/pages/scan.tsx):**
+  - Fixed TypeScript errors by adding proper type definitions for scan results
+  - Verified role-specific actions work correctly:
+    - Contractors: "Log Service Event" and "Upload Service Photos"
+    - Homeowners: "Upload Warranty/Receipt" and "View Service History"
+    - Public users: "View Public Information"
+- **Removed QR Generator UI:**
+  - Removed "QR Code Generator" from dashboard tools and quick actions
+  - Updated Asset Management description to clarify use of pre-printed FixTrack stickers
+  - Contractors order stickers from admin fulfillment, not self-generate
+
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
 - Implemented rate limiting on AI warranty parsing (10 req/hour per user)

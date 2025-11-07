@@ -68,7 +68,7 @@ export default function Dashboard() {
     retry: false,
   });
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || !isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
@@ -76,7 +76,7 @@ export default function Dashboard() {
     );
   }
 
-  const userRole = user?.role || "HOMEOWNER";
+  const userRole = user.role || "HOMEOWNER";
 
   // Role-specific stats
   const getDashboardStats = () => {
@@ -171,16 +171,8 @@ export default function Dashboard() {
 
   const tools = [
     {
-      title: "QR Code Generator",
-      description: "Batch generate branded QR/NFC codes for assets and properties. Print stickers with your company branding.",
-      icon: QrCode,
-      status: "Active",
-      statusColor: "green" as const,
-      href: "/tools/identifiers",
-    },
-    {
       title: "Asset Management",
-      description: "Create master property codes and bind assets. Manage installation records and contractor assignments.",
+      description: "View and manage your assets, installation records, and service history. Scan pre-printed FixTrack stickers to log new assets.",
       icon: Wrench,
       status: "Core",
       statusColor: "blue" as const,
@@ -344,18 +336,6 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start" 
-                    asChild
-                    data-testid="button-generate-qr"
-                  >
-                    <Link href="/tools/identifiers">
-                      <QrCode className="mr-2 h-4 w-4" />
-                      Generate QR Codes
-                    </Link>
-                  </Button>
-                  
                   <Button 
                     variant="outline" 
                     className="w-full justify-start" 

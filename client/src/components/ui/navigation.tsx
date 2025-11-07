@@ -31,10 +31,16 @@ export default function Navigation() {
     return false;
   };
 
-  const userRole = user?.role || "HOMEOWNER";
-
-  // Role-specific navigation
+  // Role-specific navigation - only show if authenticated
   const getNavLinks = () => {
+    if (!isAuthenticated || !user) {
+      return [
+        { href: "/scan", label: "Scan", icon: Camera },
+        { href: "/pricing", label: "Pricing", icon: Zap },
+      ];
+    }
+
+    const userRole = user.role || "HOMEOWNER";
     const baseLinks = [
       { href: "/dashboard", label: "Dashboard", icon: Home },
       { href: "/scan", label: "Scan", icon: Camera },
