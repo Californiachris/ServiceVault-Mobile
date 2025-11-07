@@ -9,6 +9,7 @@ import StatsCard from "@/components/ui/stats-card";
 import ToolCard from "@/components/ui/tool-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   QrCode, 
   Wrench, 
@@ -20,12 +21,16 @@ import {
   Plus,
   TrendingUp,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Home,
+  Building2,
+  Truck,
+  Sparkles
 } from "lucide-react";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -42,13 +47,22 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    activeAssets?: number;
+    qrCodesGenerated?: number;
+    propertiesManaged?: number;
+    activeSubscriptions?: number;
+    quotaUsed?: number;
+    quotaTotal?: number;
+    activeJobs?: number;
+    fleetAssets?: number;
+  }>({
     queryKey: ["/api/dashboard/stats"],
     enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: properties } = useQuery({
+  const { data: properties } = useQuery<any[]>({
     queryKey: ["/api/properties"],
     enabled: isAuthenticated,
     retry: false,
@@ -62,36 +76,98 @@ export default function Dashboard() {
     );
   }
 
-  const dashboardStats = [
-    { 
-      label: "Active Assets", 
-      value: stats?.activeAssets?.toString() || "0", 
-      change: "+12%", 
-      icon: Wrench,
-      trend: "up"
-    },
-    { 
-      label: "QR Codes Generated", 
-      value: stats?.qrCodesGenerated?.toString() || "0", 
-      change: "+8%", 
-      icon: QrCode,
-      trend: "up"
-    },
-    { 
-      label: "Properties Managed", 
-      value: stats?.propertiesManaged?.toString() || "0", 
-      change: "+5%", 
-      icon: BarChart3,
-      trend: "up"
-    },
-    { 
-      label: "Active Subscriptions", 
-      value: stats?.activeSubscriptions?.toString() || "0", 
-      change: "+15%", 
-      icon: TrendingUp,
-      trend: "up"
-    },
-  ];
+  const userRole = user?.role || "HOMEOWNER";
+
+  // Role-specific stats
+  const getDashboardStats = () => {
+    switch (userRole) {
+      case "CONTRACTOR":
+        return [
+          { 
+            label: "Quota Used", 
+            value: `${stats?.quotaUsed || 0}/${stats?.quotaTotal || 50}`, 
+            icon: QrCode,
+            trend: "up" as const
+          },
+          { 
+            label: "Active Jobs", 
+            value: (stats?.activeJobs || 0).toString(), 
+            icon: Wrench,
+            trend: "up" as const
+          },
+          { 
+            label: "Assets Installed", 
+            value: (stats?.activeAssets || 0).toString(), 
+            icon: CheckCircle2,
+            trend: "up" as const
+          },
+          { 
+            label: "Active Reminders", 
+            value: (stats?.activeSubscriptions || 0).toString(), 
+            icon: Bell,
+            trend: "up" as const
+          },
+        ];
+      
+      case "FLEET":
+        return [
+          { 
+            label: "Fleet Assets", 
+            value: (stats?.fleetAssets || 0).toString(), 
+            icon: Truck,
+            trend: "up" as const
+          },
+          { 
+            label: "Active Service", 
+            value: (stats?.activeJobs || 0).toString(), 
+            icon: Wrench,
+            trend: "up" as const
+          },
+          { 
+            label: "Maintenance Due", 
+            value: (stats?.activeSubscriptions || 0).toString(), 
+            icon: AlertTriangle,
+            trend: "down" as const
+          },
+          { 
+            label: "Total Properties", 
+            value: (stats?.propertiesManaged || 0).toString(), 
+            icon: Building2,
+            trend: "up" as const
+          },
+        ];
+
+      default: // HOMEOWNER
+        return [
+          { 
+            label: "My Assets", 
+            value: (stats?.activeAssets || 0).toString(), 
+            icon: Home,
+            trend: "up" as const
+          },
+          { 
+            label: "Active Warranties", 
+            value: (stats?.qrCodesGenerated || 0).toString(), 
+            icon: CheckCircle2,
+            trend: "up" as const
+          },
+          { 
+            label: "Properties", 
+            value: (stats?.propertiesManaged || 0).toString(), 
+            icon: Building2,
+            trend: "up" as const
+          },
+          { 
+            label: "Upcoming Reminders", 
+            value: (stats?.activeSubscriptions || 0).toString(), 
+            icon: Bell,
+            trend: "up" as const
+          },
+        ];
+    }
+  };
+
+  const dashboardStats = getDashboardStats();
 
   const tools = [
     {
@@ -152,10 +228,36 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back! Here's what's happening with your properties and assets.
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold" data-testid="heading-dashboard">Dashboard</h1>
+              {userRole === "HOMEOWNER" && (
+                <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+                  <Home className="h-3 w-3 mr-1" />
+                  Homeowner
+                </Badge>
+              )}
+              {userRole === "CONTRACTOR" && (
+                <Badge variant="secondary" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
+                  <Building2 className="h-3 w-3 mr-1" />
+                  Contractor
+                </Badge>
+              )}
+              {userRole === "FLEET" && (
+                <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+                  <Truck className="h-3 w-3 mr-1" />
+                  Fleet Manager
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground" data-testid="text-welcome">
+              {userRole === "HOMEOWNER" && "Track your assets, warranties, and maintenance schedules."}
+              {userRole === "CONTRACTOR" && "Manage your jobs, sticker quota, and installations."}
+              {userRole === "FLEET" && "Monitor your fleet assets, maintenance, and driver activity."}
             </p>
+            <Badge className="mt-2 bg-primary/10 text-primary border-primary/20" data-testid="badge-ai-free">
+              <Sparkles className="h-3 w-3 mr-1" />
+              AI Predictive Maintenance — FREE
+            </Badge>
           </div>
           
           <div className="flex items-center gap-3">

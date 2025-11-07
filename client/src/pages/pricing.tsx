@@ -78,13 +78,15 @@ export default function PricingPage() {
       {/* Header */}
       <div className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <img 
               src="/logo.png" 
               alt="FixTrack Logo" 
               className="h-10 w-10 object-contain"
             />
-            <span className="font-bold text-xl">FixTrack Pro</span>
+            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
+              FixTrack Pro
+            </span>
           </div>
           <Button variant="ghost" onClick={() => setLocation("/")}>
             Back to Home
