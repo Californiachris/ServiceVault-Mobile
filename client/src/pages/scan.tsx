@@ -113,6 +113,15 @@ export default function Scan() {
     type: 'MASTER' | 'ASSET';
     brandLabel?: string;
     claimed: boolean;
+    asset?: {
+      id: string;
+      name: string;
+      category: string;
+      brand?: string;
+      model?: string;
+      installedAt?: string;
+      status: string;
+    };
   }>({
     queryKey: ["/api/scan", scannedCode],
     enabled: !!scannedCode,
@@ -876,11 +885,25 @@ export default function Scan() {
                             </>
                           ) : (
                           <>
-                            {isAuthenticated && user ? (
+                            {/* Primary Action: View Asset Timeline (for everyone) */}
+                            {scanResult.asset && (
+                              <Button 
+                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600" 
+                                onClick={() => setLocation(`/asset/${scanResult.asset!.id}`)}
+                                data-testid="button-view-asset"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Complete History
+                              </Button>
+                            )}
+
+                            {/* Secondary Actions (role-specific) */}
+                            {isAuthenticated && user && (
                               <>
                                 {user.role === 'CONTRACTOR' && (
                                   <>
                                     <Button 
+                                      variant="outline"
                                       className="w-full" 
                                       onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
                                       data-testid="button-log-service"
@@ -900,46 +923,17 @@ export default function Scan() {
                                   </>
                                 )}
                                 {user.role === 'HOMEOWNER' && (
-                                  <>
-                                    <Button 
-                                      className="w-full" 
-                                      onClick={() => setLocation(`/tools/documents`)}
-                                      data-testid="button-upload-receipt"
-                                    >
-                                      <Upload className="mr-2 h-4 w-4" />
-                                      Upload Warranty/Receipt
-                                    </Button>
-                                    <Button 
-                                      variant="outline"
-                                      className="w-full" 
-                                      onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
-                                      data-testid="button-view-history"
-                                    >
-                                      <History className="mr-2 h-4 w-4" />
-                                      View Service History
-                                    </Button>
-                                  </>
-                                )}
-                                {(user.role === 'INSPECTOR' || user.role === 'ADMIN') && (
                                   <Button 
+                                    variant="outline"
                                     className="w-full" 
-                                    onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
-                                    data-testid="button-view-details"
+                                    onClick={() => setLocation(`/tools/documents`)}
+                                    data-testid="button-upload-receipt"
                                   >
-                                    <History className="mr-2 h-4 w-4" />
-                                    View Full Details & History
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload Warranty/Receipt
                                   </Button>
                                 )}
                               </>
-                            ) : (
-                              <Button 
-                                className="w-full" 
-                                onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
-                                data-testid="button-view-public"
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Public Information
-                              </Button>
                             )}
                           </>
                         )}
