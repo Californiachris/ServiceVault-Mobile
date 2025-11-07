@@ -224,7 +224,7 @@ export default function PricingPage() {
                 Contractor Pro
               </CardTitle>
               <CardDescription data-testid="description-plan-contractor">
-                Build your brand with every install
+                Turn every install into guaranteed future work
               </CardDescription>
             </CardHeader>
 
@@ -241,16 +241,39 @@ export default function PricingPage() {
                 </div>
               </div>
 
+              {/* Value Proposition Highlight */}
+              <div className="p-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Zap className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs space-y-1">
+                    <p className="font-semibold text-orange-600 dark:text-orange-400">
+                      Installation Records That Never Get Lost
+                    </p>
+                    <p className="text-muted-foreground">
+                      Anyone scanning your stickers sees install date, installer info, warranty details, and your contact—
+                      building trust & making you the first call for future service.
+                    </p>
+                    <p className="font-semibold text-orange-600 dark:text-orange-400 mt-2">
+                      AI Automatically Creates Future Work
+                    </p>
+                    <p className="text-muted-foreground">
+                      When warranties are uploaded, AI extracts dates, researches the asset, and sends predictive maintenance 
+                      reminders to both you and the homeowner—turning every install into recurring revenue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm text-muted-foreground">INCLUDED:</h4>
                 <ul className="space-y-2">
                   {[
                     "Your Logo on Every Sticker",
                     "Permanent Contact Info Display",
-                    "Free Marketing on Every Install",
                     "License Verification Badge",
-                    "Install History Tracking",
-                    "AI Predictive Reminders",
+                    "Permanent Install History (Date, Installer, Warranty)",
+                    "AI Warranty Parsing & Maintenance Predictions",
+                    "Automatic Reminders for Future Service",
                     "Client & Contractor Notifications",
                     "Referral System for Upsells",
                   ].map((feature, i) => (
