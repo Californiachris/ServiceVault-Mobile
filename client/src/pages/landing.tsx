@@ -15,10 +15,12 @@ export default function Landing() {
       {/* Header */}
       <div className="border-b bg-background/80 backdrop-blur-lg sticky top-0 z-50 h-16">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2" data-testid="logo-fixtrack">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
+          <div className="flex items-center gap-3" data-testid="logo-fixtrack">
+            <img 
+              src="/logo.png" 
+              alt="FixTrack Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <span className="font-bold text-xl">FixTrack Pro</span>
           </div>
           <div className="flex items-center gap-4">
