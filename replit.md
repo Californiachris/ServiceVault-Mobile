@@ -242,6 +242,10 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Removed "QR Code Generator" from dashboard tools and quick actions
   - Updated Asset Management description to clarify use of pre-printed FixTrack stickers
   - Contractors order stickers from admin fulfillment, not self-generate
+- **UX Enhancement (client/src/App.tsx):**
+  - Added automatic scroll-to-top behavior on all page navigation
+  - Uses wouter's `useLocation` hook to detect route changes
+  - Ensures users always see the top of new pages when navigating
 
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
