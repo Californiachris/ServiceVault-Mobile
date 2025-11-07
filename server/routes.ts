@@ -172,6 +172,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/me/quota', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      
+      if (!subscription) {
+        return res.json({ quotaTotal: 0, quotaUsed: 0, plan: null });
+      }
+
+      res.json({
+        quotaTotal: subscription.quotaTotal || 0,
+        quotaUsed: subscription.quotaUsed || 0,
+        plan: subscription.plan,
+        status: subscription.status,
+      });
+    } catch (error) {
+      console.error("Error fetching quota:", error);
+      res.status(500).json({ error: "Failed to fetch quota" });
+    }
+  });
+
   app.post('/api/identifiers/claim', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -189,6 +210,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (identifier.claimedAt) {
         return res.status(400).json({ error: "Identifier already claimed" });
+      }
+
+      // Check quota for contractors
+      const user = await storage.getUser(userId);
+      if (user?.role === 'CONTRACTOR') {
+        const subscription = await storage.getUserSubscription(userId);
+        if (subscription) {
+          const quotaUsed = subscription.quotaUsed || 0;
+          const quotaTotal = subscription.quotaTotal || 0;
+          
+          if (quotaUsed >= quotaTotal) {
+            return res.status(403).json({ 
+              error: "Quota exceeded", 
+              message: `You have claimed ${quotaUsed}/${quotaTotal} stickers. Upgrade your plan to claim more.`,
+              quotaUsed,
+              quotaTotal
+            });
+          }
+        }
       }
 
       // Create or find property
@@ -220,6 +260,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update identifier as claimed
       await storage.updateIdentifier(identifier.id, { claimedAt: new Date() });
+
+      // Increment quota for contractors
+      if (user?.role === 'CONTRACTOR') {
+        const subscription = await storage.getUserSubscription(userId);
+        if (subscription) {
+          await storage.updateSubscription(subscription.id, {
+            quotaUsed: (subscription.quotaUsed || 0) + 1
+          });
+        }
+      }
 
       // Create installation event
       await storage.createEvent({
@@ -350,6 +400,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating asset:", error);
       res.status(500).json({ error: "Failed to create asset" });
+    }
+  });
+
+  app.get('/api/assets/:assetId/validate-chain', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId } = req.params;
+
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+
+      const property = await storage.getProperty(asset.propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const events = await storage.getAssetEvents(assetId);
+      const { validateHashChain } = await import('./hashChain');
+      const validation = await validateHashChain(events);
+
+      res.json({
+        assetId,
+        eventCount: events.length,
+        isValid: validation.isValid,
+        errors: validation.errors,
+      });
+    } catch (error) {
+      console.error("Error validating hash chain:", error);
+      res.status(500).json({ error: "Failed to validate hash chain" });
     }
   });
 

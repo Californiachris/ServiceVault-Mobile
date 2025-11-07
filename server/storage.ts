@@ -272,7 +272,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEvent(event: InsertEvent): Promise<Event> {
-    const [created] = await db.insert(events).values(event).returning();
+    // Get the previous event for this asset to build the hash chain
+    const [prevEvent] = await db
+      .select()
+      .from(events)
+      .where(eq(events.assetId, event.assetId))
+      .orderBy(desc(events.createdAt))
+      .limit(1);
+    
+    const prevHash = prevEvent?.hash || null;
+    
+    // Import hash function dynamically to avoid circular deps
+    const { computeHash } = await import('./hashChain');
+    const eventData = {
+      assetId: event.assetId,
+      type: event.type,
+      data: event.data,
+      photoUrls: event.photoUrls || [],
+      createdBy: event.createdBy || null,
+      createdAt: new Date(),
+    };
+    
+    const hash = computeHash(prevHash, eventData);
+    
+    const [created] = await db.insert(events).values({
+      ...event,
+      prevHash,
+      hash,
+    }).returning();
+    
     return created;
   }
 
