@@ -22,6 +22,10 @@ export default function PropertyViewPage() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
 
+  // Use authenticated endpoint if logged in (to see PERSONAL assets if owner)
+  // Otherwise use public endpoint (to see INFRASTRUCTURE only)
+  const endpoint = isAuthenticated ? `/api/property/${id}` : `/api/public/property/${id}`;
+  
   const { data: property, isLoading } = useQuery<{
     id: string;
     name: string | null;
@@ -35,6 +39,7 @@ export default function PropertyViewPage() {
       familyName: string;
       familyLogoUrl: string;
     } | null;
+    isOwner?: boolean;
     assets: Array<{
       id: string;
       name: string;
@@ -43,10 +48,12 @@ export default function PropertyViewPage() {
       model: string | null;
       installedAt: string | null;
       status: string;
+      assetType?: string;
     }>;
   }>({
-    queryKey: ["/api/public/property", id],
+    queryKey: [endpoint],
     retry: false,
+    enabled: !!id,
   });
 
   if (isLoading) {
@@ -141,10 +148,22 @@ export default function PropertyViewPage() {
               <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-1">Property Infrastructure History</h3>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold">
+                      {property.isOwner ? "Your Property Assets" : "Property Infrastructure History"}
+                    </h3>
+                    {property.isOwner && (
+                      <Badge variant="default" data-testid="badge-owner-view">
+                        <Eye className="mr-1 h-3 w-3" />
+                        Owner View
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    This page shows all infrastructure installations and service records for this property. 
-                    Click any asset to view its complete tamper-proof timeline.
+                    {property.isOwner 
+                      ? "You can see all assets for this property, including personal items. Infrastructure assets are visible to the public."
+                      : "This page shows all infrastructure installations and service records for this property. Click any asset to view its complete tamper-proof timeline."
+                    }
                   </p>
                 </div>
               </div>
@@ -178,6 +197,18 @@ export default function PropertyViewPage() {
                         {asset.category.replace('_', ' ')}
                       </Badge>
                     </div>
+
+                    {property.isOwner && asset.assetType && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Visibility</span>
+                        <Badge 
+                          variant={asset.assetType === 'INFRASTRUCTURE' ? 'default' : 'secondary'}
+                          data-testid={`badge-asset-type-${asset.id}`}
+                        >
+                          {asset.assetType === 'INFRASTRUCTURE' ? 'Public' : 'Private'}
+                        </Badge>
+                      </div>
+                    )}
 
                     {asset.brand && (
                       <div className="flex items-center justify-between text-sm">

@@ -1369,6 +1369,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authenticated property view - shows ALL assets for owner, infrastructure only for others
+  app.get('/api/property/:propertyId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { propertyId } = req.params;
+      const userId = req.user.claims.sub;
+      const property = await storage.getProperty(propertyId);
+      
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const isOwner = property.ownerId === userId;
+
+      // Get all assets for this property
+      const allAssets = await storage.getAssets(propertyId);
+      
+      // For owners: show ALL assets (both INFRASTRUCTURE and PERSONAL)
+      // For others: only show INFRASTRUCTURE assets
+      const visibleAssets = isOwner 
+        ? allAssets
+        : allAssets.filter((asset: any) => 
+            asset.assetType === 'INFRASTRUCTURE' || !asset.assetType
+          );
+
+      // Get property owner for family branding
+      const owner = await storage.getUser(property.ownerId);
+      const familyBranding = owner?.familyName && owner?.familyLogoUrl ? {
+        familyName: owner.familyName,
+        familyLogoUrl: owner.familyLogoUrl,
+      } : null;
+
+      // Return property info with appropriate assets based on ownership
+      res.json({
+        id: property.id,
+        name: property.name,
+        address: property.addressLine1 ? {
+          line1: property.addressLine1,
+          city: property.city,
+          state: property.state,
+          postalCode: property.postalCode,
+        } : null,
+        familyBranding,
+        isOwner,
+        assets: visibleAssets.map((asset: any) => ({
+          id: asset.id,
+          name: asset.name,
+          category: asset.category,
+          brand: asset.brand,
+          model: asset.model,
+          installedAt: asset.installedAt,
+          status: asset.status,
+          assetType: asset.assetType || 'INFRASTRUCTURE',
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching property:", error);
+      res.status(500).json({ error: "Failed to fetch property" });
+    }
+  });
+
   // Public property view - shows property + infrastructure assets
   app.get('/api/public/property/:propertyId', async (req, res) => {
     try {
