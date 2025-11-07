@@ -1,14 +1,25 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { 
   Sparkles, Shield, Users, Building2, Zap, Check, QrCode, 
-  Camera, Bell, Upload, TrendingUp, Phone, Globe
+  Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2
 } from "lucide-react";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const [securityDialogOpen, setSecurityDialogOpen] = useState(false);
+  const [setupDialogOpen, setSetupDialogOpen] = useState(false);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -97,20 +108,32 @@ export default function Landing() {
           </Button>
         </div>
 
-        {/* Trust Signals */}
+        {/* Trust Signals - Now Clickable */}
         <div className="flex flex-wrap justify-center gap-8 items-center text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setSecurityDialogOpen(true)}
+            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            data-testid="button-info-security"
+          >
             <Shield className="h-4 w-4" />
             <span>Bank-Level Security</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </button>
+          <button 
+            onClick={() => setSetupDialogOpen(true)}
+            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            data-testid="button-info-setup"
+          >
             <Zap className="h-4 w-4" />
             <span>Instant Setup</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </button>
+          <button 
+            onClick={() => setSupportDialogOpen(true)}
+            className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+            data-testid="button-info-support"
+          >
             <Phone className="h-4 w-4" />
             <span>24/7 Support</span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -278,6 +301,240 @@ export default function Landing() {
           <p>&copy; 2025 FixTrack Pro. All rights reserved.</p>
         </div>
       </div>
+
+      {/* Security Dialog */}
+      <Dialog open={securityDialogOpen} onOpenChange={setSecurityDialogOpen}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-security">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Shield className="h-6 w-6 text-primary" />
+              Bank-Level Security
+            </DialogTitle>
+            <DialogDescription>
+              Your data is protected with enterprise-grade security measures
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="flex items-start gap-3">
+              <Lock className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Secure Authentication</h4>
+                <p className="text-sm text-muted-foreground">
+                  Industry-standard OpenID Connect (OIDC) authentication with Replit. 
+                  Signed, HTTP-only session cookies stored in PostgreSQL automatically expire after 7 days.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Server className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Encrypted Database Storage</h4>
+                <p className="text-sm text-muted-foreground">
+                  Serverless PostgreSQL database (Neon) with WebSocket connection pooling. 
+                  All data encrypted at rest and in transit using industry-standard TLS.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Link2 className="h-5 w-5 text-orange-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Tamper-Proof Event Logging</h4>
+                <p className="text-sm text-muted-foreground">
+                  Every asset service event is cryptographically linked using SHA-256 hash chains.
+                  Once recorded, event history cannot be modified or deleted without detection.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Shield className="h-5 w-5 text-purple-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Access Control & Abuse Prevention</h4>
+                <p className="text-sm text-muted-foreground">
+                  Role-based access control (RBAC), object-level permissions for file storage, 
+                  and rate limiting on AI endpoints (10 requests/hour per user) prevent abuse.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Check className="h-5 w-5 text-cyan-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Input Validation</h4>
+                <p className="text-sm text-muted-foreground">
+                  All user inputs are validated using Zod schemas. Image uploads are limited to 10MB 
+                  with base64 format verification to prevent malicious files.
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Setup Dialog */}
+      <Dialog open={setupDialogOpen} onOpenChange={setSetupDialogOpen}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-setup">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Zap className="h-6 w-6 text-primary" />
+              Instant Setup
+            </DialogTitle>
+            <DialogDescription>
+              Get started in 3 simple steps—no technical knowledge required
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
+                1
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Sign Up with Replit</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Click "Get Started" and login with your Replit account. No password required—
+                  secure authentication happens automatically.
+                </p>
+                <Button 
+                  size="sm" 
+                  onClick={() => window.location.href = "/api/login"}
+                  data-testid="button-dialog-setup-login"
+                >
+                  Login with Replit
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
+                2
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Choose Your Plan</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Select the plan that fits your needs:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                    <span><strong>Homeowners:</strong> $99 one-time + $10/year</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                    <span><strong>Contractors:</strong> $19.99-$29.99/month</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                    <span><strong>Fleet:</strong> $2-$3/asset/year</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
+                3
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Receive & Start Scanning</h4>
+                <p className="text-sm text-muted-foreground">
+                  We ship pre-printed FixTrack stickers to you (no printing required). 
+                  Apply them to your assets and scan with your phone to start tracking instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mt-6">
+              <p className="text-sm font-semibold text-primary mb-2">
+                <Sparkles className="h-4 w-4 inline mr-1" />
+                Setup takes less than 5 minutes
+              </p>
+              <p className="text-xs text-muted-foreground">
+                No credit card required for browsing. Only charged when you subscribe.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Support Dialog */}
+      <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-support">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Phone className="h-6 w-6 text-primary" />
+              24/7 Support
+            </DialogTitle>
+            <DialogDescription>
+              We're here to help whenever you need us
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-4">
+            <div className="flex items-start gap-3">
+              <Phone className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Call Us Anytime</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Speak with a real person who understands FixTrack Pro
+                </p>
+                <a 
+                  href="tel:+1234567890" 
+                  className="text-lg font-bold text-primary hover:underline"
+                  data-testid="link-support-phone"
+                >
+                  +1 (234) 567-8900
+                </a>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Available 24/7 for urgent issues
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Globe className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Email Support</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Prefer email? We typically respond within 2 hours
+                </p>
+                <a 
+                  href="mailto:trackfixes@gmail.com" 
+                  className="text-primary hover:underline"
+                  data-testid="link-support-email"
+                >
+                  trackfixes@gmail.com
+                </a>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Users className="h-5 w-5 text-orange-500 mt-0.5" />
+              <div>
+                <h4 className="font-semibold mb-1">Support Hours</h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p><strong>Emergency Support:</strong> 24/7 by phone</p>
+                  <p><strong>General Inquiries:</strong> Monday-Friday, 8AM-8PM EST</p>
+                  <p><strong>Email:</strong> Checked and responded to 24/7</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mt-6">
+              <p className="text-sm font-semibold text-primary mb-2">
+                <Check className="h-4 w-4 inline mr-1" />
+                Average Response Time: Under 2 Hours
+              </p>
+              <p className="text-xs text-muted-foreground">
+                We pride ourselves on fast, helpful support. Real people, real solutions.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
