@@ -10,6 +10,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Scan from "@/pages/scan";
 import AssetView from "@/pages/asset-view";
+import PropertyView from "@/pages/property-view";
 import Pricing from "@/pages/pricing";
 import IdentifiersPage from "@/pages/tools/identifiers";
 import AssetsPage from "@/pages/tools/assets";
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/scan" component={Scan} />
           <Route path="/asset/:id" component={AssetView} />
+          <Route path="/property/:id" component={PropertyView} />
           <Route path="/pricing" component={Pricing} />
         </>
       ) : (
@@ -43,6 +45,7 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/scan" component={Scan} />
           <Route path="/asset/:id" component={AssetView} />
+          <Route path="/property/:id" component={PropertyView} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />
           <Route path="/tools/assets" component={AssetsPage} />

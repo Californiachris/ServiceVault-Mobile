@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -114,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const code = generateCode(type || 'ASSET');
         identifiers.push({
           code,
-          type: type || 'ASSET',
+          kind: type || 'ASSET',
           contractorId: contractor?.id,
           brandLabel: brandLabel || contractor?.companyName || "Fix-Track",
         });
@@ -321,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const identifier = await storage.getIdentifier(code);
-      if (!identifier || identifier.type !== 'MASTER') {
+      if (!identifier || identifier.kind !== 'HOUSE') {
         return res.status(400).json({ error: "Valid master identifier required" });
       }
 
@@ -1272,36 +1274,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "QR code not found" });
       }
 
-      // Get asset info if claimed
+      // Get asset info if claimed (for ASSET type)
       let assetInfo = null;
+      // Get property info if claimed (for MASTER type)
+      let propertyInfo = null;
+
       if (identifier.claimedAt && identifier.id) {
-        const assets = await db
-          .select()
-          .from((await import('@shared/schema')).assets)
-          .where(eq((await import('@shared/schema')).assets.identifierId, identifier.id))
-          .limit(1);
-        
-        if (assets.length > 0) {
-          const asset = assets[0];
-          assetInfo = {
-            id: asset.id,
-            name: asset.name,
-            category: asset.category,
-            brand: asset.brand,
-            model: asset.model,
-            installedAt: asset.installedAt,
-            status: asset.status,
-          };
+        if (identifier.kind === 'ASSET') {
+          const assets = await db
+            .select()
+            .from((await import('@shared/schema')).assets)
+            .where(eq((await import('@shared/schema')).assets.identifierId, identifier.id))
+            .limit(1);
+          
+          if (assets.length > 0) {
+            const asset = assets[0];
+            assetInfo = {
+              id: asset.id,
+              name: asset.name,
+              category: asset.category,
+              brand: asset.brand,
+              model: asset.model,
+              installedAt: asset.installedAt,
+              status: asset.status,
+            };
+          }
+        } else if (identifier.kind === 'HOUSE') {
+          // For MASTER/HOUSE type, find the property linked to this identifier
+          const properties = await db
+            .select()
+            .from((await import('@shared/schema')).properties)
+            .where(eq((await import('@shared/schema')).properties.masterIdentifierId, identifier.id))
+            .limit(1);
+
+          if (properties.length > 0) {
+            const property = properties[0];
+            propertyInfo = {
+              id: property.id,
+            };
+          }
         }
       }
 
       // Return public info without PII (no owner names, emails, addresses)
       res.json({
         code: identifier.code,
-        type: identifier.type,
+        type: identifier.kind, // ASSET or HOUSE
         brandLabel: identifier.brandLabel,
         claimed: !!identifier.claimedAt,
         asset: assetInfo,
+        property: propertyInfo,
       });
     } catch (error) {
       console.error("Error scanning code:", error);
@@ -1344,6 +1366,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching public asset:", error);
       res.status(500).json({ error: "Failed to fetch asset" });
+    }
+  });
+
+  // Public property view - shows property + infrastructure assets
+  app.get('/api/public/property/:propertyId', async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const property = await storage.getProperty(propertyId);
+      
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Get all assets for this property
+      const allAssets = await storage.getAssets(propertyId);
+      
+      // For public view: only show INFRASTRUCTURE assets (not PERSONAL items)
+      const publicAssets = allAssets.filter((asset: any) => 
+        asset.assetType === 'INFRASTRUCTURE' || !asset.assetType // Default to infrastructure if not set
+      );
+
+      // Get property owner for family branding (but not PII like email)
+      const owner = await storage.getUser(property.ownerId);
+      const familyBranding = owner?.familyName && owner?.familyLogoUrl ? {
+        familyName: owner.familyName,
+        familyLogoUrl: owner.familyLogoUrl,
+      } : null;
+
+      // Return public property info with infrastructure assets only
+      res.json({
+        id: property.id,
+        name: property.name,
+        address: property.addressLine1 ? {
+          line1: property.addressLine1,
+          city: property.city,
+          state: property.state,
+          postalCode: property.postalCode,
+        } : null,
+        familyBranding,
+        assets: publicAssets.map((asset: any) => ({
+          id: asset.id,
+          name: asset.name,
+          category: asset.category,
+          brand: asset.brand,
+          model: asset.model,
+          installedAt: asset.installedAt,
+          status: asset.status,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching public property:", error);
+      res.status(500).json({ error: "Failed to fetch property" });
     }
   });
 

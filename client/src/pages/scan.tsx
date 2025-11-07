@@ -127,7 +127,7 @@ export default function Scan() {
 
   const { data: scanResult, isLoading: scanLoading, error: scanError } = useQuery<{
     code: string;
-    type: 'MASTER' | 'ASSET';
+    type: 'HOUSE' | 'ASSET';
     brandLabel?: string;
     claimed: boolean;
     asset?: {
@@ -138,6 +138,9 @@ export default function Scan() {
       model?: string;
       installedAt?: string;
       status: string;
+    };
+    property?: {
+      id: string;
     };
   }>({
     queryKey: ["/api/scan", scannedCode],
@@ -542,7 +545,7 @@ export default function Scan() {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Type:</span>
                             <Badge variant="outline">
-                              {scanResult.type === 'MASTER' ? 'Property Master' : 'Asset'}
+                              {scanResult.type === 'HOUSE' ? 'Property Master' : 'Asset'}
                             </Badge>
                           </div>
                           <div className="flex justify-between">
@@ -976,7 +979,7 @@ export default function Scan() {
                                   data-testid="button-claim-asset"
                                 >
                                   <Link className="mr-2 h-4 w-4" />
-                                  Claim & Bind {scanResult.type === 'MASTER' ? 'Property' : 'Asset'}
+                                  Claim & Bind {scanResult.type === 'HOUSE' ? 'Property' : 'Asset'}
                                 </Button>
                               ) : (
                                 <Button 
@@ -991,8 +994,17 @@ export default function Scan() {
                             </>
                           ) : (
                           <>
-                            {/* Primary Action: View Asset Timeline (for everyone) */}
-                            {scanResult.asset && (
+                            {/* Primary Action: View Property or Asset Timeline (for everyone) */}
+                            {scanResult.property && scanResult.type === 'HOUSE' ? (
+                              <Button 
+                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600" 
+                                onClick={() => setLocation(`/property/${scanResult.property!.id}`)}
+                                data-testid="button-view-property"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Property History
+                              </Button>
+                            ) : scanResult.asset && (
                               <Button 
                                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600" 
                                 onClick={() => setLocation(`/asset/${scanResult.asset!.id}`)}
@@ -1115,8 +1127,8 @@ export default function Scan() {
 
                       {/* Information */}
                       <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
-                        {scanResult.type === 'MASTER' ? (
-                          <p>This is a master property code that provides access to the complete property history, including all assets, documents, and maintenance records.</p>
+                        {scanResult.type === 'HOUSE' ? (
+                          <p>This is a master property code that provides access to the complete property history, including all infrastructure assets, installation records, and service history.</p>
                         ) : (
                           <p>This is an asset identifier that tracks the complete lifecycle of a specific item including installation, service, warranties, and transfers.</p>
                         )}
