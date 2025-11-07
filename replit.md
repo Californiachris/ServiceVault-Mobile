@@ -65,6 +65,9 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - `server/replitAuth.ts` - Authentication setup and middleware
 - `server/objectStorage.ts` - Google Cloud Storage integration with ACL
 - `server/objectAcl.ts` - Object-level access control system
+- `server/hashChain.ts` - Tamper-proof hash chain system for event logging
+- `server/openaiClient.ts` - OpenAI Vision API client for warranty parsing
+- `server/rateLimiter.ts` - In-memory rate limiting for AI parsing endpoints
 
 **API Structure:**
 - `/api/auth/*` - Authentication endpoints (user info, login/logout)
@@ -112,7 +115,15 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - Role-based access: HOMEOWNER, CONTRACTOR, INSPECTOR, ADMIN
 - Object-level ACL for Google Cloud Storage
 - Protected routes with `isAuthenticated` middleware
+- Admin-only routes protected with `requireAdmin` middleware
 - User-specific data isolation
+
+**Security Features:**
+- Rate limiting on AI parsing endpoints (10 requests/hour per user)
+- Image upload validation (max 10MB, base64 format verification)
+- Warranty data validation (date ranges, schedule limits)
+- Hash chain integrity verification for tamper detection
+- Admin role enforcement for fulfillment operations
 
 ### External Dependencies
 
@@ -155,7 +166,28 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Property master identifier codes
   - Embedded in PDF reports
 
+**AI-Powered Parsing:**
+- **OpenAI** - Vision API for warranty document parsing
+  - Model: gpt-5 (newest available as of August 2025)
+  - Integrated via Replit AI Integrations
+  - Extracts warranty dates and maintenance schedules from images
+  - Creates automatic reminders for contractors and homeowners
+  - Rate limited to prevent abuse (10 requests/hour per user)
+
 **Development Tools:**
 - Replit-specific Vite plugins (cartographer, dev-banner, runtime-error-modal)
 - ESBuild for server bundling
 - TypeScript for type checking across frontend and backend
+
+## Recent Changes
+
+**November 7, 2025 - Security Hardening:**
+- Added `requireAdmin` middleware to protect admin fulfillment endpoints
+- Implemented rate limiting on AI warranty parsing (10 req/hour per user)
+- Added comprehensive input validation for warranty parsing:
+  - Image size validation (max 10MB)
+  - Base64 format verification
+  - Date range validation (past 10 years to future 5 years)
+  - Maintenance schedule limits (max 20 reminders)
+  - Interval validation (1-120 months)
+- Created `server/rateLimiter.ts` for in-memory rate limiting with automatic cleanup
