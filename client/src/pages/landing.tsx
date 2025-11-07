@@ -321,7 +321,7 @@ export default function Landing() {
               <div>
                 <h4 className="font-semibold mb-1">Secure Authentication</h4>
                 <p className="text-sm text-muted-foreground">
-                  Industry-standard OpenID Connect (OIDC) authentication with Replit. 
+                  Industry-standard OpenID Connect (OIDC) authentication with Google, GitHub, or email. 
                   Signed, HTTP-only session cookies stored in PostgreSQL automatically expire after 7 days.
                 </p>
               </div>
@@ -393,17 +393,17 @@ export default function Landing() {
                 1
               </div>
               <div>
-                <h4 className="font-semibold mb-1">Sign Up with Replit</h4>
+                <h4 className="font-semibold mb-1">Create Your Account</h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Click "Get Started" and login with your Replit account. No password required—
-                  secure authentication happens automatically.
+                  Click "Get Started" and sign in securely. No password required—
+                  authentication happens automatically with your Google, GitHub, or email account.
                 </p>
                 <Button 
                   size="sm" 
                   onClick={() => window.location.href = "/api/login"}
                   data-testid="button-dialog-setup-login"
                 >
-                  Login with Replit
+                  Get Started
                 </Button>
               </div>
             </div>
