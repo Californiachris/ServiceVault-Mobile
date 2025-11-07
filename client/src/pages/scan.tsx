@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/ui/navigation";
 import QRScanner from "@/components/scanner/qr-scanner";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   QrCode, 
   CheckCircle2, 
@@ -14,13 +15,17 @@ import {
   Camera,
   AlertCircle,
   Home,
-  Wrench
+  Wrench,
+  Upload,
+  Eye,
+  FileText
 } from "lucide-react";
 
 export default function Scan() {
   const [, setLocation] = useLocation();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
   // Check URL for code parameter
   useEffect(() => {
@@ -229,26 +234,98 @@ export default function Scan() {
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
+                      {/* Role-Based Action Buttons */}
                       <div className="space-y-2">
                         {!scanResult.claimed ? (
-                          <Button 
-                            className="w-full" 
-                            onClick={handleClaimAsset}
-                            data-testid="button-claim-asset"
-                          >
-                            <Link className="mr-2 h-4 w-4" />
-                            Claim & Bind {scanResult.type === 'MASTER' ? 'Property' : 'Asset'}
-                          </Button>
+                          <>
+                            {isAuthenticated ? (
+                              <Button 
+                                className="w-full" 
+                                onClick={handleClaimAsset}
+                                data-testid="button-claim-asset"
+                              >
+                                <Link className="mr-2 h-4 w-4" />
+                                Claim & Bind {scanResult.type === 'MASTER' ? 'Property' : 'Asset'}
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="w-full" 
+                                onClick={() => setLocation('/pricing')}
+                                data-testid="button-sign-up"
+                              >
+                                <Link className="mr-2 h-4 w-4" />
+                                Sign Up to Claim
+                              </Button>
+                            )}
+                          </>
                         ) : (
-                          <Button 
-                            className="w-full" 
-                            onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
-                            data-testid="button-view-details"
-                          >
-                            <History className="mr-2 h-4 w-4" />
-                            View Details & History
-                          </Button>
+                          <>
+                            {isAuthenticated && user ? (
+                              <>
+                                {user.role === 'CONTRACTOR' && (
+                                  <>
+                                    <Button 
+                                      className="w-full" 
+                                      onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
+                                      data-testid="button-log-service"
+                                    >
+                                      <Wrench className="mr-2 h-4 w-4" />
+                                      Log Service Event
+                                    </Button>
+                                    <Button 
+                                      variant="outline"
+                                      className="w-full" 
+                                      onClick={() => setLocation(`/tools/documents`)}
+                                      data-testid="button-upload-photo"
+                                    >
+                                      <Upload className="mr-2 h-4 w-4" />
+                                      Upload Service Photos
+                                    </Button>
+                                  </>
+                                )}
+                                {user.role === 'HOMEOWNER' && (
+                                  <>
+                                    <Button 
+                                      className="w-full" 
+                                      onClick={() => setLocation(`/tools/documents`)}
+                                      data-testid="button-upload-receipt"
+                                    >
+                                      <Upload className="mr-2 h-4 w-4" />
+                                      Upload Warranty/Receipt
+                                    </Button>
+                                    <Button 
+                                      variant="outline"
+                                      className="w-full" 
+                                      onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
+                                      data-testid="button-view-history"
+                                    >
+                                      <History className="mr-2 h-4 w-4" />
+                                      View Service History
+                                    </Button>
+                                  </>
+                                )}
+                                {(user.role === 'INSPECTOR' || user.role === 'ADMIN') && (
+                                  <Button 
+                                    className="w-full" 
+                                    onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
+                                    data-testid="button-view-details"
+                                  >
+                                    <History className="mr-2 h-4 w-4" />
+                                    View Full Details & History
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              <Button 
+                                className="w-full" 
+                                onClick={() => setLocation(`/tools/assets?code=${encodeURIComponent(scannedCode)}`)}
+                                data-testid="button-view-public"
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Public Information
+                              </Button>
+                            )}
+                          </>
                         )}
                         
                         <Button 

@@ -525,6 +525,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/documents/parse-warranty', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { imageBase64, assetId } = req.body;
+
+      if (!imageBase64) {
+        return res.status(400).json({ error: "Image data is required" });
+      }
+
+      // Rate limiting for AI parsing (10 requests per hour per user)
+      const { checkRateLimit, RATE_LIMITS } = await import('./rateLimiter');
+      const rateLimit = checkRateLimit(userId, 'warranty-parse', RATE_LIMITS.WARRANTY_PARSE);
+      
+      if (!rateLimit.allowed) {
+        const resetInMinutes = Math.ceil((rateLimit.resetAt - Date.now()) / 1000 / 60);
+        return res.status(429).json({ 
+          error: "Rate limit exceeded",
+          message: `Too many warranty parsing requests. Please try again in ${resetInMinutes} minutes.`,
+          resetAt: rateLimit.resetAt,
+        });
+      }
+
+      // Validate base64 image size (max 10MB)
+      const base64SizeInBytes = (imageBase64.length * 3) / 4;
+      const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+      if (base64SizeInBytes > maxSizeInBytes) {
+        return res.status(400).json({ error: "Image size exceeds 10MB limit" });
+      }
+
+      // Validate base64 format
+      if (!/^[A-Za-z0-9+/=]+$/.test(imageBase64)) {
+        return res.status(400).json({ error: "Invalid base64 image format" });
+      }
+
+      // Verify asset ownership if provided
+      if (assetId) {
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          return res.status(404).json({ error: "Asset not found" });
+        }
+        const property = await storage.getProperty(asset.propertyId);
+        if (!property || property.ownerId !== userId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
+      // Parse warranty using OpenAI Vision
+      const { parseWarrantyDocument } = await import('./openaiClient');
+      const warrantyInfo = await parseWarrantyDocument(imageBase64);
+
+      res.json({ warrantyInfo });
+    } catch (error) {
+      console.error("Error parsing warranty:", error);
+      res.status(500).json({ error: "Failed to parse warranty document" });
+    }
+  });
+
   // Home Health Certificate generation
   app.post('/api/reports/home-health', isAuthenticated, async (req: any, res) => {
     try {
@@ -694,6 +751,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/reminders/from-warranty', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId, warrantyInfo } = req.body;
+
+      if (!assetId || !warrantyInfo) {
+        return res.status(400).json({ error: "Asset ID and warranty info are required" });
+      }
+
+      // Validate warranty info structure
+      if (typeof warrantyInfo !== 'object') {
+        return res.status(400).json({ error: "Warranty info must be an object" });
+      }
+
+      // Validate and sanitize dates
+      const validateDate = (dateStr: string | undefined): boolean => {
+        if (!dateStr) return true; // Optional dates are ok
+        const date = new Date(dateStr);
+        const now = new Date();
+        const fiveYearsFromNow = new Date();
+        fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
+        
+        // Date must be valid and within reasonable range (past 10 years to future 5 years)
+        return !isNaN(date.getTime()) && 
+               date >= new Date(now.getFullYear() - 10, 0, 1) && 
+               date <= fiveYearsFromNow;
+      };
+
+      if (warrantyInfo.warrantyStartDate && !validateDate(warrantyInfo.warrantyStartDate)) {
+        return res.status(400).json({ error: "Invalid warranty start date" });
+      }
+
+      if (warrantyInfo.warrantyEndDate && !validateDate(warrantyInfo.warrantyEndDate)) {
+        return res.status(400).json({ error: "Invalid warranty end date" });
+      }
+
+      // Validate maintenance schedule if provided
+      if (warrantyInfo.maintenanceSchedule) {
+        if (!Array.isArray(warrantyInfo.maintenanceSchedule)) {
+          return res.status(400).json({ error: "Maintenance schedule must be an array" });
+        }
+
+        // Limit number of reminders
+        if (warrantyInfo.maintenanceSchedule.length > 20) {
+          return res.status(400).json({ error: "Too many maintenance schedules (max 20)" });
+        }
+
+        for (const schedule of warrantyInfo.maintenanceSchedule) {
+          if (schedule.intervalMonths && (schedule.intervalMonths < 1 || schedule.intervalMonths > 120)) {
+            return res.status(400).json({ error: "Invalid interval months (must be 1-120)" });
+          }
+          if (schedule.firstDueDate && !validateDate(schedule.firstDueDate)) {
+            return res.status(400).json({ error: "Invalid maintenance schedule date" });
+          }
+        }
+      }
+
+      // Verify asset ownership
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+      const property = await storage.getProperty(asset.propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const reminders = [];
+
+      // Create warranty expiration reminder
+      if (warrantyInfo.warrantyEndDate) {
+        const warrantyReminder = await storage.createReminder({
+          assetId,
+          dueAt: new Date(warrantyInfo.warrantyEndDate),
+          type: "WARRANTY",
+        });
+        reminders.push(warrantyReminder);
+      }
+
+      // Create maintenance schedule reminders
+      if (warrantyInfo.maintenanceSchedule && Array.isArray(warrantyInfo.maintenanceSchedule)) {
+        for (const schedule of warrantyInfo.maintenanceSchedule) {
+          if (schedule.firstDueDate) {
+            const maintenanceReminder = await storage.createReminder({
+              assetId,
+              dueAt: new Date(schedule.firstDueDate),
+              type: "MAINTENANCE",
+            });
+            reminders.push(maintenanceReminder);
+          } else if (schedule.intervalMonths) {
+            // Calculate first due date based on today + interval
+            const firstDue = new Date();
+            firstDue.setMonth(firstDue.getMonth() + schedule.intervalMonths);
+            
+            const maintenanceReminder = await storage.createReminder({
+              assetId,
+              dueAt: firstDue,
+              type: "MAINTENANCE",
+            });
+            reminders.push(maintenanceReminder);
+          }
+        }
+      }
+
+      res.json({ reminders, count: reminders.length });
+    } catch (error) {
+      console.error("Error creating warranty reminders:", error);
+      res.status(500).json({ error: "Failed to create warranty reminders" });
+    }
+  });
+
+  // Admin middleware
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    const userId = req.user?.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    
+    next();
+  };
+
+  // Admin routes
+  app.get('/api/admin/subscriptions/pending', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+
+      // Get all subscriptions that haven't been fulfilled yet
+      const allSubscriptions = await db
+        .select()
+        .from((await import('@shared/schema')).subscriptions)
+        .where(eq((await import('@shared/schema')).subscriptions.status, 'active'))
+        .orderBy(desc((await import('@shared/schema')).subscriptions.createdAt));
+
+      res.json(allSubscriptions.filter(sub => !sub.fulfilled));
+    } catch (error) {
+      console.error("Error fetching pending subscriptions:", error);
+      res.status(500).json({ error: "Failed to fetch subscriptions" });
+    }
+  });
+
+  app.post('/api/admin/subscriptions/:id/fulfill', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      // Mark subscription as fulfilled
+      const updated = await storage.updateSubscription(id, {
+        fulfilled: true,
+        fulfilledAt: new Date(),
+      });
+
+      // TODO: Send email notification to customer
+      // This would integrate with an email service like SendGrid or AWS SES
+
+      res.json({ subscription: updated });
+    } catch (error) {
+      console.error("Error fulfilling subscription:", error);
+      res.status(500).json({ error: "Failed to fulfill subscription" });
+    }
+  });
+
   // Contractor routes
   app.post('/api/contractor/profile', isAuthenticated, async (req: any, res) => {
     try {
@@ -734,12 +957,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.user.claims.sub;
         const { plan } = req.body;
 
-        // Map plans to price IDs (these would be set in environment variables)
+        // Map plans to price IDs (Stripe Product pricing: $19.99/50, $29/100, $100 lifetime, $15/yr)
         const priceIds: Record<string, string> = {
-          'contractor_50': process.env.STRIPE_PRICE_CONTRACTOR_50 || 'price_fake_19',
-          'contractor_100': process.env.STRIPE_PRICE_CONTRACTOR_100 || 'price_fake_29',
-          'home_lifetime': process.env.STRIPE_PRICE_HOME_LIFETIME || 'price_fake_100',
-          'home_annual': process.env.STRIPE_PRICE_HOME_ANNUAL || 'price_fake_15',
+          'contractor_50': process.env.STRIPE_PRICE_CONTRACTOR_50 || '',
+          'contractor_100': process.env.STRIPE_PRICE_CONTRACTOR_100 || '',
+          'home_lifetime': process.env.STRIPE_PRICE_HOME_LIFETIME || '',
+          'home_annual': process.env.STRIPE_PRICE_HOME_ANNUAL || '',
         };
 
         const priceId = priceIds[plan];
@@ -831,6 +1054,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 );
               }
 
+              // Calculate quota based on plan
+              let quotaTotal = 0;
+              if (plan === 'contractor_50') quotaTotal = 50;
+              else if (plan === 'contractor_100') quotaTotal = 100;
+              else if (plan === 'home_lifetime' || plan === 'home_annual') quotaTotal = 10; // Homeowners get 10 stickers
+
               await storage.createSubscription({
                 userId,
                 stripeCustomerId: session.customer as string,
@@ -838,6 +1067,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 priceId: session.line_items?.data[0]?.price?.id,
                 plan,
                 status: 'active',
+                quotaTotal,
+                quotaUsed: 0,
                 currentPeriodEnd: session.subscription ? undefined : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year for lifetime
               });
             }
@@ -879,8 +1110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // Public QR scan route (no auth required)
-  app.get('/api/scan/:code', async (req, res) => {
+  // Public read-only endpoints with PII redaction
+  app.get('/api/public/scan/:code', async (req, res) => {
     try {
       const { code } = req.params;
       const identifier = await storage.getIdentifier(code);
@@ -889,17 +1120,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "QR code not found" });
       }
 
-      // Return basic info without sensitive data
+      // Get asset info if claimed
+      let assetInfo = null;
+      if (identifier.claimedAt && identifier.id) {
+        const assets = await db
+          .select()
+          .from((await import('@shared/schema')).assets)
+          .where(eq((await import('@shared/schema')).assets.identifierId, identifier.id))
+          .limit(1);
+        
+        if (assets.length > 0) {
+          const asset = assets[0];
+          assetInfo = {
+            id: asset.id,
+            name: asset.name,
+            category: asset.category,
+            brand: asset.brand,
+            model: asset.model,
+            installedAt: asset.installedAt,
+            status: asset.status,
+          };
+        }
+      }
+
+      // Return public info without PII (no owner names, emails, addresses)
       res.json({
         code: identifier.code,
         type: identifier.type,
         brandLabel: identifier.brandLabel,
         claimed: !!identifier.claimedAt,
+        asset: assetInfo,
       });
     } catch (error) {
       console.error("Error scanning code:", error);
       res.status(500).json({ error: "Failed to scan code" });
     }
+  });
+
+  app.get('/api/public/asset/:assetId', async (req, res) => {
+    try {
+      const { assetId } = req.params;
+      const asset = await storage.getAsset(assetId);
+      
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+
+      // Get public event history (redacted)
+      const events = await storage.getAssetEvents(assetId);
+      const publicEvents = events.map(event => ({
+        id: event.id,
+        type: event.type,
+        data: event.data,
+        createdAt: event.createdAt,
+        // No createdBy to avoid exposing user IDs
+      }));
+
+      // Return public asset info without PII
+      res.json({
+        id: asset.id,
+        name: asset.name,
+        category: asset.category,
+        brand: asset.brand,
+        model: asset.model,
+        serial: asset.serial,
+        installedAt: asset.installedAt,
+        status: asset.status,
+        events: publicEvents,
+        // No property owner info, no installer info
+      });
+    } catch (error) {
+      console.error("Error fetching public asset:", error);
+      res.status(500).json({ error: "Failed to fetch asset" });
+    }
+  });
+
+  // Legacy scan route (redirect to public endpoint)
+  app.get('/api/scan/:code', async (req, res) => {
+    res.redirect(301, `/api/public/scan/${req.params.code}`);
   });
 
   const httpServer = createServer(app);

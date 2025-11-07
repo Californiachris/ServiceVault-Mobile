@@ -15,6 +15,7 @@ import DocumentsPage from "@/pages/tools/documents";
 import ReportsPage from "@/pages/tools/reports";
 import InspectionsPage from "@/pages/tools/inspections";
 import RemindersPage from "@/pages/tools/reminders";
+import AdminFulfillmentPage from "@/pages/tools/admin-fulfillment";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -39,6 +40,7 @@ function Router() {
           <Route path="/tools/reports" component={ReportsPage} />
           <Route path="/tools/inspections" component={InspectionsPage} />
           <Route path="/tools/reminders" component={RemindersPage} />
+          <Route path="/tools/admin-fulfillment" component={AdminFulfillmentPage} />
         </>
       )}
       <Route component={NotFound} />

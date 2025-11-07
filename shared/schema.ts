@@ -173,6 +173,8 @@ export const subscriptions = pgTable("subscriptions", {
   quotaTotal: integer("quota_total").default(0),
   quotaUsed: integer("quota_used").default(0),
   currentPeriodEnd: timestamp("current_period_end"),
+  fulfilled: boolean("fulfilled").default(false),
+  fulfilledAt: timestamp("fulfilled_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
