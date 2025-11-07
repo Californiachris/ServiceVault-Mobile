@@ -112,7 +112,7 @@ export default function Landing() {
         <div className="flex flex-wrap justify-center gap-8 items-center text-sm">
           <button 
             onClick={() => setSecurityDialogOpen(true)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
+            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
             data-testid="button-info-security"
           >
             <Shield className="h-4 w-4" />
@@ -120,7 +120,7 @@ export default function Landing() {
           </button>
           <button 
             onClick={() => setSetupDialogOpen(true)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
+            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
             data-testid="button-info-setup"
           >
             <Zap className="h-4 w-4" />
@@ -128,7 +128,7 @@ export default function Landing() {
           </button>
           <button 
             onClick={() => setSupportDialogOpen(true)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-orange-500 transition-all cursor-pointer hover:scale-105 underline decoration-transparent hover:decoration-orange-500"
+            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
             data-testid="button-info-support"
           >
             <Phone className="h-4 w-4" />
