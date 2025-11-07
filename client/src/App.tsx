@@ -12,6 +12,7 @@ import Scan from "@/pages/scan";
 import AssetView from "@/pages/asset-view";
 import PropertyView from "@/pages/property-view";
 import Pricing from "@/pages/pricing";
+import FamilyBrandingSettings from "@/pages/family-branding-settings";
 import IdentifiersPage from "@/pages/tools/identifiers";
 import AssetsPage from "@/pages/tools/assets";
 import DocumentsPage from "@/pages/tools/documents";
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/asset/:id" component={AssetView} />
           <Route path="/property/:id" component={PropertyView} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/settings/branding" component={FamilyBrandingSettings} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />
           <Route path="/tools/assets" component={AssetsPage} />
           <Route path="/tools/documents" component={DocumentsPage} />

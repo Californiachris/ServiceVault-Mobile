@@ -1176,7 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let userRole = 'HOMEOWNER';
               
               if (plan === 'homeowner_base') {
-                quotaTotal = 6; // 1 master + 5 small stickers + 1 magnetic = 7 total identifiers
+                quotaTotal = 1; // 1 master identifier (printed on 7 physical stickers)
                 userRole = 'HOMEOWNER';
               } else if (plan === 'contractor_starter') {
                 quotaTotal = 50;
@@ -1192,6 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Parse add-ons and set feature flags
               const addOnsList = addOns ? JSON.parse(addOns) : [];
               const featureFlags: any = {
+                featureFamilyBranding: addOnsList.includes('addon_family_branding'),
                 featureServiceSessions: addOnsList.includes('addon_service_sessions'),
                 featureNanoTag: addOnsList.includes('addon_nanotag_setup') || addOnsList.includes('addon_nanotag_monthly'),
                 featureCrewClockIn: addOnsList.includes('addon_crew_clockin'),
@@ -1225,6 +1226,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Update user role
               await storage.updateUser(userId, { role: userRole });
+
+              // For homeowners: create property and master identifier
+              if (plan === 'homeowner_base') {
+                const user = await storage.getUser(userId);
+                if (user) {
+                  // Create default property
+                  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+                  const property = await storage.createProperty({
+                    ownerId: userId,
+                    name: fullName ? `${fullName}'s Property` : 'My Property',
+                    addressLine1: null,
+                    city: null,
+                    state: null,
+                    postalCode: null,
+                  });
+
+                  // Create 1 master identifier (will be printed on 7 physical stickers)
+                  const { nanoid } = await import('nanoid');
+                  const masterCode = nanoid(12);
+                  
+                  await storage.createIdentifiers([{
+                    code: masterCode,
+                    kind: 'HOUSE',
+                    ownerId: userId,
+                    propertyId: property.id,
+                    tamperState: 'PENDING_FULFILLMENT',
+                  }]);
+
+                  console.log(`Created property ${property.id} and master identifier for homeowner ${userId}`);
+                }
+              }
             }
             break;
           }

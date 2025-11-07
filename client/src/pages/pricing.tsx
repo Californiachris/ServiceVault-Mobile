@@ -193,6 +193,19 @@ export default function PricingPage() {
                     <div className="text-xs text-muted-foreground">BLE/NFC tracking • $14.99 setup + $2/mo per asset</div>
                   </Label>
                 </div>
+
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="homeowner-branding"
+                    checked={selectedAddOns.homeowner.includes('addon_family_branding')}
+                    onCheckedChange={() => toggleAddOn('homeowner', 'addon_family_branding')}
+                    data-testid="checkbox-addon-homeowner-branding"
+                  />
+                  <Label htmlFor="homeowner-branding" className="text-sm cursor-pointer">
+                    <div className="font-medium">Custom Family Branding</div>
+                    <div className="text-xs text-muted-foreground">Family name + logo on all stickers • $5 one-time</div>
+                  </Label>
+                </div>
               </div>
             </CardContent>
 
