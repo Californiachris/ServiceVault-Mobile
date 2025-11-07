@@ -482,11 +482,11 @@ export default function Landing() {
                   Speak with a real person who understands FixTrack Pro
                 </p>
                 <a 
-                  href="tel:+1234567890" 
+                  href="tel:+17602695750" 
                   className="text-lg font-bold text-primary hover:underline"
                   data-testid="link-support-phone"
                 >
-                  +1 (234) 567-8900
+                  (760) 269-5750
                 </a>
                 <p className="text-xs text-muted-foreground mt-1">
                   Available 24/7 for urgent issues
