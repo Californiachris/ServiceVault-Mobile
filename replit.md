@@ -181,13 +181,38 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 
 ## Recent Changes
 
+**November 7, 2025 - New Pricing Model & UI Overhaul:**
+- Implemented new three-tier subscription structure:
+  - Homeowner Pack: $99 one-time + $10/year with 7 identifiers (1 master + 5 small + 1 magnetic)
+  - Contractor Starter/Pro: $19.99/mo (50 stickers) or $29.99/mo (100 stickers) with branding
+  - Fleet Management: Dynamic pricing ($3/asset for 1-999, $2/asset for 1000+)
+- Added comprehensive add-ons system with feature flags:
+  - Service Sessions ($4.99/mo), NanoTag Theft Recovery, Crew Clock-In
+  - Fleet add-ons: Real-time Tracking, Theft Recovery, Driver Accountability, AI Insights
+- Database schema updates:
+  - Added `serviceSessions` table for verified GPS clock-in/out feature
+  - Added feature flag fields to subscriptions (featureServiceSessions, featureNanoTag, etc.)
+  - Added fleet management fields (fleetAssetCount, fleetPricePerAsset)
+  - Added contractor contact info (phone, email, website, licenseNumber)
+  - Added FLEET user role
+- Updated Stripe integration:
+  - Checkout handles dynamic line items for base plans + add-ons
+  - Fleet pricing calculated on-the-fly based on asset count
+  - Webhook sets feature flags based on purchased add-ons
+  - Automatic role assignment based on plan type
+- Built new pricing page (client/src/pages/pricing.tsx):
+  - Three premium pricing cards with psychological triggers
+  - Add-on checkboxes for each tier
+  - Fleet asset counter with dynamic price calculation
+  - Complete data-testid coverage for testing
+- Rebuilt landing page (client/src/pages/landing.tsx):
+  - Premium hero section with stats bar (10K+ Assets, 500+ Companies, 99.9% Uptime)
+  - "Who It's For" section showcasing Homeowner/Contractor/Fleet use cases
+  - "How It Works" 3-step process
+  - Full data-testid coverage (in progress)
+
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
 - Implemented rate limiting on AI warranty parsing (10 req/hour per user)
-- Added comprehensive input validation for warranty parsing:
-  - Image size validation (max 10MB)
-  - Base64 format verification
-  - Date range validation (past 10 years to future 5 years)
-  - Maintenance schedule limits (max 20 reminders)
-  - Interval validation (1-120 months)
+- Added comprehensive input validation for warranty parsing
 - Created `server/rateLimiter.ts` for in-memory rate limiting with automatic cleanup

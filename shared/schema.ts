@@ -34,7 +34,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("HOMEOWNER"), // HOMEOWNER, CONTRACTOR, INSPECTOR, ADMIN
+  role: varchar("role").default("HOMEOWNER"), // HOMEOWNER, CONTRACTOR, FLEET, INSPECTOR, ADMIN
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -47,7 +47,11 @@ export const contractors = pgTable("contractors", {
   userId: varchar("user_id").notNull().references(() => users.id),
   companyName: varchar("company_name").notNull(),
   logoUrl: varchar("logo_url"),
-  plan: varchar("plan"), // contractor_50, contractor_100
+  phone: varchar("phone"),
+  email: varchar("email"),
+  website: varchar("website"),
+  licenseNumber: varchar("license_number"),
+  plan: varchar("plan"), // contractor_starter, contractor_pro
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -161,6 +165,28 @@ export const inspections = pgTable("inspections", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Service Sessions (for Verified Service Sessions add-on)
+export const serviceSessions = pgTable("service_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id").notNull().references(() => properties.id),
+  homeownerId: varchar("homeowner_id").notNull().references(() => users.id),
+  workerId: varchar("worker_id").references(() => users.id),
+  workerName: varchar("worker_name"),
+  workerPhone: varchar("worker_phone"),
+  title: varchar("title").notNull(),
+  checklist: jsonb("checklist").$type<Array<{task: string, completed: boolean, photoUrl?: string, notes?: string}>>(),
+  clockInAt: timestamp("clock_in_at"),
+  clockInLocation: jsonb("clock_in_location").$type<{lat: number, lng: number, address?: string}>(),
+  clockOutAt: timestamp("clock_out_at"),
+  clockOutLocation: jsonb("clock_out_location").$type<{lat: number, lng: number, address?: string}>(),
+  status: varchar("status").default("PENDING"), // PENDING, IN_PROGRESS, COMPLETED, TIMEOUT
+  pdfReportUrl: varchar("pdf_report_url"),
+  homeownerSignature: text("homeowner_signature"),
+  workerSignature: text("worker_signature"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 // Subscriptions
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -168,13 +194,27 @@ export const subscriptions = pgTable("subscriptions", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubId: varchar("stripe_sub_id"),
   priceId: varchar("price_id"),
-  plan: varchar("plan"), // C50, C100, HOUSE
+  plan: varchar("plan"), // homeowner_base, contractor_starter, contractor_pro, fleet_base
   status: varchar("status"),
   quotaTotal: integer("quota_total").default(0),
   quotaUsed: integer("quota_used").default(0),
   currentPeriodEnd: timestamp("current_period_end"),
   fulfilled: boolean("fulfilled").default(false),
   fulfilledAt: timestamp("fulfilled_at"),
+  
+  // Fleet-specific fields
+  fleetAssetCount: integer("fleet_asset_count").default(0),
+  fleetPricePerAsset: decimal("fleet_price_per_asset", { precision: 10, scale: 2 }),
+  
+  // Feature flags for add-ons
+  featureServiceSessions: boolean("feature_service_sessions").default(false),
+  featureNanoTag: boolean("feature_nanotag").default(false),
+  featureCrewClockIn: boolean("feature_crew_clockin").default(false),
+  featureRealtimeTracking: boolean("feature_realtime_tracking").default(false),
+  featureTheftRecovery: boolean("feature_theft_recovery").default(false),
+  featureDriverAccountability: boolean("feature_driver_accountability").default(false),
+  featureAiInsights: boolean("feature_ai_insights").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -324,6 +364,11 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
   updatedAt: true,
 });
 
+export const insertServiceSessionSchema = createInsertSchema(serviceSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -337,6 +382,7 @@ export type Reminder = typeof reminders.$inferSelect;
 export type Transfer = typeof transfers.$inferSelect;
 export type Inspection = typeof inspections.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+export type ServiceSession = typeof serviceSessions.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -348,3 +394,4 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type InsertInspection = z.infer<typeof insertInspectionSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type InsertServiceSession = z.infer<typeof insertServiceSessionSchema>;

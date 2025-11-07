@@ -1,0 +1,135 @@
+TITLE: FixTrack App – Full Pricing Structure, Add-Ons & Workflow Logic
+──────────────────────────────────────────────────────────────
+
+PURPOSE:
+Defines the entire FixTrack business and functional structure for Ripplet implementation, including all subscription tiers, pricing, features, add-ons, and user flows. Used to configure app payment logic and UX.
+
+──────────────────────────────
+🏠 HOMEOWNER PACK
+──────────────────────────────
+• Price: $99 one-time setup + $10/year maintenance  
+• Includes:
+  - 1 Master Whole-House Identifier (electrical panel)
+  - 5 smaller QR/NFC FixTrack stickers (safe, closet, etc.)
+  - 1 magnetic QR/NFC code for fridge/entryway
+  - Lifetime property asset + maintenance record storage
+  - **AI Predictive Maintenance Reminders (INCLUDED)** – automatic reminders via text/push for all household assets (HVAC, water heater, etc.)
+  - Warranty/recall/expiration notifications
+  - Ownership transfer & multi-user family access
+
+📦 Add-ons (Homeowner)
+1. Verified Service Sessions — $4.99 / month  
+   → Clock-in / clock-out for maids, landscapers, pool techs, etc.  
+   → Geofence + GPS check to verify on-site presence.  
+   → Homeowner pre-builds a task checklist in app.  
+   → Worker scans property QR to clock in, completes tasks, uploads photos/notes, and scans out.  
+   → Generates PDF report with timestamps, GPS, tasks, evidence, signatures.  
+   → Homeowner receives instant push/email: “Service completed — View Report.”
+
+2. NanoTag Theft Recovery — $14.99 setup + $2 / month per asset  
+   → BLE/NFC hybrid tag for high-value property (tractors, bikes, heavy tools).  
+   → Optional geofencing + theft alerts.  
+   → GPS-based last known location via FixTrack network pings.
+
+──────────────────────────────
+🧰 CONTRACTOR PACKS
+──────────────────────────────
+• Starter Pack — $19.99 / month (50 branded QR/NFC FixTrack stickers)  
+• Pro Pack — $29.99 / month (100 branded QR/NFC FixTrack stickers)  
+• Enterprise Pack — Custom pricing (250 + units)
+
+Includes:
+  - Contractor logo on QR/NFC stickers  
+  - License verification & installer profile  
+  - Automatic maintenance logging per install  
+  - **AI Predictive Maintenance Reminders (INCLUDED)** – contractor and client both receive text/push alerts when service is due or warranty expiring.  
+  - Verified Installer Badge for marketing trust  
+  - Referral system for homeowner upsells
+
+📦 Add-ons (Contractor)
+1. Verified Crew Clock-In — $4.99 / month per crew  
+   → Crew scans QR to log job site presence (GPS + timestamp).  
+   → Tracks duration, tasks, and service notes.  
+   → Sends reports to contractor dashboard.
+
+──────────────────────────────
+🚛 FLEET MANAGEMENT PACK
+──────────────────────────────
+• Price:  
+  - 1–500 assets → $3 / asset / year  
+  - 1,000 + assets → $2 / asset / year  
+
+Includes:
+  - Asset registration & ownership history  
+  - Maintenance schedule logging  
+  - **AI Predictive Maintenance Reminders (INCLUDED)** – automatic service interval texts & dashboard alerts  
+  - Tamper & inspection logs  
+  - Role-based dashboards (admin, driver, maintenance)
+
+📦 Add-ons (Fleet)
+1. Real-Time Tracking — $1.50 / month per asset  
+2. Theft Recovery & Geofencing — $9.99 / month per asset  
+3. Driver Accountability — $9.99 / month per driver  
+4. Advanced Predictive Insights — $199 / year (AI analytics layer)  
+5. SmartTag Integration Upgrade — $10 one-time per asset (physical BLE/NFC hybrid tag with tamper detection)
+
+──────────────────────────────
+🧹 VERIFIED SERVICE SESSION WORKFLOW (Homeowner Add-On)
+──────────────────────────────
+• Homeowner creates checklist (tasks like “Mop kitchen, Vacuum living room”).  
+• Worker scans QR → Clock In (GPS verified).  
+• Worker views checklist and marks tasks complete (photos/notes optional).  
+• Worker scans again → Clock Out.  
+• System creates PDF report with time, GPS, evidence, signatures.  
+• Homeowner notified instantly.  
+• No Clock-Out allowed until all required tasks completed.  
+• Auto timeout if worker forgets; homeowner can reopen within 24 hours.  
+
+──────────────────────────────
+💳 STRIPE SUBSCRIPTIONS (FOR RIPPLET)
+──────────────────────────────
+Example Plan IDs:
+- homeowner_base_99  
+- homeowner_maint_10_year  
+- addon_service_sessions_499_month  
+- addon_nanotag_1499_setup  
+- contractor_50pack_1999_month  
+- contractor_100pack_2999_month  
+- fleet_base_3_asset  
+- fleet_base_2_asset  
+- addon_realtime_track_150_month  
+- addon_theft_recovery_999_month  
+- addon_driver_account_999_month  
+- addon_ai_insights_199_year  
+
+Webhook Flow:
+1. Stripe subscription created  
+2. Webhook → FixTrack backend issues identifier pack  
+3. Dashboard auto-updates active plan & features  
+
+──────────────────────────────
+⚙️ APP LOGIC SUMMARY
+──────────────────────────────
+• User chooses role (Homeowner / Contractor / Fleet)  
+• Payment → Stripe → Webhook → Profile + Identifiers issued  
+• Feature flags enabled per plan:  
+  - FEATURE_SERVICE_SESSIONS  
+  - FEATURE_TRACKING  
+  - FEATURE_THEFT_RECOVERY  
+  - FEATURE_INSURER_GATEWAY  
+  - FEATURE_CREW_CLOCKIN  
+• **AI Predictive Maintenance Reminders always enabled (system-wide)**  
+
+──────────────────────────────
+💬 SUPPORT
+──────────────────────────────
+• Confirmation email → “Activate Your FixTrack Kit”  
+• Support: trackfixes@gmail.com  
+• In-app chat: AI FixTrack Assistant (FAQ + help)
+
+──────────────────────────────
+NOTES FOR DEVELOPER
+──────────────────────────────
+AI Predictive Maintenance Reminders are always active for every user.  
+They should send automated text and push alerts based on asset type, install date, and manufacturer recommendations.  
+These notifications must be free to the user (no additional cost).

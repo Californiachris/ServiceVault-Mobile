@@ -955,14 +955,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.post('/api/stripe/create-checkout-session', isAuthenticated, async (req: any, res) => {
       try {
         const userId = req.user.claims.sub;
-        const { plan } = req.body;
+        const { plan, addOns, fleetAssetCount } = req.body;
 
-        // Map plans to price IDs (Stripe Product pricing: $19.99/50, $29/100, $100 lifetime, $15/yr)
+        // Map plans to price IDs (NEW PRICING: Homeowner $99+$10/yr, Contractor $19.99/$29.99/mo, Fleet dynamic)
         const priceIds: Record<string, string> = {
-          'contractor_50': process.env.STRIPE_PRICE_CONTRACTOR_50 || '',
-          'contractor_100': process.env.STRIPE_PRICE_CONTRACTOR_100 || '',
-          'home_lifetime': process.env.STRIPE_PRICE_HOME_LIFETIME || '',
-          'home_annual': process.env.STRIPE_PRICE_HOME_ANNUAL || '',
+          'homeowner_base': process.env.STRIPE_PRICE_HOMEOWNER_BASE || '',
+          'homeowner_maint': process.env.STRIPE_PRICE_HOMEOWNER_MAINT || '',
+          'contractor_starter': process.env.STRIPE_PRICE_CONTRACTOR_STARTER || '',
+          'contractor_pro': process.env.STRIPE_PRICE_CONTRACTOR_PRO || '',
+          'fleet_base': process.env.STRIPE_PRICE_FLEET_BASE || '',
+          // Add-ons
+          'addon_service_sessions': process.env.STRIPE_PRICE_ADDON_SERVICE_SESSIONS || '',
+          'addon_nanotag_setup': process.env.STRIPE_PRICE_ADDON_NANOTAG_SETUP || '',
+          'addon_nanotag_monthly': process.env.STRIPE_PRICE_ADDON_NANOTAG_MONTHLY || '',
+          'addon_crew_clockin': process.env.STRIPE_PRICE_ADDON_CREW_CLOCKIN || '',
+          'addon_realtime_tracking': process.env.STRIPE_PRICE_ADDON_REALTIME_TRACKING || '',
+          'addon_theft_recovery': process.env.STRIPE_PRICE_ADDON_THEFT_RECOVERY || '',
+          'addon_driver_accountability': process.env.STRIPE_PRICE_ADDON_DRIVER_ACCOUNTABILITY || '',
+          'addon_ai_insights': process.env.STRIPE_PRICE_ADDON_AI_INSIGHTS || '',
         };
 
         const priceId = priceIds[plan];
@@ -975,20 +985,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "User not found" });
         }
 
+        const lineItems: any[] = [];
+
+        // Base plan
+        if (plan === 'homeowner_base') {
+          // Homeowner needs both base ($99) and maintenance ($10/yr)
+          lineItems.push(
+            { price: priceIds['homeowner_base'], quantity: 1 },
+            { price: priceIds['homeowner_maint'], quantity: 1 }
+          );
+        } else if (plan === 'fleet_base' && fleetAssetCount) {
+          // Fleet uses dynamic pricing - create price on the fly
+          const pricePerAsset = fleetAssetCount >= 1000 ? 2 : 3;
+          const totalAmount = Math.floor(fleetAssetCount * pricePerAsset * 100); // in cents
+          
+          lineItems.push({
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Fleet Management - ${fleetAssetCount} assets`,
+                description: `$${pricePerAsset}/asset/year for ${fleetAssetCount} assets`,
+              },
+              unit_amount: totalAmount,
+              recurring: { interval: 'year' },
+            },
+            quantity: 1,
+          });
+        } else {
+          lineItems.push({ price: priceId, quantity: 1 });
+        }
+
+        // Add-ons
+        if (addOns && Array.isArray(addOns)) {
+          for (const addon of addOns) {
+            if (priceIds[addon]) {
+              lineItems.push({ price: priceIds[addon], quantity: 1 });
+            }
+          }
+        }
+
         const session = await stripe.checkout.sessions.create({
           customer_email: user.email || undefined,
-          line_items: [
-            {
-              price: priceId,
-              quantity: 1,
-            },
-          ],
-          mode: plan.includes('lifetime') ? 'payment' : 'subscription',
+          line_items: lineItems,
+          mode: plan === 'homeowner_base' ? 'subscription' : 'subscription', // All plans are subscriptions now
           success_url: `${req.headers.origin}/dashboard?success=true`,
           cancel_url: `${req.headers.origin}/pricing?canceled=true`,
           metadata: {
             userId,
             plan,
+            addOns: JSON.stringify(addOns || []),
+            fleetAssetCount: fleetAssetCount?.toString() || '0',
           },
         });
 
@@ -1043,7 +1089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         switch (event.type) {
           case 'checkout.session.completed': {
             const session = event.data.object as Stripe.Checkout.Session;
-            const { userId, plan } = session.metadata || {};
+            const { userId, plan, addOns, fleetAssetCount } = session.metadata || {};
             
             if (userId && plan) {
               if (session.customer) {
@@ -1054,11 +1100,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 );
               }
 
-              // Calculate quota based on plan
+              // Calculate quota based on plan (sticker/identifier quota)
               let quotaTotal = 0;
-              if (plan === 'contractor_50') quotaTotal = 50;
-              else if (plan === 'contractor_100') quotaTotal = 100;
-              else if (plan === 'home_lifetime' || plan === 'home_annual') quotaTotal = 10; // Homeowners get 10 stickers
+              let userRole = 'HOMEOWNER';
+              
+              if (plan === 'homeowner_base') {
+                quotaTotal = 6; // 1 master + 5 small stickers + 1 magnetic = 7 total identifiers
+                userRole = 'HOMEOWNER';
+              } else if (plan === 'contractor_starter') {
+                quotaTotal = 50;
+                userRole = 'CONTRACTOR';
+              } else if (plan === 'contractor_pro') {
+                quotaTotal = 100;
+                userRole = 'CONTRACTOR';
+              } else if (plan === 'fleet_base') {
+                quotaTotal = 0; // Fleet doesn't use sticker quota
+                userRole = 'FLEET';
+              }
+
+              // Parse add-ons and set feature flags
+              const addOnsList = addOns ? JSON.parse(addOns) : [];
+              const featureFlags: any = {
+                featureServiceSessions: addOnsList.includes('addon_service_sessions'),
+                featureNanoTag: addOnsList.includes('addon_nanotag_setup') || addOnsList.includes('addon_nanotag_monthly'),
+                featureCrewClockIn: addOnsList.includes('addon_crew_clockin'),
+                featureRealtimeTracking: addOnsList.includes('addon_realtime_tracking'),
+                featureTheftRecovery: addOnsList.includes('addon_theft_recovery'),
+                featureDriverAccountability: addOnsList.includes('addon_driver_accountability'),
+                featureAiInsights: addOnsList.includes('addon_ai_insights'),
+              };
+
+              // Fleet-specific fields
+              const fleetFields: any = {};
+              if (plan === 'fleet_base' && fleetAssetCount) {
+                const assetCount = parseInt(fleetAssetCount);
+                fleetFields.fleetAssetCount = assetCount;
+                fleetFields.fleetPricePerAsset = assetCount >= 1000 ? '2.00' : '3.00';
+              }
 
               await storage.createSubscription({
                 userId,
@@ -1069,8 +1147,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 status: 'active',
                 quotaTotal,
                 quotaUsed: 0,
-                currentPeriodEnd: session.subscription ? undefined : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year for lifetime
+                currentPeriodEnd: session.subscription ? undefined : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                ...featureFlags,
+                ...fleetFields,
               });
+
+              // Update user role
+              await storage.updateUser(userId, { role: userRole });
             }
             break;
           }
