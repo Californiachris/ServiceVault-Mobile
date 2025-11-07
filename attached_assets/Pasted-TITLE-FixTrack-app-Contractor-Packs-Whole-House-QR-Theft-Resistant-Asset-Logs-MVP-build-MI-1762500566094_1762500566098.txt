@@ -1,0 +1,126 @@
+TITLE: FixTrack.app — Contractor Packs + Whole-House QR + Theft-Resistant Asset Logs (MVP build)
+
+MISSION
+Build a production-ready MVP for FixTrack that lets:
+1) Contractors scan pre-printed FixTrack stickers (QR/NFC/RFID/plate) and log installs/maintenance with photos & docs.
+2) Homeowners scan a Whole-House master QR to view a read-only history and create homeowner uploads (warranty receipts, photos).
+3) Role-based access + license verification (contractor gets write, public gets read; homeowner gets limited write to home node).
+4) Reminders: AI-light schedules (rules + simple model) and basic geofence alerts (server-side Haversine).
+5) Stripe subscriptions:
+   - Contractors: $19.99/mo (50 stickers), $29.00/mo (100 stickers). Enforce quota (stickers claimed).
+   - Homeowner “Whole-House” plan: $100 one-time activation + $15/year maintenance (renewals).
+6) Admin console to fulfill physical sticker orders (email notification when new subscription starts with shipping info).
+
+ARCHITECTURE
+- Frontend: React + Vite, Tailwind. Public “Scan View” route is cacheable. Private dashboard for contractors/homeowners.
+- Backend: Node.js + Express. Queue (BullMQ/Redis) optional; for MVP use in-process background jobs.
+- DB: Postgres (Supabase). Object storage: Supabase Storage (or S3-compatible).
+- Auth: Supabase Auth (email/password + magic link). JWT used for API.
+- Payments: Stripe Checkout + Webhooks (subscription created, invoice.paid, customer.subscription.updated/deleted).
+- Email: SendGrid (or SMTP) for receipts & shipping confirmation.
+- Caching: Cloudflare in front of public read routes (/api/public/asset/:id, /scan/:code) with short TTL (30–120s).
+
+DATA MODEL (tables, minimal)
+- users(id, role enum['contractor','homeowner','inspector','admin'], email, name, org_name, license_no, license_state, verified_bool, created_at)
+- properties(id, owner_user_id, address, geo_lat, geo_lng, master_identifier_id, created_at)
+- identifiers(id, code TEXT UNIQUE, kind enum['HOUSE','ASSET','THEFT_TAG'], brand_logo_url, org_display_name, tamper_state enum['OK','TRIPPED'], assigned_to_asset_id, created_at)
+- assets(id, property_id, title, category enum['PLUMBING','ELECTRICAL','HVAC','APPLIANCE','FURNITURE','FLEET','MEDICAL','AG','OTHER'], make, model, serial, installed_at, installer_user_id)
+- events(id, asset_id, actor_user_id, op_code enum['INSTALL','SERVICE','INSPECT','TRANSFER','WARRANTY','RECALL','NOTE'], payload JSONB, photo_urls TEXT[], created_at, prev_hash, hash)
+- subscriptions(id, user_id, stripe_customer_id, stripe_sub_id, plan enum['C50','C100','HOUSE'], quota_total, quota_used, renews_at, status)
+- transfers(id, asset_id, from_user_id, to_user_id, method enum['DIGITAL','NOTARY'], created_at)
+- reminders(id, asset_id, rule JSONB, next_at, last_sent_at)
+- license_cache(id, license_no, state, status, expires_at, raw JSONB)
+
+LICENSE VERIFY (enablement stub)
+- REST call: GET /licenses/verify?number=XXXX&state=CA → {status:'valid'|'expired'|'not_found', expiration:'YYYY-MM-DD', classes:['C36']}.
+- For MVP, implement a mock provider + admin override; leave provider stubbed for real DMV/state API later.
+
+ENDPOINTS (must implement)
+- POST /api/auth/signup, /login (Supabase handles; backend validates token)
+- POST /api/identifiers/claim  {code} → binds sticker to asset or to property (HOUSE)
+- POST /api/assets            {property_id, title, category, ...}
+- POST /api/events            {asset_id, op_code, payload, photos[]} → returns {hash}
+- GET  /api/public/asset/:id  (redacted view; no PII)
+- GET  /api/property/:id/timeline   (role-based view)
+- POST /api/transfers/initiate {asset_id, to_user_email, method}
+- POST /api/reminders/seed     (install rules by category)
+- POST /api/stripe/webhook     (handle subscription lifecycle)
+- GET  /api/me/quota           (contractor quota for sticker packs)
+
+SCAN FLOW (critical UX)
+- User scans QR → opens https://fixtrack.app/scan/:code
+- If code is HOUSE: show property timeline (read), CTA “Add Home Upload” (owner only).
+- If code is ASSET: show asset card, last service, CTA “Log Service” (contractor only). Not logged-in users see read-only.
+
+REMINDERS (AI-light)
+- Seed rules per category (examples):
+  - WATER_HEATER: flush every 12 months; anode inspection 36 months.
+  - HVAC: filter 90 days; coil clean 12 months.
+- Compute next_at after each event; enqueue email/push. Geofence: if asset has beacon or phone shares scan location, breach → notify.
+
+STRIPE (plans & enforcement)
+- Plans:
+  - contractor_c50: $19.99/mo → quota_total=50 stickers
+  - contractor_c100: $29.00/mo → quota_total=100 stickers
+  - house_life: $100 one-time (activation) + $15/year (separate “maintenance” sub or scheduled invoice)
+- On successful webhook: set subscriptions row; for contractor plans, allow /identifiers/claim until quota_used < quota_total (increment on first claim of each code).
+
+UPLOADS
+- Pre-signed URLs to Supabase Storage. Client uploads first, then POST /api/events with URL list.
+- Don’t store binaries in Postgres.
+
+SECURITY
+- Role-based check in middleware; redacted public responses (no emails, no PII).
+- Hash chain: event.hash = SHA256(JSON(event) + prev_hash). (Store prev_hash in asset head; recompute on write).
+
+REPLIT SETUP (do this)
+1) Create new Repl (Node.js). Upload project or Git import.
+2) In “Secrets”, add:
+   SUPABASE_URL=…
+   SUPABASE_SERVICE_ROLE_KEY=…
+   STRIPE_SECRET_KEY=…
+   STRIPE_WEBHOOK_SECRET=…
+   SENDGRID_API_KEY=…
+   JWT_SECRET=change_me_long
+   PUBLIC_BASE_URL=https://<your-repl-URL>
+3) In “Shell”:
+   npm i
+   npx prisma migrate deploy   # if using Prisma (or run SQL init)
+   npm run dev                 # dev; later npm run start
+4) Set Always-On. Expose /api/stripe/webhook publicly and add endpoint in Stripe Dashboard.
+5) In Cloudflare (optional now), proxy domain fixtrack.app → Replit URL; cache GET /scan/* and /api/public/* for 60s.
+
+ENV TEMPLATE (paste into .env for local; also mirror in Replit Secrets)
+SUPABASE_URL=https://xxxxxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=xxxxxxxx
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+SENDGRID_API_KEY=SG.xxxxx
+JWT_SECRET=this_should_be_64+chars
+PUBLIC_BASE_URL=https://fixtrack.app
+
+ACCEPTANCE CRITERIA (Ripplet must demo)
+- Create contractor, subscribe via Stripe test checkout; admin gets email with shipping info (address in user profile).
+- Claim 1 sticker → create ASSET → log INSTALL with 2 photos → view hash chain in DB.
+- Scan flow works in incognito (read-only public).
+- Whole-House code bound to a property; homeowner can upload a receipt; reminders seeded.
+- Quota enforcement blocks 51st claim on C50 plan.
+- License verify stub present; admin toggle can mark contractor verified (unverified can’t write).
+- Webhook updates subscription on cancel/past_due.
+- Basic admin page lists new subs awaiting fulfillment.
+
+DEFINITION OF DONE
+- No secrets in repo; all routes behind auth except public scan.
+- 95th percentile scan → page render < 500ms without image loads.
+- Zero DB errors under 20 concurrent scans/post-events in rehearsal.
+- README with:
+  - Routes list
+  - ENV keys
+  - Stripe test cards
+  - Supabase setup steps
+
+FUTURE STUBS (do NOT build now, but leave TODOs)
+- Theft-tag “nanoparticle/embedded” mode (separate identifier kind; placeholder screen).
+- NFC read path (WebNFC feature-detect).
+- AI image QA (queue & stub).
+- Contractor directory page (opt-in listing).
