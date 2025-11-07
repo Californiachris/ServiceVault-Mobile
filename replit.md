@@ -258,8 +258,9 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Created three detailed dialog modals with accurate information:
     - Security: OIDC authentication, PostgreSQL storage, SHA-256 hash chains, rate limiting, RBAC
     - Setup: Step-by-step signup guide (Login → Choose Plan → Receive Stickers)
-    - Support: Real contact information (phone +1 (234) 567-8900, email trackfixes@gmail.com)
+    - Support: Real contact information (phone (760) 269-5750, email trackfixes@gmail.com)
   - All claims verified against actual implementation (no marketing fluff)
+  - Phone number is clickable with proper tel: link format for mobile calls
 
 **November 7, 2025 - Security Hardening:**
 - Added `requireAdmin` middleware to protect admin fulfillment endpoints
