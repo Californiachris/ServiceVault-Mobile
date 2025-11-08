@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+import { users, subscriptions } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -36,6 +37,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Initialize object storage service
+  const objectStorageService = new ObjectStorageService();
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -51,9 +55,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Object storage routes for file uploads
-  const objectStorageService = new ObjectStorageService();
+  // Subscription status endpoint
+  app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
+      // Check if user has an active subscription with family branding
+      let featureFamilyBranding = false;
+      
+      if (user.stripeSubscriptionId) {
+        const subscription = await db
+          .select()
+          .from(subscriptions)
+          .where(eq(subscriptions.stripeSubId, user.stripeSubscriptionId))
+          .limit(1);
+        
+        if (subscription.length > 0) {
+          featureFamilyBranding = subscription[0].featureFamilyBranding || false;
+        }
+      }
+
+      res.json({
+        featureFamilyBranding,
+        familyName: user.familyName,
+        familyLogoUrl: user.familyLogoUrl,
+      });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+
+  // Update user family branding
+  app.patch('/api/user/family-branding', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { familyName, familyLogoUrl } = req.body;
+
+      if (!familyName || typeof familyName !== 'string') {
+        return res.status(400).json({ error: "Family name is required" });
+      }
+
+      // If logo URL provided, set ACL to make it publicly readable
+      if (familyLogoUrl) {
+        try {
+          await objectStorageService.trySetObjectEntityAclPolicy(familyLogoUrl, {
+            owner: userId,
+            visibility: "public",
+          });
+        } catch (error) {
+          console.error("Error setting ACL for family logo:", error);
+          // Continue anyway - logo might still work
+        }
+      }
+
+      await db
+        .update(users)
+        .set({
+          familyName: familyName.trim(),
+          familyLogoUrl: familyLogoUrl || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating family branding:", error);
+      res.status(500).json({ error: "Failed to update family branding" });
+    }
+  });
+
+  // Object storage routes for file uploads
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
     try {
@@ -80,6 +157,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Get upload URL for family branding logos
+  app.post('/api/upload/branding', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Use the existing upload URL method - it creates path like /PRIVATE_DIR/uploads/{uuid}
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      
+      // Extract the object ID from the URL to construct the object path
+      // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
+      const urlParts = uploadURL.split('/');
+      const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
+      const objectIdWithQuery = urlParts[objectIdIndex];
+      const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
+      
+      // Construct the object path that will be used to retrieve the file
+      // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
+      // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
+      const objectPath = `/objects/uploads/${objectId}`;
+      
+      res.json({ 
+        uploadURL, 
+        objectPath
+      });
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
@@ -1036,6 +1143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'contractor_pro': process.env.STRIPE_PRICE_CONTRACTOR_PRO || '',
           'fleet_base': process.env.STRIPE_PRICE_FLEET_BASE || '',
           // Add-ons
+          'addon_family_branding': process.env.STRIPE_PRICE_ADDON_FAMILY_BRANDING || '',
           'addon_service_sessions': process.env.STRIPE_PRICE_ADDON_SERVICE_SESSIONS || '',
           'addon_nanotag_setup': process.env.STRIPE_PRICE_ADDON_NANOTAG_SETUP || '',
           'addon_nanotag_monthly': process.env.STRIPE_PRICE_ADDON_NANOTAG_MONTHLY || '',
@@ -1231,7 +1339,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (plan === 'homeowner_base') {
                 const user = await storage.getUser(userId);
                 if (user) {
-                  // Create default property
+                  // Create 1 master identifier first (will be printed on 7 physical stickers)
+                  const masterCode = generateCode('MASTER');
+                  
+                  const identifiers = await storage.createIdentifiers([{
+                    code: masterCode,
+                    kind: 'HOUSE',
+                    tamperState: 'PENDING_FULFILLMENT',
+                  }]);
+
+                  // Create default property linked to the master identifier
                   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
                   const property = await storage.createProperty({
                     ownerId: userId,
@@ -1240,21 +1357,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     city: null,
                     state: null,
                     postalCode: null,
+                    masterIdentifierId: identifiers[0].id,
                   });
 
-                  // Create 1 master identifier (will be printed on 7 physical stickers)
-                  const { nanoid } = await import('nanoid');
-                  const masterCode = nanoid(12);
-                  
-                  await storage.createIdentifiers([{
-                    code: masterCode,
-                    kind: 'HOUSE',
-                    ownerId: userId,
-                    propertyId: property.id,
-                    tamperState: 'PENDING_FULFILLMENT',
-                  }]);
-
-                  console.log(`Created property ${property.id} and master identifier for homeowner ${userId}`);
+                  console.log(`Created property ${property.id} and master identifier ${identifiers[0].code} for homeowner ${userId}`);
                 }
               }
             }

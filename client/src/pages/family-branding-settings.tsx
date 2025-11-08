@@ -77,30 +77,31 @@ export default function FamilyBrandingSettingsPage() {
 
       // Upload logo if changed
       if (logoFile) {
-        const formData = new FormData();
-        formData.append('file', logoFile);
-        formData.append('category', 'branding');
+        // Step 1: Get upload URL and object path
+        const uploadRes = await apiRequest('POST', '/api/upload/branding');
+        const uploadParams = await uploadRes.json();
 
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
+        // Step 2: Upload file to object storage
+        const uploadResponse = await fetch(uploadParams.uploadURL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': logoFile.type,
+          },
+          body: logoFile,
         });
 
-        if (!uploadRes.ok) {
-          throw new Error('Failed to upload logo');
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload logo to storage');
         }
 
-        const uploadData = await uploadRes.json();
-        logoUrl = uploadData.url;
+        // Step 3: Use the object path as the logo URL
+        logoUrl = uploadParams.objectPath;
       }
 
       // Save family name and logo URL
-      return apiRequest('/api/user/family-branding', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          familyName: familyName.trim(),
-          familyLogoUrl: logoUrl,
-        }),
+      return apiRequest('PATCH', '/api/user/family-branding', {
+        familyName: familyName.trim(),
+        familyLogoUrl: logoUrl,
       });
     },
     onSuccess: () => {
