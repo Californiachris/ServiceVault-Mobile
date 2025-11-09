@@ -10,6 +10,7 @@ import {
   transfers,
   inspections,
   subscriptions,
+  notificationLogs,
   type User,
   type UpsertUser,
   type Contractor,
@@ -22,6 +23,7 @@ import {
   type Transfer,
   type Inspection,
   type Subscription,
+  type NotificationLog,
   type InsertContractor,
   type InsertProperty,
   type InsertIdentifier,
@@ -31,6 +33,7 @@ import {
   type InsertReminder,
   type InsertInspection,
   type InsertSubscription,
+  type InsertNotificationLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, lte, count, isNull } from "drizzle-orm";
@@ -80,9 +83,13 @@ export interface IStorage {
   deleteDocument(id: string, userId: string): Promise<void>;
 
   // Reminder operations
+  getReminder(id: string): Promise<Reminder | undefined>;
   getDueReminders(): Promise<Reminder[]>;
   createReminder(reminder: InsertReminder): Promise<Reminder>;
   updateReminder(id: string, updates: Partial<InsertReminder>): Promise<Reminder>;
+  
+  // Notification log operations
+  createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog>;
 
   // Inspection operations
   getPropertyInspections(propertyId: string): Promise<Inspection[]>;
@@ -363,6 +370,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Reminder operations
+  async getReminder(id: string): Promise<Reminder | undefined> {
+    const [reminder] = await db.select().from(reminders).where(eq(reminders.id, id));
+    return reminder;
+  }
+
   async getDueReminders(): Promise<Reminder[]> {
     const now = new Date();
     return await db
@@ -383,6 +395,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reminders.id, id))
       .returning();
     return updated;
+  }
+  
+  async createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog> {
+    const [created] = await db.insert(notificationLogs).values(log).returning();
+    return created;
   }
 
   // Inspection operations

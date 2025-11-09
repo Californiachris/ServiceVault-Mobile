@@ -52,3 +52,25 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 -   **PDFKit:** Server-side PDF generation for reports.
 -   **qrcode:** QR code generation library.
 -   **OpenAI:** Vision API for AI-powered warranty document parsing (gpt-5 model), integrated via Replit AI Integrations.
+-   **Twilio:** SMS notifications for maintenance reminders (manual API credentials via secrets).
+-   **Resend:** Transactional email notifications (manual API credentials via secrets).
+
+## Recent Changes
+
+### November 9, 2025 - Multi-Role Dashboard Architecture
+- **Database Schema Enhancements:**
+  - Added contractor tables: `jobs`, `sticker_orders` with unique constraints and performance indexes
+  - Added fleet tables: `fleet_industries`, `fleet_asset_categories`, `fleet_operators`, `fleet_operator_assets`
+  - Added notification infrastructure: `notification_logs` with delivery tracking
+  - Enhanced `reminders` table with recurrence fields (frequency, intervalDays, nextDueAt) and notification control
+  - Enhanced `users` table with phone and notificationPreference fields
+  - All tables include comprehensive indexes for high-traffic queries
+
+- **Stripe Integration:**
+  - Webhook correctly maps plan purchases to user roles (contractor_starter/pro → CONTRACTOR, fleet_base → FLEET)
+  - Role changes persist to database on subscription purchase
+
+- **Notification System:**
+  - Using manual Twilio/Resend API credentials (Replit integrations were declined)
+  - Multi-channel support: EMAIL, SMS, or both based on user preferences
+  - Multi-party notifications: contractors can send reminders to homeowners, fleet to operators
