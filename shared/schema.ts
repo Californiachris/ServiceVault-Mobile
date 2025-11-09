@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -41,6 +42,10 @@ export const users = pgTable("users", {
   // Family branding for homeowners
   familyName: varchar("family_name"),
   familyLogoUrl: varchar("family_logo_url"),
+  
+  // Notification settings
+  phone: varchar("phone"),
+  notificationPreference: varchar("notification_preference").default("EMAIL_AND_SMS"), // EMAIL_ONLY, SMS_ONLY, EMAIL_AND_SMS, NONE
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -96,7 +101,7 @@ export const identifiers = pgTable("identifiers", {
 // Assets
 export const assets = pgTable("assets", {
   id: uuid("id").primaryKey().defaultRandom(),
-  propertyId: uuid("property_id").notNull().references(() => properties.id),
+  propertyId: uuid("property_id").references(() => properties.id),
   name: varchar("name").notNull(),
   category: varchar("category").notNull(), // PLUMBING, ELECTRICAL, HVAC, APPLIANCE, etc.
   brand: varchar("brand"),
@@ -111,10 +116,20 @@ export const assets = pgTable("assets", {
   // Privacy model: INFRASTRUCTURE (public on property view) vs PERSONAL (owner-only)
   assetType: varchar("asset_type").default("INFRASTRUCTURE"), // INFRASTRUCTURE, PERSONAL
   
+  // Fleet-specific fields
+  fleetIndustryId: uuid("fleet_industry_id").references(() => fleetIndustries.id),
+  fleetCategoryId: uuid("fleet_category_id").references(() => fleetAssetCategories.id),
+  location: varchar("location"), // For fleet: warehouse, site, etc.
+  
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  propertyIdx: index("idx_assets_property").on(table.propertyId),
+  fleetIndustryIdx: index("idx_assets_fleet_industry").on(table.fleetIndustryId),
+  fleetCategoryIdx: index("idx_assets_fleet_category").on(table.fleetCategoryId),
+  statusIdx: index("idx_assets_status").on(table.status),
+}));
 
 // Events/Timeline
 export const events = pgTable("events", {
@@ -153,7 +168,24 @@ export const reminders = pgTable("reminders", {
   propertyId: uuid("property_id").references(() => properties.id),
   dueAt: timestamp("due_at").notNull(),
   type: varchar("type").notNull(),
+  title: varchar("title"),
+  description: text("description"),
   status: varchar("status").default("PENDING"),
+  
+  // Recurrence support
+  frequency: varchar("frequency"), // ONE_TIME, MONTHLY, QUARTERLY, ANNUALLY, CUSTOM
+  intervalDays: integer("interval_days"), // For custom frequency
+  nextDueAt: timestamp("next_due_at"),
+  
+  // Notification control
+  notifyContractor: boolean("notify_contractor").default(false),
+  notifyHomeowner: boolean("notify_homeowner").default(true),
+  notifyOperators: boolean("notify_operators").default(false),
+  
+  // Source tracking
+  source: varchar("source").default("MANUAL"), // AI_GENERATED, MANUAL
+  createdBy: varchar("created_by").references(() => users.id),
+  
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
 });
@@ -182,6 +214,112 @@ export const inspections = pgTable("inspections", {
   signedAt: timestamp("signed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Contractor Jobs
+export const jobs = pgTable("jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  propertyId: uuid("property_id").references(() => properties.id),
+  clientId: varchar("client_id").references(() => users.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  status: varchar("status").default("PENDING"), // PENDING, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledAt: timestamp("scheduled_at"),
+  completedAt: timestamp("completed_at"),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  contractorIdx: index("idx_jobs_contractor").on(table.contractorId),
+  statusIdx: index("idx_jobs_status").on(table.status),
+  scheduledIdx: index("idx_jobs_scheduled").on(table.scheduledAt),
+  contractorStatusIdx: index("idx_jobs_contractor_status").on(table.contractorId, table.status),
+}));
+
+// Sticker Orders - Track monthly quota usage
+export const stickerOrders = pgTable("sticker_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  subscriptionId: uuid("subscription_id").notNull().references(() => subscriptions.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  quotaTotal: integer("quota_total").notNull().default(0),
+  quotaUsed: integer("quota_used").notNull().default(0),
+  orderedAt: timestamp("ordered_at").defaultNow(),
+  fulfilledAt: timestamp("fulfilled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  contractorIdx: index("idx_sticker_orders_contractor").on(table.contractorId),
+  contractorPeriodUnique: uniqueIndex("uq_sticker_orders_contractor_period").on(table.contractorId, table.subscriptionId, table.year, table.month),
+}));
+
+// Fleet Industries
+export const fleetIndustries = pgTable("fleet_industries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  iconName: varchar("icon_name"),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Fleet Asset Categories (per industry)
+export const fleetAssetCategories = pgTable("fleet_asset_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  industryId: uuid("industry_id").notNull().references(() => fleetIndustries.id),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  maintenanceIntervalDays: integer("maintenance_interval_days"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  industryIdx: index("idx_fleet_asset_categories_industry").on(table.industryId),
+}));
+
+// Fleet Operators (drivers, maintenance workers)
+export const fleetOperators = pgTable("fleet_operators", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fleetUserId: varchar("fleet_user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  email: varchar("email"),
+  phone: varchar("phone"),
+  licenseNumber: varchar("license_number"),
+  status: varchar("status").default("ACTIVE"), // ACTIVE, INACTIVE, SUSPENDED
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Fleet Operator Asset Assignments (junction table)
+export const fleetOperatorAssets = pgTable("fleet_operator_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  operatorId: uuid("operator_id").notNull().references(() => fleetOperators.id),
+  assetId: uuid("asset_id").notNull().references(() => assets.id),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  unassignedAt: timestamp("unassigned_at"),
+}, (table) => ({
+  operatorIdx: index("idx_fleet_operator_assets_operator").on(table.operatorId),
+  assetIdx: index("idx_fleet_operator_assets_asset").on(table.assetId),
+  operatorAssetUnique: uniqueIndex("uq_fleet_operator_assets_operator_asset").on(table.operatorId, table.assetId),
+}));
+
+// Notification Logs
+export const notificationLogs = pgTable("notification_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  reminderId: uuid("reminder_id").references(() => reminders.id),
+  channel: varchar("channel").notNull(), // EMAIL, SMS
+  status: varchar("status").default("PENDING"), // PENDING, SENT, DELIVERED, FAILED
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_notification_logs_user").on(table.userId),
+  reminderIdx: index("idx_notification_logs_reminder").on(table.reminderId),
+  statusIdx: index("idx_notification_logs_status").on(table.status),
+  userStatusIdx: index("idx_notification_logs_user_status").on(table.userId, table.status),
+}));
 
 // Service Sessions (for Verified Service Sessions add-on)
 export const serviceSessions = pgTable("service_sessions", {
@@ -388,6 +526,42 @@ export const insertServiceSessionSchema = createInsertSchema(serviceSessions).om
   createdAt: true,
 });
 
+export const insertJobSchema = createInsertSchema(jobs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertStickerOrderSchema = createInsertSchema(stickerOrders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFleetIndustrySchema = createInsertSchema(fleetIndustries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFleetAssetCategorySchema = createInsertSchema(fleetAssetCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFleetOperatorSchema = createInsertSchema(fleetOperators).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertFleetOperatorAssetSchema = createInsertSchema(fleetOperatorAssets).omit({
+  id: true,
+});
+
+export const insertNotificationLogSchema = createInsertSchema(notificationLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -402,6 +576,13 @@ export type Transfer = typeof transfers.$inferSelect;
 export type Inspection = typeof inspections.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type ServiceSession = typeof serviceSessions.$inferSelect;
+export type Job = typeof jobs.$inferSelect;
+export type StickerOrder = typeof stickerOrders.$inferSelect;
+export type FleetIndustry = typeof fleetIndustries.$inferSelect;
+export type FleetAssetCategory = typeof fleetAssetCategories.$inferSelect;
+export type FleetOperator = typeof fleetOperators.$inferSelect;
+export type FleetOperatorAsset = typeof fleetOperatorAssets.$inferSelect;
+export type NotificationLog = typeof notificationLogs.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -414,3 +595,10 @@ export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type InsertInspection = z.infer<typeof insertInspectionSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type InsertServiceSession = z.infer<typeof insertServiceSessionSchema>;
+export type InsertJob = z.infer<typeof insertJobSchema>;
+export type InsertStickerOrder = z.infer<typeof insertStickerOrderSchema>;
+export type InsertFleetIndustry = z.infer<typeof insertFleetIndustrySchema>;
+export type InsertFleetAssetCategory = z.infer<typeof insertFleetAssetCategorySchema>;
+export type InsertFleetOperator = z.infer<typeof insertFleetOperatorSchema>;
+export type InsertFleetOperatorAsset = z.infer<typeof insertFleetOperatorAssetSchema>;
+export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;
