@@ -130,6 +130,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user notification settings
+  app.patch('/api/user/notification-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { phone, notificationPreference } = req.body;
+
+      const validPreferences = ['EMAIL_ONLY', 'SMS_ONLY', 'EMAIL_AND_SMS', 'NONE'];
+      if (notificationPreference && !validPreferences.includes(notificationPreference)) {
+        return res.status(400).json({ error: "Invalid notification preference" });
+      }
+
+      // Validate phone format if provided (basic E.164 format check)
+      if (phone && phone.trim()) {
+        const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+        if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+          return res.status(400).json({ 
+            error: "Invalid phone number format. Please use international format (e.g., +1234567890)" 
+          });
+        }
+      }
+
+      // Enforce phone requirement for SMS preferences
+      const requiresPhone = notificationPreference === 'SMS_ONLY' || notificationPreference === 'EMAIL_AND_SMS';
+      if (requiresPhone && (!phone || !phone.trim())) {
+        return res.status(400).json({ 
+          error: "Phone number is required for SMS notifications" 
+        });
+      }
+
+      const updates: any = { updatedAt: new Date() };
+      if (phone !== undefined) {
+        // Normalize phone: remove spaces, dashes, parentheses
+        updates.phone = phone && phone.trim() ? phone.replace(/[\s\-\(\)]/g, '') : null;
+      }
+      if (notificationPreference) {
+        updates.notificationPreference = notificationPreference;
+      }
+
+      await db
+        .update(users)
+        .set(updates)
+        .where(eq(users.id, userId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating notification settings:", error);
+      res.status(500).json({ error: "Failed to update notification settings" });
+    }
+  });
+
   // Object storage routes for file uploads
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;

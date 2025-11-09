@@ -36,16 +36,18 @@ export class NotificationService {
     emailSent: boolean;
     smsSent: boolean;
     errors: string[];
+    warnings: string[];
   }> {
     const { userId, reminderId, subject, message, channel } = options;
     const errors: string[] = [];
+    const warnings: string[] = [];
     let emailSent = false;
     let smsSent = false;
 
     const user = await this.storage.getUser(userId);
     if (!user) {
       errors.push(`User ${userId} not found`);
-      return { emailSent, smsSent, errors };
+      return { emailSent, smsSent, errors, warnings };
     }
 
     const userPreference = user.notificationPreference || 'EMAIL_AND_SMS';
@@ -55,15 +57,27 @@ export class NotificationService {
                          (channel === undefined && (userPreference === 'SMS_ONLY' || userPreference === 'EMAIL_AND_SMS'));
 
     if (userPreference === 'NONE') {
-      console.log(`User ${userId} has notifications disabled`);
-      return { emailSent, smsSent, errors };
+      warnings.push('User has notifications disabled');
+      return { emailSent, smsSent, errors, warnings };
+    }
+
+    // Validate required contact details and log warnings
+    if (shouldSendEmail && !user.email) {
+      const warning = 'Email notifications requested but no email address on file';
+      warnings.push(warning);
+      await this.logNotification(userId, reminderId, 'EMAIL', 'FAILED', warning);
+    }
+    if (shouldSendSMS && !user.phone) {
+      const warning = 'SMS notifications requested but no phone number on file';
+      warnings.push(warning);
+      await this.logNotification(userId, reminderId, 'SMS', 'FAILED', warning);
     }
 
     if (shouldSendEmail && user.email) {
       const emailResult = await this.sendEmail(userId, user.email, subject, message, reminderId);
       emailSent = emailResult.success;
       if (!emailResult.success) {
-        errors.push(emailResult.error || 'Email failed');
+        errors.push(`Email delivery failed: ${emailResult.error || 'Unknown error'}`);
       }
     }
 
@@ -71,11 +85,11 @@ export class NotificationService {
       const smsResult = await this.sendSMS(userId, user.phone, message, reminderId);
       smsSent = smsResult.success;
       if (!smsResult.success) {
-        errors.push(smsResult.error || 'SMS failed');
+        errors.push(`SMS delivery failed: ${smsResult.error || 'Unknown error'}`);
       }
     }
 
-    return { emailSent, smsSent, errors };
+    return { emailSent, smsSent, errors, warnings };
   }
 
   private async sendEmail(
