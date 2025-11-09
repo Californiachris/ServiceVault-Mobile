@@ -138,6 +138,10 @@ export const documents = pgTable("documents", {
   type: varchar("type").notNull(), // RECEIPT, WARRANTY, MANUAL, INSPECTION, etc.
   title: varchar("title").notNull(),
   path: varchar("path").notNull(),
+  issueDate: timestamp("issue_date"),
+  expiryDate: timestamp("expiry_date"),
+  amount: varchar("amount"),
+  description: text("description"),
   deletedAt: timestamp("deleted_at"),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });

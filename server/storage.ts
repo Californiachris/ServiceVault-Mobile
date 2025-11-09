@@ -33,7 +33,7 @@ import {
   type InsertSubscription,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, lte, count } from "drizzle-orm";
+import { eq, and, desc, asc, lte, count, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -75,7 +75,9 @@ export interface IStorage {
   // Document operations
   getAssetDocuments(assetId: string): Promise<Document[]>;
   getPropertyDocuments(propertyId: string): Promise<Document[]>;
+  getUserDocuments(userId: string): Promise<Document[]>;
   createDocument(document: InsertDocument): Promise<Document>;
+  deleteDocument(id: string, userId: string): Promise<void>;
 
   // Reminder operations
   getDueReminders(): Promise<Reminder[]>;
@@ -334,9 +336,30 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(documents.uploadedAt));
   }
 
+  async getUserDocuments(userId: string): Promise<Document[]> {
+    return await db
+      .select()
+      .from(documents)
+      .where(and(
+        eq(documents.uploadedBy, userId),
+        isNull(documents.deletedAt)
+      ))
+      .orderBy(desc(documents.uploadedAt));
+  }
+
   async createDocument(document: InsertDocument): Promise<Document> {
     const [created] = await db.insert(documents).values(document).returning();
     return created;
+  }
+
+  async deleteDocument(id: string, userId: string): Promise<void> {
+    await db
+      .update(documents)
+      .set({ deletedAt: new Date() })
+      .where(and(
+        eq(documents.id, id),
+        eq(documents.uploadedBy, userId)
+      ));
   }
 
   // Reminder operations

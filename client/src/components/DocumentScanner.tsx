@@ -9,7 +9,9 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, Upload, Loader2, CheckCircle2, X, AlertCircle } from "lucide-react";
 
-interface ExtractedData {
+// AI extraction response from backend (before objectPath is added)
+interface AIExtractionResponse {
+  // Asset extraction fields
   assetName?: string;
   assetBrand?: string;
   assetModel?: string;
@@ -23,11 +25,23 @@ interface ExtractedData {
   price?: string;
   vendor?: string;
   notes?: string;
+  // Document extraction fields
+  documentName?: string;
+  documentType?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  amount?: string;
+  description?: string;
+}
+
+// Payload passed to parent component (includes guaranteed objectPath)
+export interface ExtractedDocumentPayload extends AIExtractionResponse {
+  objectPath: string; // Non-optional - always present after successful extraction
 }
 
 interface DocumentScannerProps {
-  onDataExtracted: (data: ExtractedData) => void;
-  extractionType: "asset" | "warranty" | "receipt";
+  onDataExtracted: (data: ExtractedDocumentPayload) => void;
+  extractionType: "asset" | "warranty" | "receipt" | "document";
 }
 
 export function DocumentScanner({ onDataExtracted, extractionType }: DocumentScannerProps) {
@@ -44,12 +58,22 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
       });
       return response.json();
     },
-    onSuccess: (data: ExtractedData) => {
+    onSuccess: (data: AIExtractionResponse) => {
+      if (!objectPath) {
+        toast({
+          title: "Error",
+          description: "Object path is missing. Please try scanning again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "Document Scanned Successfully",
         description: "AI extracted the information. Please review and confirm.",
       });
-      onDataExtracted(data);
+      // Include the objectPath in the extracted data so parent components can use it
+      onDataExtracted({ ...data, objectPath });
       setShowScanner(false);
       setUploadedFile(null);
       setObjectPath(null);

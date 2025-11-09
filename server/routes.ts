@@ -668,6 +668,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document upload
+  // Generic document CRUD operations
+  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const documents = await storage.getUserDocuments(userId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  app.post('/api/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name, documentType, issueDate, expiryDate, amount, description, objectPath } = req.body;
+
+      if (!name || !objectPath) {
+        return res.status(400).json({ error: "Name and object path are required" });
+      }
+
+      // Set ACL policy for the uploaded object
+      const normalizedPath = objectStorageService.normalizeObjectEntityPath(objectPath);
+      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+        owner: userId,
+        visibility: "private",
+      });
+
+      const document = await storage.createDocument({
+        uploadedBy: userId,
+        type: documentType || "OTHER",
+        title: name,
+        path: normalizedPath,
+        issueDate: issueDate ? new Date(issueDate) : undefined,
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+        amount: amount || undefined,
+        description: description || undefined,
+      });
+
+      res.json(document);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ error: "Failed to create document" });
+    }
+  });
+
+  app.delete('/api/documents/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+
+      await storage.deleteDocument(id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ error: "Failed to delete document" });
+    }
+  });
+
   app.post('/api/documents/upload', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -783,8 +842,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Object path is required" });
       }
 
-      if (!extractionType || !['asset', 'warranty', 'receipt'].includes(extractionType)) {
-        return res.status(400).json({ error: "Valid extraction type is required (asset, warranty, or receipt)" });
+      if (!extractionType || !['asset', 'warranty', 'receipt', 'document'].includes(extractionType)) {
+        return res.status(400).json({ error: "Valid extraction type is required (asset, warranty, receipt, or document)" });
       }
 
       // Rate limiting for AI parsing (10 requests per hour per user)
@@ -865,7 +924,7 @@ Instructions:
 - Extract all dates in YYYY-MM-DD format
 - Include detailed coverage information
 - Return valid JSON only`;
-      } else {
+      } else if (extractionType === 'receipt') {
         extractionPrompt = `Analyze this receipt or invoice and extract information in JSON format:
 {
   "assetName": "string (item purchased)",
@@ -881,6 +940,24 @@ Instructions:
 - Extract purchase date in YYYY-MM-DD format
 - Include pricing and vendor information
 - Extract item details if visible
+- Return valid JSON only`;
+      } else {
+        // extractionType === 'document'
+        extractionPrompt = `Analyze this document and extract relevant information in JSON format:
+{
+  "documentName": "string (descriptive title of the document)",
+  "documentType": "string (WARRANTY, RECEIPT, MANUAL, INSPECTION_REPORT, INSURANCE, PERMIT, CERTIFICATION, or OTHER)",
+  "issueDate": "YYYY-MM-DD or null (when document was issued/created)",
+  "expiryDate": "YYYY-MM-DD or null (expiration/end date if applicable)",
+  "amount": "string (monetary amount if present, e.g., '$499.99')",
+  "description": "string (brief summary of document content, key details, coverage, terms)"
+}
+
+Instructions:
+- Classify the document type accurately based on content
+- Extract all dates in YYYY-MM-DD format
+- Include any monetary amounts found
+- Provide a concise description of the document's purpose
 - Return valid JSON only`;
       }
 
