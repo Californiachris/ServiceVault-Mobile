@@ -22,7 +22,7 @@ import { useState } from "react";
 
 export default function Navigation() {
   const { user, isAuthenticated } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
@@ -143,7 +143,7 @@ export default function Navigation() {
                   Sign In
                 </Button>
                 <Button 
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => setLocation("/pricing")}
                   data-testid="button-get-started"
                 >
                   Get Started
@@ -235,7 +235,7 @@ export default function Navigation() {
                     className="w-full"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      window.location.href = "/api/login";
+                      setLocation("/pricing");
                     }}
                     data-testid="button-mobile-get-started"
                   >

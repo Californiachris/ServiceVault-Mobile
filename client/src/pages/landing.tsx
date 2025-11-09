@@ -45,7 +45,7 @@ export default function Landing() {
               Pricing
             </Button>
             <Button 
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => setLocation("/pricing")}
               data-testid="button-nav-get-started"
             >
               Get Started
@@ -101,7 +101,7 @@ export default function Landing() {
             size="lg"
             variant="outline"
             className="text-base font-semibold px-8 py-3 rounded-lg"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => setLocation("/pricing")}
             data-testid="button-hero-try-free"
           >
             Try It Free
@@ -400,7 +400,7 @@ export default function Landing() {
                 </p>
                 <Button 
                   size="sm" 
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => setLocation("/pricing")}
                   data-testid="button-dialog-setup-login"
                 >
                   Get Started
