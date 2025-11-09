@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Home, Building2, Truck, ChevronDown } from "lucide-react";
+import { useLocation } from "wouter";
 
 const ROLES = [
   { value: "HOMEOWNER", label: "Homeowner", icon: Home, color: "text-blue-500" },
@@ -18,6 +19,7 @@ const ROLES = [
 
 export default function DevRoleSwitcher() {
   const { overrideRole, setOverrideRole } = useDevRoleOverride();
+  const [, setLocation] = useLocation();
 
   if (!import.meta.env.DEV) {
     return null;
@@ -51,7 +53,7 @@ export default function DevRoleSwitcher() {
                 key={role.value}
                 onClick={() => {
                   setOverrideRole(role.value);
-                  window.location.href = "/dashboard";
+                  setLocation("/dashboard");
                 }}
                 className="cursor-pointer"
                 data-testid={`option-role-${role.value.toLowerCase()}`}
