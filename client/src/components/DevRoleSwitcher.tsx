@@ -27,18 +27,18 @@ export default function DevRoleSwitcher() {
   const CurrentIcon = currentRole.icon;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50" data-testid="dev-role-switcher">
+    <div className="fixed top-4 left-4 z-50" data-testid="dev-role-switcher">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            size="lg"
+            size="sm"
             className="shadow-lg border-2 bg-background hover:bg-muted"
             data-testid="button-dev-role-trigger"
           >
-            <CurrentIcon className={`h-5 w-5 mr-2 ${currentRole.color}`} />
-            <span className="font-semibold">{currentRole.label}</span>
-            <ChevronDown className="h-4 w-4 ml-2" />
+            <CurrentIcon className={`h-4 w-4 mr-2 ${currentRole.color}`} />
+            <span className="font-semibold text-sm">{currentRole.label}</span>
+            <ChevronDown className="h-3 w-3 ml-2" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

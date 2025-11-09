@@ -28,10 +28,7 @@ interface ContractorDashboardData {
     scheduled: number;
     completed: number;
   };
-  revenue: {
-    total: number;
-    thisMonth: number;
-  };
+  revenue: number;
   quota: {
     total: number;
     used: number;
@@ -68,7 +65,7 @@ export default function ContractorDashboard() {
 
   const contractor = data?.contractor;
   const jobs = data?.jobs || { pending: 0, scheduled: 0, completed: 0 };
-  const revenue = data?.revenue || { total: 0, thisMonth: 0 };
+  const revenue = data?.revenue || 0;
   const quota = data?.quota || { total: 50, used: 0, remaining: 50 };
   const clientCount = data?.clientCount || 0;
   const recentJobs = data?.recentJobs || [];
@@ -162,19 +159,18 @@ export default function ContractorDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Revenue
+              Total Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold" data-testid="stat-revenue">
-              ${revenue.thisMonth.toLocaleString()}
+              ${revenue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              This month (${revenue.total.toLocaleString()} total)
+              All completed jobs
             </p>
           </CardContent>
         </Card>
-
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
