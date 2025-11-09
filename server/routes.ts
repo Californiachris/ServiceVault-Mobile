@@ -156,7 +156,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      
+      // Extract the object ID from the URL to construct the object path
+      // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
+      const urlParts = uploadURL.split('/');
+      const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
+      const objectIdWithQuery = urlParts[objectIdIndex];
+      const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
+      
+      // Construct the object path that will be used to retrieve the file
+      // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
+      // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
+      const objectPath = `/objects/uploads/${objectId}`;
+      
+      res.json({ uploadURL, objectPath });
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });

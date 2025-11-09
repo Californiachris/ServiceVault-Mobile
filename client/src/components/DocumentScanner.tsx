@@ -33,12 +33,13 @@ interface DocumentScannerProps {
 export function DocumentScanner({ onDataExtracted, extractionType }: DocumentScannerProps) {
   const { toast } = useToast();
   const [showScanner, setShowScanner] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<{ uploadURL: string; name: string } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{ uploadURL: string; name: string; objectPath?: string } | null>(null);
+  const [objectPath, setObjectPath] = useState<string | null>(null);
 
   const extractMutation = useMutation({
-    mutationFn: async (objectPath: string) => {
+    mutationFn: async (objPath: string) => {
       const response = await apiRequest("POST", "/api/ai/documents/extract", {
-        objectPath,
+        objectPath: objPath,
         extractionType,
       });
       return response.json();
@@ -51,6 +52,7 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
       onDataExtracted(data);
       setShowScanner(false);
       setUploadedFile(null);
+      setObjectPath(null);
     },
     onError: (error: any) => {
       toast({
@@ -64,6 +66,7 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
   const handleGetUploadParameters = async () => {
     const response = await apiRequest("POST", "/api/objects/upload");
     const data = await response.json();
+    setObjectPath(data.objectPath);
     return {
       method: "PUT" as const,
       url: data.uploadURL,
@@ -71,10 +74,10 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
   };
 
   const handleUploadComplete = (result: { successful: Array<{ uploadURL: string; name: string }> }) => {
-    if (result.successful.length > 0) {
+    if (result.successful.length > 0 && objectPath) {
       const file = result.successful[0];
-      setUploadedFile(file);
-      extractMutation.mutate(file.uploadURL);
+      setUploadedFile({ ...file, objectPath });
+      extractMutation.mutate(objectPath);
     }
   };
 

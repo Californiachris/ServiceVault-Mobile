@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AssetClaimToolView from "@/components/AssetClaimToolView";
 
 type ToolType = "assets" | "documents" | "reports" | "inspections" | "reminders" | null;
 
@@ -70,12 +71,8 @@ export function ToolModalProvider({ children }: ToolModalProviderProps) {
             </Button>
           </div>
           
-          <div className="p-6">
-            {currentTool === "assets" && (
-              <div className="text-center py-8 text-muted-foreground">
-                Asset Management Tool View - Coming Soon
-              </div>
-            )}
+          <div className="p-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
+            {currentTool === "assets" && <AssetClaimToolView />}
             {currentTool === "documents" && (
               <div className="text-center py-8 text-muted-foreground">
                 Document Storage Tool View - Coming Soon
