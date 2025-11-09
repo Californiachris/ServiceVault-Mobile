@@ -66,7 +66,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      seedDemoData(userId).catch(err => console.error("Demo data seed error:", err));
+      if (process.env.NODE_ENV === 'development') {
+        seedDemoData(userId).catch(err => console.error("Demo data seed error:", err));
+      }
       
       res.json(user);
     } catch (error) {
