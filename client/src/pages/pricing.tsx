@@ -155,6 +155,7 @@ export default function PricingPage() {
                     "Automatic Recall Notifications",
                     "Family Multi-User Access",
                     "Ownership Transfer Support",
+                    "Customizable with Family Name & Pet Photo/Logo",
                   ].map((feature, i) => (
                     <li key={i} className="flex items-start gap-2" data-testid={`feature-homeowner-${i}`}>
                       <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
