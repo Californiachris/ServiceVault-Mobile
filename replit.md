@@ -74,3 +74,17 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Using manual Twilio/Resend API credentials (Replit integrations were declined)
   - Multi-channel support: EMAIL, SMS, or both based on user preferences
   - Multi-party notifications: contractors can send reminders to homeowners, fleet to operators
+
+- **Application Shell & Navigation (Tasks 12-16 COMPLETE):**
+  - **Desktop Layout:** Fixed w-64 sidebar with role-based navigation, sticky top bar with search input/notifications/profile avatar
+  - **Mobile Layout:** Collapsible slide-out drawer, sticky top bar with hamburger menu, iOS/Android-ready bottom navigation (4 primary actions)
+  - **Role-Based Navigation:** Dynamic links based on user role (Homeowner: Dashboard/Scan/Assets/Reminders/Settings, Contractor: Dashboard/Scan/Jobs/Reminders/Billing, Fleet: Dashboard/Scan/Fleet Assets/Maintenance/Billing)
+  - **Profile Controls:** User avatar with name/role display, logout functionality, settings access
+  - **Responsive Design:** Mobile-first approach with breakpoints (sm/md/lg), proper spacing for mobile bottom nav
+
+- **Three Elite-Quality Dashboards:**
+  - **Homeowner Dashboard:** Premium mobile-first design with properties overview, asset grid, upcoming reminders, quick actions (upload warranty, view assets, health report, notifications), empty states with helpful CTAs
+  - **Contractor Dashboard:** Professional desktop-optimized design with job pipeline stats (pending/scheduled/completed), QR quota widget with progress bar and warnings, revenue tracking (monthly/total), client count, recent jobs list, quick actions (create reminder, view clients, revenue report, billing)
+  - **Fleet Dashboard:** Enterprise data-dense design with industry tabs, asset grouping by category, total fleet stats, upcoming maintenance schedule, operator count, active asset rate, quick actions (add equipment, manage operators, utilization reports, schedule service)
+  - **Backend Integration:** All dashboards fetch real-time data from role-specific API endpoints (/api/dashboard/homeowner, /api/dashboard/contractor, /api/dashboard/fleet) with proper multi-tenant isolation
+  - **Design Quality:** Silicon Valley-level polish with role color coding (blue/orange/purple), consistent spacing/typography, proper loading states, all data-testid attributes for testing
