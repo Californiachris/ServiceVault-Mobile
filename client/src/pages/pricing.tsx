@@ -289,6 +289,7 @@ export default function PricingPage() {
                     "Automatic Reminders for Future Service",
                     "Client & Contractor Notifications",
                     "Referral System for Upsells",
+                    "Public QR Access - Anyone Can Scan for Installation Info",
                   ].map((feature, i) => (
                     <li key={i} className="flex items-start gap-2" data-testid={`feature-contractor-${i}`}>
                       <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
