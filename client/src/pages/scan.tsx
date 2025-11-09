@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Navigation from "@/components/ui/navigation";
-import QRScanner from "@/components/scanner/qr-scanner";
+import QRScanner, { CameraStatus } from "@/components/scanner/qr-scanner";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -113,6 +113,8 @@ export default function Scan() {
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [servicePhotos, setServicePhotos] = useState<UploadedPhoto[]>([]);
   const [claimSuccess, setClaimSuccess] = useState<any>(null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus | null>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
@@ -380,6 +382,28 @@ export default function Scan() {
     serviceEventMutation.mutate(data);
   };
 
+  const handleCameraStatusChange = (status: CameraStatus, message?: string) => {
+    setCameraStatus(status);
+    
+    if (status === 'blocked') {
+      toast({
+        title: "Camera Blocked",
+        description: "Open this page in a new tab to use the camera scanner.",
+        variant: "destructive",
+      });
+    } else if (status === 'denied') {
+      toast({
+        title: "Camera Permission Denied",
+        description: "Please allow camera access in your browser settings.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFallbackRequest = () => {
+    manualInputRef.current?.focus();
+  };
+
   const recentScans = [
     { code: "FT-PLUMB-2024-B3M7", name: "Water Heater", type: "ASSET", claimed: true },
     { code: "FT-HVAC-2024-A7K9", name: "HVAC Unit", type: "ASSET", claimed: true },
@@ -429,7 +453,12 @@ export default function Scan() {
                     </div>
                   </div>
                 ) : (
-                  <QRScanner onScan={handleScan} onClose={() => setIsScanning(false)} />
+                  <QRScanner 
+                    onScan={handleScan} 
+                    onClose={() => setIsScanning(false)}
+                    onStatusChange={handleCameraStatusChange}
+                    onFallbackRequest={handleFallbackRequest}
+                  />
                 )}
 
                 {/* Manual Code Input */}
@@ -437,6 +466,7 @@ export default function Scan() {
                   <p className="text-sm text-muted-foreground mb-2">Or enter code manually:</p>
                   <div className="flex gap-2">
                     <input
+                      ref={manualInputRef}
                       type="text"
                       placeholder="Enter QR code (e.g., FT-HVAC-2024-A7K9)"
                       className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground placeholder:text-muted-foreground"

@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, Camera, AlertCircle } from 'lucide-react';
+import { X, Camera, AlertCircle, ExternalLink } from 'lucide-react';
+
+export type CameraStatus = 'initializing' | 'granted' | 'denied' | 'blocked' | 'error';
 
 interface QRScannerProps {
   onScan: (code: string) => void;
   onClose: () => void;
+  onStatusChange?: (status: CameraStatus, message?: string) => void;
+  onFallbackRequest?: () => void;
 }
 
 // Simple QR code pattern detection for demo purposes
@@ -28,25 +32,60 @@ function detectQRPattern(imageData: ImageData): string | null {
   return null;
 }
 
-export default function QRScanner({ onScan, onClose }: QRScannerProps) {
+export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackRequest }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('initializing');
+  const isInIframeRef = useRef<boolean>(false);
 
   useEffect(() => {
-    startCamera();
+    const inIframe = checkIframeStatus();
+    if (!inIframe) {
+      startCamera();
+    }
     return () => {
       stopCamera();
     };
   }, []);
 
+  const checkIframeStatus = (): boolean => {
+    try {
+      const inIframe = window.self !== window.top;
+      isInIframeRef.current = inIframe;
+      if (inIframe) {
+        setError('Camera unavailable in embedded view. Please open in a new tab.');
+        updateStatus('blocked', 'Camera blocked: Running in embedded view');
+      }
+      return inIframe;
+    } catch (e) {
+      isInIframeRef.current = true;
+      setError('Camera unavailable in embedded view. Please open in a new tab.');
+      updateStatus('blocked', 'Camera blocked: Cross-origin frame detected');
+      return true;
+    }
+  };
+
+  const updateStatus = (status: CameraStatus, message?: string) => {
+    setCameraStatus(status);
+    onStatusChange?.(status, message);
+  };
+
   const startCamera = async () => {
     try {
+      updateStatus('initializing', 'Requesting camera access...');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera API not supported in this browser.');
+        updateStatus('error', 'Camera API not supported');
+        return;
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // Prefer back camera
+          facingMode: 'environment',
           width: { ideal: 640 },
           height: { ideal: 480 }
         }
@@ -57,10 +96,24 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
         setStream(mediaStream);
         setIsScanning(true);
         setError(null);
+        updateStatus('granted', 'Camera access granted');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing camera:', err);
-      setError('Unable to access camera. Please ensure camera permissions are granted.');
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Camera permission denied. Please allow camera access in your browser settings.');
+        updateStatus('denied', 'Camera permission denied by user');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('No camera found on this device.');
+        updateStatus('error', 'No camera device found');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setError('Camera is already in use by another application.');
+        updateStatus('error', 'Camera in use by another app');
+      } else {
+        setError('Unable to access camera. Please ensure camera permissions are granted.');
+        updateStatus('error', err.message || 'Unknown camera error');
+      }
     }
   };
 
@@ -117,14 +170,66 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Camera Error</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={handleClose} data-testid="button-close-scanner">
-            Close Scanner
-          </Button>
+      <Card className="border-destructive/50">
+        <CardContent className="p-6 text-center space-y-4">
+          <AlertCircle className="h-16 w-16 text-destructive mx-auto" />
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Camera Error</h3>
+            <p className="text-muted-foreground text-sm mb-4">{error}</p>
+          </div>
+
+          {isInIframeRef.current && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-left space-y-3">
+              <p className="font-medium flex items-center gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Solution: Open in New Tab
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Camera access is blocked in embedded views. Click below to open this page in a full browser tab where camera permissions will work.
+              </p>
+              <Button 
+                className="w-full"
+                onClick={() => window.open(window.location.href, '_blank')}
+                data-testid="button-open-new-tab"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open in New Tab
+              </Button>
+            </div>
+          )}
+
+          {cameraStatus === 'denied' && (
+            <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm text-left space-y-2">
+              <p className="font-medium">Need Help?</p>
+              <ul className="text-muted-foreground text-xs space-y-1 list-disc list-inside">
+                <li>Check browser settings for camera permissions</li>
+                <li>Look for a camera icon in the address bar</li>
+                <li>Refresh the page after granting permissions</li>
+              </ul>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            {onFallbackRequest && (
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  onFallbackRequest();
+                  handleClose();
+                }}
+                data-testid="button-use-fallback"
+              >
+                Enter Code Manually
+              </Button>
+            )}
+            <Button 
+              variant={onFallbackRequest ? "outline" : "default"}
+              onClick={handleClose} 
+              data-testid="button-close-scanner"
+            >
+              Close Scanner
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
