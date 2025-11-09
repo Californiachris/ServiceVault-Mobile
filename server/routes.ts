@@ -2,8 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, desc, count } from "drizzle-orm";
-import { users, subscriptions, assets, documents, inspections, events, reminders } from "@shared/schema";
+import { eq, desc, count, and, lte, asc, isNull } from "drizzle-orm";
+import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetOperators } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -33,9 +33,14 @@ function generateCode(type: 'ASSET' | 'MASTER', length = 8): string {
   return code;
 }
 
+import { seedFleetData } from "./seedFleetData";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Seed fleet data on startup (idempotent)
+  seedFleetData().catch(err => console.error("Fleet data seeding error:", err));
 
   // Initialize object storage service
   const objectStorageService = new ObjectStorageService();
@@ -177,6 +182,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating notification settings:", error);
       res.status(500).json({ error: "Failed to update notification settings" });
+    }
+  });
+
+  // Role-specific dashboard endpoints
+  app.get('/api/dashboard/homeowner', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'HOMEOWNER') {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const properties = await storage.getProperties(userId);
+      const subscription = await storage.getUserSubscription(userId);
+      
+      // Get counts
+      let totalAssets = 0;
+      let documentsCount = 0;
+      for (const property of properties) {
+        const assets = await storage.getAssets(property.id);
+        totalAssets += assets.length;
+        const docs = await storage.getPropertyDocuments(property.id);
+        documentsCount += docs.length;
+      }
+
+      const upcomingReminders = await db
+        .select()
+        .from(reminders)
+        .where(eq(reminders.createdBy, userId))
+        .orderBy(desc(reminders.dueAt))
+        .limit(5);
+
+      res.json({
+        properties,
+        totalAssets,
+        documentsCount,
+        upcomingReminders,
+        subscription: subscription || null,
+      });
+    } catch (error) {
+      console.error("Error fetching homeowner dashboard:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  app.get('/api/dashboard/contractor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'CONTRACTOR') {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const contractor = await storage.getContractor(userId);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+
+      const subscription = await storage.getUserSubscription(userId);
+      
+      // Get jobs statistics
+      const allJobs = await db.select().from(jobs).where(eq(jobs.contractorId, contractor.id));
+      const pendingJobs = allJobs.filter(j => j.status === 'PENDING').length;
+      const scheduledJobs = allJobs.filter(j => j.status === 'SCHEDULED').length;
+      const completedJobs = allJobs.filter(j => j.status === 'COMPLETED').length;
+      
+      // Calculate total revenue
+      const totalRevenue = allJobs
+        .filter(j => j.revenue)
+        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
+
+      // Get recent jobs
+      const recentJobs = allJobs
+        .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+        .slice(0, 10);
+
+      // Get quota usage
+      const quotaTotal = subscription?.quotaTotal || 0;
+      const quotaUsed = subscription?.quotaUsed || 0;
+
+      // Get client properties
+      const installedAssets = await db
+        .select()
+        .from(assets)
+        .where(eq(assets.installerId, contractor.id));
+      
+      const uniquePropertyIds = Array.from(new Set(installedAssets.map(a => a.propertyId).filter(Boolean)));
+
+      res.json({
+        contractor,
+        jobs: {
+          pending: pendingJobs,
+          scheduled: scheduledJobs,
+          completed: completedJobs,
+          total: allJobs.length,
+          recent: recentJobs,
+        },
+        revenue: totalRevenue,
+        quota: {
+          total: quotaTotal,
+          used: quotaUsed,
+          remaining: quotaTotal - quotaUsed,
+        },
+        clientCount: uniquePropertyIds.length,
+        subscription: subscription || null,
+      });
+    } catch (error) {
+      console.error("Error fetching contractor dashboard:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
+  app.get('/api/dashboard/fleet', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'FLEET') {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get all fleet industries (public reference data)
+      const industries = await db.select().from(fleetIndustries).orderBy(asc(fleetIndustries.displayOrder));
+      
+      // Get fleet assets created by this user only
+      // Note: Assets created via scan/install will have createdBy field from events
+      // For proper multi-tenant fleet, we need to track asset ownership
+      const userAssets = await db
+        .select()
+        .from(assets)
+        .innerJoin(events, eq(assets.id, events.assetId))
+        .where(
+          and(
+            isNull(assets.propertyId),
+            eq(events.createdBy, userId)
+          )
+        );
+      
+      // Extract unique assets (join might create duplicates)
+      const fleetAssets = Array.from(
+        new Map(userAssets.map(ua => [ua.assets.id, ua.assets])).values()
+      );
+      
+      // Group assets by industry and category
+      const assetsByIndustry: any = {};
+      for (const asset of fleetAssets) {
+        if (asset.fleetIndustryId) {
+          if (!assetsByIndustry[asset.fleetIndustryId]) {
+            assetsByIndustry[asset.fleetIndustryId] = [];
+          }
+          assetsByIndustry[asset.fleetIndustryId].push(asset);
+        }
+      }
+
+      // Get maintenance reminders created by this user only
+      const upcomingMaintenance = await db
+        .select()
+        .from(reminders)
+        .where(
+          and(
+            eq(reminders.createdBy, userId),
+            eq(reminders.status, 'PENDING'),
+            lte(reminders.dueAt, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) // Next 30 days
+          )
+        )
+        .orderBy(asc(reminders.dueAt))
+        .limit(10);
+
+      // Get operators for this user's fleet only (using userId as org identifier for now)
+      const operators = await db
+        .select()
+        .from(fleetOperators)
+        .where(eq(fleetOperators.userId, userId));
+
+      res.json({
+        industries,
+        totalAssets: fleetAssets.length,
+        assetsByIndustry,
+        upcomingMaintenance,
+        operatorCount: operators.length,
+        activeAssets: fleetAssets.filter(a => a.status === 'ACTIVE').length,
+      });
+    } catch (error) {
+      console.error("Error fetching fleet dashboard:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
     }
   });
 
