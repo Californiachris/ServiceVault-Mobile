@@ -88,3 +88,12 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - **Fleet Dashboard:** Enterprise data-dense design with industry tabs, asset grouping by category, total fleet stats, upcoming maintenance schedule, operator count, active asset rate, quick actions (add equipment, manage operators, utilization reports, schedule service)
   - **Backend Integration:** All dashboards fetch real-time data from role-specific API endpoints (/api/dashboard/homeowner, /api/dashboard/contractor, /api/dashboard/fleet) with proper multi-tenant isolation
   - **Design Quality:** Silicon Valley-level polish with role color coding (blue/orange/purple), consistent spacing/typography, proper loading states, all data-testid attributes for testing
+
+- **Professional Camera Permission Handling:**
+  - **QRScanner Component:** Enterprise-grade permission detection with 5 status states (initializing, granted, denied, blocked, error)
+  - **Iframe Detection:** Synchronous detection via useRef prevents getUserMedia calls in embedded contexts (Replit preview), eliminating race conditions
+  - **Professional Error UI:** Context-aware messaging with "Open in New Tab" button for iframe blocking, troubleshooting steps for permission denials, manual entry fallback
+  - **Toast Notifications:** Destructive toasts surface camera blocking and permission denial with actionable guidance
+  - **Status Callbacks:** Structured onStatusChange(status, message) and onFallbackRequest() propagate camera state to parent components
+  - **Mobile-First:** Works seamlessly on mobile browsers when opened in full tab, handles all MediaDevices error types (NotAllowedError, NotFoundError, NotReadableError)
+  - **User Flow:** Preview (iframe) → Error with "Open in New Tab" → New tab → Camera permissions work → QR scanning functional
