@@ -7,14 +7,32 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getDevRoleOverrideHeader(): Record<string, string> {
+  if (import.meta.env.DEV) {
+    const overrideRole = sessionStorage.getItem('devRoleOverride');
+    if (overrideRole) {
+      return { 'X-Dev-Role-Override': overrideRole };
+    }
+  }
+  return {};
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...getDevRoleOverrideHeader(),
+  };
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -31,6 +49,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers: getDevRoleOverrideHeader(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

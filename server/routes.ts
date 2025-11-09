@@ -39,6 +39,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Dev-only role override middleware
+  app.use((req: any, res, next) => {
+    if (process.env.NODE_ENV === 'development' && req.headers['x-dev-role-override']) {
+      const overrideRole = req.headers['x-dev-role-override'] as string;
+      if (['HOMEOWNER', 'CONTRACTOR', 'FLEET'].includes(overrideRole)) {
+        req.devRoleOverride = overrideRole;
+      }
+    }
+    next();
+  });
+
   // Seed fleet data on startup (idempotent)
   seedFleetData().catch(err => console.error("Fleet data seeding error:", err));
 
@@ -233,7 +244,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
-      if (!user || user.role !== 'CONTRACTOR') {
+      const effectiveRole = req.devRoleOverride || user?.role;
+      
+      if (!user || effectiveRole !== 'CONTRACTOR') {
         return res.status(403).json({ error: "Access denied" });
       }
 
@@ -301,7 +314,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
-      if (!user || user.role !== 'FLEET') {
+      const effectiveRole = req.devRoleOverride || user?.role;
+      
+      if (!user || effectiveRole !== 'FLEET') {
         return res.status(403).json({ error: "Access denied" });
       }
 
