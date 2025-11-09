@@ -16,9 +16,17 @@ export function DevRoleOverrideProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isDevMode) {
-      const stored = sessionStorage.getItem("dev_role_override");
-      if (stored) {
-        setOverrideRoleState(stored as UserRole);
+      const urlParams = new URLSearchParams(window.location.search);
+      const roleParam = urlParams.get('role')?.toUpperCase();
+      
+      if (roleParam && ['HOMEOWNER', 'CONTRACTOR', 'FLEET'].includes(roleParam)) {
+        setOverrideRoleState(roleParam as UserRole);
+        sessionStorage.setItem("dev_role_override", roleParam);
+      } else {
+        const stored = sessionStorage.getItem("dev_role_override");
+        if (stored) {
+          setOverrideRoleState(stored as UserRole);
+        }
       }
     }
   }, [isDevMode]);

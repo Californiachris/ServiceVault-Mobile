@@ -9,7 +9,7 @@ async function throwIfResNotOk(res: Response) {
 
 function getDevRoleOverrideHeader(): Record<string, string> {
   if (import.meta.env.DEV) {
-    const overrideRole = sessionStorage.getItem('devRoleOverride');
+    const overrideRole = sessionStorage.getItem('dev_role_override');
     if (overrideRole) {
       return { 'X-Dev-Role-Override': overrideRole };
     }
