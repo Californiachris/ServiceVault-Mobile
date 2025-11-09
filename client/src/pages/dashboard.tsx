@@ -177,6 +177,7 @@ export default function Dashboard() {
       status: "Core",
       statusColor: "blue" as const,
       href: "/tools/assets",
+      toolId: "assets" as const,
     },
     {
       title: "Document Storage",
@@ -185,6 +186,7 @@ export default function Dashboard() {
       status: "Essential",
       statusColor: "purple" as const,
       href: "/tools/documents",
+      toolId: "documents" as const,
     },
     {
       title: "Health Reports",
@@ -193,6 +195,7 @@ export default function Dashboard() {
       status: "Premium",
       statusColor: "orange" as const,
       href: "/tools/reports",
+      toolId: "reports" as const,
     },
     {
       title: "Inspection Logs",
@@ -201,6 +204,7 @@ export default function Dashboard() {
       status: "Professional",
       statusColor: "cyan" as const,
       href: "/tools/inspections",
+      toolId: "inspections" as const,
     },
     {
       title: "Smart Reminders",
@@ -209,6 +213,7 @@ export default function Dashboard() {
       status: "Automated",
       statusColor: "red" as const,
       href: "/tools/reminders",
+      toolId: "reminders" as const,
     },
   ];
 

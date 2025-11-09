@@ -130,6 +130,26 @@ export class ObjectStorageService {
     }
   }
 
+  // Downloads an object as a Buffer for processing
+  async downloadObjectAsBuffer(objectPath: string): Promise<Buffer> {
+    try {
+      const file = await this.getObjectEntityFile(objectPath);
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new ObjectNotFoundError();
+      }
+
+      const [contents] = await file.download();
+      return contents;
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) {
+        throw error;
+      }
+      console.error("Error downloading object as buffer:", error);
+      throw new Error("Failed to download object");
+    }
+  }
+
   // Gets the upload URL for an object entity.
   async getObjectEntityUploadURL(): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();

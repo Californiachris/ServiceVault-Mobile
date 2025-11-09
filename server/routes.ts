@@ -760,6 +760,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Document Extraction - Comprehensive endpoint for assets, warranties, receipts
+  app.post('/api/ai/documents/extract', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { objectPath, extractionType } = req.body;
+
+      if (!objectPath) {
+        return res.status(400).json({ error: "Object path is required" });
+      }
+
+      if (!extractionType || !['asset', 'warranty', 'receipt'].includes(extractionType)) {
+        return res.status(400).json({ error: "Valid extraction type is required (asset, warranty, or receipt)" });
+      }
+
+      // Rate limiting for AI parsing (10 requests per hour per user)
+      const { checkRateLimit, RATE_LIMITS } = await import('./rateLimiter');
+      const rateLimit = checkRateLimit(userId, 'warranty-parse', RATE_LIMITS.WARRANTY_PARSE);
+      
+      if (!rateLimit.allowed) {
+        const resetInMinutes = Math.ceil((rateLimit.resetAt - Date.now()) / 1000 / 60);
+        return res.status(429).json({ 
+          error: "Rate limit exceeded",
+          message: `Too many AI extraction requests. Please try again in ${resetInMinutes} minutes.`,
+          resetAt: rateLimit.resetAt,
+        });
+      }
+
+      // Download the object and convert to base64
+      let imageBuffer: Buffer;
+      try {
+        imageBuffer = await objectStorageService.downloadObjectAsBuffer(objectPath);
+      } catch (error) {
+        if (error instanceof ObjectNotFoundError) {
+          return res.status(404).json({ error: "Object not found" });
+        }
+        throw error;
+      }
+
+      // Validate image size (max 10MB)
+      const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+      if (imageBuffer.length > maxSizeInBytes) {
+        return res.status(400).json({ error: "Image size exceeds 10MB limit" });
+      }
+
+      const imageBase64 = imageBuffer.toString('base64');
+
+      // Build extraction prompt based on type
+      const { openai } = await import('./openaiClient');
+      
+      let extractionPrompt = '';
+      if (extractionType === 'asset') {
+        extractionPrompt = `Analyze this warranty, receipt, or product documentation image and extract ALL information in JSON format:
+{
+  "assetName": "string (e.g., 'Water Heater', 'HVAC Unit')",
+  "assetBrand": "string (manufacturer brand)",
+  "assetModel": "string (model number/name)",
+  "assetSerial": "string (serial number)",
+  "assetCategory": "string (PLUMBING, ELECTRICAL, HVAC, APPLIANCE, FURNITURE, STRUCTURAL, VEHICLE, HEAVY_EQUIPMENT, or OTHER)",
+  "warrantyStartDate": "YYYY-MM-DD or null",
+  "warrantyEndDate": "YYYY-MM-DD or null",
+  "warrantyDuration": "string (e.g., '2 years', '36 months')",
+  "installDate": "YYYY-MM-DD or null",
+  "purchaseDate": "YYYY-MM-DD or null",
+  "price": "string (e.g., '$499.99')",
+  "vendor": "string (store/vendor name)",
+  "notes": "any important warranty terms, coverage details, or installation notes"
+}
+
+Instructions:
+- Extract ALL dates in YYYY-MM-DD format
+- Identify asset type and categorize correctly
+- Extract brand, model, serial number prominently displayed
+- Include warranty information if present
+- Be thorough and extract all visible information
+- Return valid JSON only`;
+      } else if (extractionType === 'warranty') {
+        extractionPrompt = `Analyze this warranty certificate and extract information in JSON format:
+{
+  "assetName": "string (product name)",
+  "assetBrand": "string (manufacturer)",
+  "assetModel": "string (model)",
+  "warrantyStartDate": "YYYY-MM-DD or null",
+  "warrantyEndDate": "YYYY-MM-DD or null",
+  "warrantyDuration": "string (e.g., '5 year limited warranty')",
+  "notes": "coverage details, terms, conditions, what's covered/excluded"
+}
+
+Instructions:
+- Focus on warranty-specific information
+- Extract all dates in YYYY-MM-DD format
+- Include detailed coverage information
+- Return valid JSON only`;
+      } else {
+        extractionPrompt = `Analyze this receipt or invoice and extract information in JSON format:
+{
+  "assetName": "string (item purchased)",
+  "assetBrand": "string (brand if visible)",
+  "assetModel": "string (model if visible)",
+  "purchaseDate": "YYYY-MM-DD",
+  "price": "string (total amount)",
+  "vendor": "string (store/vendor name)",
+  "notes": "any warranty info, return policy, or important details"
+}
+
+Instructions:
+- Extract purchase date in YYYY-MM-DD format
+- Include pricing and vendor information
+- Extract item details if visible
+- Return valid JSON only`;
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: extractionPrompt
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${imageBase64}`
+                }
+              }
+            ]
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1500,
+      });
+
+      const content = response.choices[0]?.message?.content || "{}";
+      const extractedData = JSON.parse(content);
+
+      res.json(extractedData);
+    } catch (error) {
+      console.error("Error extracting document data:", error);
+      res.status(500).json({ error: "Failed to extract document data" });
+    }
+  });
+
   // Home Health Certificate generation
   app.post('/api/reports/home-health', isAuthenticated, async (req: any, res) => {
     try {

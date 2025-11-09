@@ -1,0 +1,104 @@
+import { createContext, useContext, useState, ReactNode } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+type ToolType = "assets" | "documents" | "reports" | "inspections" | "reminders" | null;
+
+interface ToolModalContextValue {
+  openTool: (tool: ToolType) => void;
+  closeTool: () => void;
+  currentTool: ToolType;
+}
+
+const ToolModalContext = createContext<ToolModalContextValue | undefined>(undefined);
+
+export function useToolModal() {
+  const context = useContext(ToolModalContext);
+  if (!context) {
+    throw new Error("useToolModal must be used within ToolModalProvider");
+  }
+  return context;
+}
+
+interface ToolModalProviderProps {
+  children: ReactNode;
+}
+
+export function ToolModalProvider({ children }: ToolModalProviderProps) {
+  const [currentTool, setCurrentTool] = useState<ToolType>(null);
+
+  const openTool = (tool: ToolType) => {
+    setCurrentTool(tool);
+  };
+
+  const closeTool = () => {
+    setCurrentTool(null);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      closeTool();
+    }
+  };
+
+  return (
+    <ToolModalContext.Provider value={{ openTool, closeTool, currentTool }}>
+      {children}
+      
+      <Dialog open={currentTool !== null} onOpenChange={handleOpenChange}>
+        <DialogContent 
+          className="max-w-6xl max-h-[90vh] overflow-y-auto p-0"
+          data-testid="dialog-tool-modal"
+        >
+          <div className="sticky top-0 z-10 bg-background border-b px-6 py-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">
+              {currentTool === "assets" && "Asset Management"}
+              {currentTool === "documents" && "Document Storage"}
+              {currentTool === "reports" && "Health Reports"}
+              {currentTool === "inspections" && "Inspection Logs"}
+              {currentTool === "reminders" && "Smart Reminders"}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeTool}
+              data-testid="button-close-tool-modal"
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="p-6">
+            {currentTool === "assets" && (
+              <div className="text-center py-8 text-muted-foreground">
+                Asset Management Tool View - Coming Soon
+              </div>
+            )}
+            {currentTool === "documents" && (
+              <div className="text-center py-8 text-muted-foreground">
+                Document Storage Tool View - Coming Soon
+              </div>
+            )}
+            {currentTool === "reports" && (
+              <div className="text-center py-8 text-muted-foreground">
+                Reports Tool View - Coming Soon
+              </div>
+            )}
+            {currentTool === "inspections" && (
+              <div className="text-center py-8 text-muted-foreground">
+                Inspections Tool View - Coming Soon
+              </div>
+            )}
+            {currentTool === "reminders" && (
+              <div className="text-center py-8 text-muted-foreground">
+                Reminders Tool View - Coming Soon
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </ToolModalContext.Provider>
+  );
+}

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { useToolModal } from "@/contexts/ToolModalContext";
 import { ExternalLink } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -12,6 +12,7 @@ interface ToolCardProps {
   status: string;
   statusColor: "green" | "blue" | "purple" | "orange" | "cyan" | "red";
   href?: string;
+  toolId?: "assets" | "documents" | "reports" | "inspections" | "reminders";
 }
 
 const statusColorMap = {
@@ -29,10 +30,20 @@ export default function ToolCard({
   icon: Icon, 
   status, 
   statusColor,
-  href 
+  href,
+  toolId
 }: ToolCardProps) {
+  const { openTool } = useToolModal();
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (toolId && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      openTool(toolId);
+    }
+  };
+
   const content = (
-    <Card className="hover:border-primary/50 transition-colors group h-full">
+    <Card className="hover:border-primary/50 transition-colors group h-full cursor-pointer">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -54,6 +65,7 @@ export default function ToolCard({
         <Button 
           className="w-full font-medium" 
           size="sm"
+          onClick={handleClick}
           data-testid={`button-open-tool-${title.toLowerCase().replace(/\s+/g, '-')}`}
         >
           <ExternalLink className="mr-2 h-4 w-4" />
@@ -63,13 +75,12 @@ export default function ToolCard({
     </Card>
   );
 
-  if (href) {
-    return (
-      <Link href={href} data-testid={`tool-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-        {content}
-      </Link>
-    );
-  }
-
-  return content;
+  return (
+    <div 
+      onClick={handleClick}
+      data-testid={`tool-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+    >
+      {content}
+    </div>
+  );
 }
