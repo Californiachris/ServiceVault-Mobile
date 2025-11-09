@@ -34,6 +34,7 @@ function generateCode(type: 'ASSET' | 'MASTER', length = 8): string {
 }
 
 import { seedFleetData } from "./seedFleetData";
+import { seedDemoData } from "./seedDemoData";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -64,6 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      
+      seedDemoData(userId).catch(err => console.error("Demo data seed error:", err));
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
