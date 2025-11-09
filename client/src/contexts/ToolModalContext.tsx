@@ -4,6 +4,9 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AssetClaimToolView from "@/components/AssetClaimToolView";
 import DocumentStorageToolView from "@/components/DocumentStorageToolView";
+import ReportsToolView from "@/components/ReportsToolView";
+import InspectionsToolView from "@/components/InspectionsToolView";
+import RemindersToolView from "@/components/RemindersToolView";
 
 type ToolType = "assets" | "documents" | "reports" | "inspections" | "reminders" | null;
 
@@ -75,21 +78,9 @@ export function ToolModalProvider({ children }: ToolModalProviderProps) {
           <div className="p-6 max-h-[calc(90vh-8rem)] overflow-y-auto">
             {currentTool === "assets" && <AssetClaimToolView />}
             {currentTool === "documents" && <DocumentStorageToolView />}
-            {currentTool === "reports" && (
-              <div className="text-center py-8 text-muted-foreground">
-                Reports Tool View - Coming Soon
-              </div>
-            )}
-            {currentTool === "inspections" && (
-              <div className="text-center py-8 text-muted-foreground">
-                Inspections Tool View - Coming Soon
-              </div>
-            )}
-            {currentTool === "reminders" && (
-              <div className="text-center py-8 text-muted-foreground">
-                Reminders Tool View - Coming Soon
-              </div>
-            )}
+            {currentTool === "reports" && <ReportsToolView />}
+            {currentTool === "inspections" && <InspectionsToolView />}
+            {currentTool === "reminders" && <RemindersToolView />}
           </div>
         </DialogContent>
       </Dialog>

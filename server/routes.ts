@@ -2,8 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
-import { users, subscriptions } from "@shared/schema";
+import { eq, desc, count } from "drizzle-orm";
+import { users, subscriptions, assets, documents, inspections, events, reminders } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -455,7 +455,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/properties/:propertyId/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId } = req.params;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const [assetsResult] = await db
+        .select({ count: count() })
+        .from(assets)
+        .where(eq(assets.propertyId, propertyId));
+
+      const [documentsResult] = await db
+        .select({ count: count() })
+        .from(documents)
+        .where(eq(documents.propertyId, propertyId));
+
+      const [inspectionsResult] = await db
+        .select({ count: count() })
+        .from(inspections)
+        .where(eq(inspections.propertyId, propertyId));
+
+      const propertyAssets = await storage.getAssets(propertyId);
+      const assetIds = propertyAssets.map(a => a.id);
+      
+      let eventCount = 0;
+      for (const assetId of assetIds) {
+        const [eventsResult] = await db
+          .select({ count: count() })
+          .from(events)
+          .where(eq(events.assetId, assetId));
+        eventCount += eventsResult.count;
+      }
+
+      res.json({
+        assetCount: assetsResult.count,
+        documentCount: documentsResult.count,
+        inspectionCount: inspectionsResult.count,
+        eventCount,
+      });
+    } catch (error) {
+      console.error("Error fetching property stats:", error);
+      res.status(500).json({ error: "Failed to fetch property stats" });
+    }
+  });
+
   // Asset routes
+  app.get('/api/assets', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId } = req.query;
+
+      if (!propertyId) {
+        return res.status(400).json({ error: "Property ID is required" });
+      }
+
+      const property = await storage.getProperty(propertyId as string);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const assetsList = await storage.getAssets(propertyId as string);
+      res.json(assetsList);
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+
   app.get('/api/assets/:propertyId', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1083,21 +1154,48 @@ Instructions:
   });
 
   // Inspection routes
+  app.get('/api/inspections', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId } = req.query;
+
+      if (!propertyId) {
+        return res.status(400).json({ error: "Property ID is required" });
+      }
+
+      const property = await storage.getProperty(propertyId as string);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const inspectionsList = await storage.getPropertyInspections(propertyId as string);
+      res.json(inspectionsList);
+    } catch (error) {
+      console.error("Error fetching inspections:", error);
+      res.status(500).json({ error: "Failed to fetch inspections" });
+    }
+  });
+
   app.post('/api/inspections', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { propertyId, jurisdiction, checklist, result } = req.body;
+      const { propertyId, jurisdiction, checklist, notes, result } = req.body;
 
       const property = await storage.getProperty(propertyId);
       if (!property || property.ownerId !== userId) {
         return res.status(404).json({ error: "Property not found" });
       }
 
+      const checklistData = { ...checklist };
+      if (notes) {
+        checklistData.notes = notes;
+      }
+
       const inspection = await storage.createInspection({
         propertyId,
         inspectorId: userId,
         jurisdiction,
-        checklist,
+        checklist: checklistData,
         result,
         signedAt: result ? new Date() : undefined,
       });
@@ -1113,10 +1211,45 @@ Instructions:
   app.get('/api/reminders/due', isAuthenticated, async (req, res) => {
     try {
       const dueReminders = await storage.getDueReminders();
+      
+      const REMINDER_TYPE_MAP: Record<string, { priority: string; title: string; description: string }> = {
+        'WARRANTY_EXPIRATION': { priority: 'high', title: 'Warranty Expiration', description: 'Warranty expiring soon' },
+        'MAINTENANCE_DUE': { priority: 'medium', title: 'Scheduled Maintenance', description: 'Maintenance due' },
+        'INSPECTION_REQUIRED': { priority: 'high', title: 'Inspection Required', description: 'Inspection needed' },
+        'SERVICE_INTERVAL': { priority: 'low', title: 'Service Interval', description: 'Service interval reached' },
+        'PERMIT_RENEWAL': { priority: 'medium', title: 'Permit Renewal', description: 'Permit needs renewal' },
+        'INSURANCE_RENEWAL': { priority: 'high', title: 'Insurance Renewal', description: 'Insurance renewal due' },
+        'SEASONAL_MAINTENANCE': { priority: 'low', title: 'Seasonal Maintenance', description: 'Seasonal maintenance required' },
+        'CONTRACT_EXPIRATION': { priority: 'medium', title: 'Contract Expiration', description: 'Contract expiring' },
+        'WARRANTY': { priority: 'high', title: 'Warranty', description: 'Warranty notification' },
+        'MAINTENANCE': { priority: 'medium', title: 'Maintenance', description: 'Maintenance reminder' },
+      };
+
+      const mappedReminders = dueReminders.map(reminder => {
+        const typeInfo = REMINDER_TYPE_MAP[reminder.type] || { 
+          priority: 'medium', 
+          title: reminder.type, 
+          description: 'Reminder' 
+        };
+        
+        return {
+          id: reminder.id,
+          dueDate: reminder.dueAt,
+          type: reminder.type,
+          priority: typeInfo.priority,
+          assetId: reminder.assetId,
+          propertyId: reminder.propertyId,
+          title: typeInfo.title,
+          description: typeInfo.description,
+          status: reminder.status,
+        };
+      });
+
       for (const reminder of dueReminders) {
         await storage.updateReminder(reminder.id, { status: 'SENT' });
       }
-      res.json({ processed: dueReminders.length, reminders: dueReminders });
+
+      res.json({ processed: dueReminders.length, reminders: mappedReminders });
     } catch (error) {
       console.error("Error processing reminders:", error);
       res.status(500).json({ error: "Failed to process reminders" });
