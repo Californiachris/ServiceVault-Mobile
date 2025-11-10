@@ -175,10 +175,10 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-[150] bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
-          <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl z-[160]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col h-full">
+          <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl z-[160] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col min-h-full">
               {/* Mobile Logo */}
-              <div className="flex items-center gap-2 h-16 px-6 border-b border-border">
+              <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0">
                 <img 
                   src="/logo.png" 
                   alt="FixTrack Logo" 
@@ -190,7 +190,7 @@ export default function AppShell({ children }: AppShellProps) {
               </div>
 
               {/* Mobile Navigation */}
-              <nav className="flex-1 px-4 py-6 space-y-1">
+              <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                 {navLinks.map((link) => {
                   const Icon = link.icon;
                   const active = isActive(link.href);
@@ -214,7 +214,7 @@ export default function AppShell({ children }: AppShellProps) {
               </nav>
 
               {/* Mobile User Profile */}
-              <div className="p-4 border-t border-border">
+              <div className="p-4 border-t border-border flex-shrink-0">
                 <div className="flex items-center gap-3 mb-3 px-2">
                   <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
                     <User className="h-5 w-5 text-primary" />
