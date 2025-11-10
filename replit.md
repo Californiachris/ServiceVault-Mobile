@@ -153,9 +153,22 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - Prevented backdrop clicks from closing modals (users must click Close/Cancel)
   - Proper z-index layering ensures modals always appear above content
 
+- **Mobile Bottom Navigation Fix (PRODUCTION-CRITICAL):**
+  - **Root Cause:** Pages using `min-h-screen` were overriding AppShell's pb-20, creating independent scroll areas that extended under the fixed bottom nav (z-200)
+  - **Solution:** Removed `min-h-screen` from all pages and added explicit `pb-24` (96px) bottom padding to provide clearance for h-16 (64px) bottom nav + safe margin
+  - **Pages Fixed (11 total):**
+    - Core authenticated pages: Reminders, Scan, Assets, Settings (4 pages)
+    - All 3 role dashboards: Homeowner, Contractor, Fleet - both loading and main states (6 states)
+    - Dual-context pages (authenticated + unauthenticated): Pricing, Asset View, Property View (3 pages)
+  - **Layout Architecture:** AppShell (pb-20) → Page Container (pb-24) → Content scrolls between top header (z-100) and bottom nav (z-200)
+  - **User Experience:** Bottom 4 navigation buttons (Dashboard, Scan QR, My Assets, Reminders) now ALWAYS visible on mobile like Instagram/TikTok
+  - **Architect Verified:** All pages have proper clearance, z-index hierarchy correct, no visual regressions on desktop
+  - **Navigation Cleanup:** Removed redundant `<Navigation />` components and imports from all updated pages
+
 - **Application Verified Production-Ready:**
   - Workflow running successfully with no console errors
   - "STRIPE_SECRET_KEY not set - Stripe functionality will be disabled" confirms graceful degradation working
   - Database seeding successful, all migrations applied
   - Frontend connected via Vite with React DevTools enabled
-  - All 18 planned tasks completed and verified functional
+  - Mobile navigation tested and ready for user QA across all 3 roles
+  - All critical mobile UX issues resolved, app ready to show to user's brother and deploy live

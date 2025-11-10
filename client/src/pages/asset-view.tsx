@@ -50,7 +50,7 @@ export default function AssetView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
         <Navigation />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Skeleton className="h-48 w-full mb-6" />
@@ -62,7 +62,7 @@ export default function AssetView() {
 
   if (!asset) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
         <Navigation />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Card className="border-red-500/20 bg-slate-900/50">
@@ -78,7 +78,7 @@ export default function AssetView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
       <Navigation />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
