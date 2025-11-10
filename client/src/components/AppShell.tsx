@@ -175,7 +175,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-[150] bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
-          <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl z-[160] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <aside className="fixed top-0 bottom-16 left-0 w-64 border-r border-border bg-card shadow-xl z-[160] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col min-h-full">
               {/* Mobile Logo */}
               <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0">
@@ -292,30 +292,28 @@ export default function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation - Hidden when sidebar is open */}
-      {!sidebarOpen && (
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
-          <div className="grid grid-cols-4 h-16">
-            {navLinks.slice(0, 4).map((link) => {
-              const Icon = link.icon;
-              const active = isActive(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
-                    active ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                  data-testid={`bottom-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      )}
+      {/* Mobile Bottom Navigation - Always Visible */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
+        <div className="grid grid-cols-4 h-16">
+          {navLinks.slice(0, 4).map((link) => {
+            const Icon = link.icon;
+            const active = isActive(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
+                  active ? 'text-primary' : 'text-muted-foreground'
+                }`}
+                data-testid={`bottom-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{link.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Bottom spacing for mobile nav */}
       <div className="lg:hidden h-16" />
