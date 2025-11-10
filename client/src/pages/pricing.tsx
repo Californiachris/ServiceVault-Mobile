@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Check, Sparkles, Zap, Shield, TrendingUp, Users, Building2, Truck, Phone } from "lucide-react";
+import { Check, Sparkles, Zap, Shield, TrendingUp, Users, Building2, Truck, Phone, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function PricingPage() {
   const [, setLocation] = useLocation();
@@ -22,6 +23,15 @@ export default function PricingPage() {
     fleet: [],
   });
   const [fleetAssetCount, setFleetAssetCount] = useState<number>(100);
+
+  // Task 9: Check services status for graceful fallbacks
+  const { data: servicesStatus, isLoading: statusLoading } = useQuery<{ stripe: boolean; email: boolean; sms: boolean }>({
+    queryKey: ["/api/services/status"],
+    retry: false,
+  });
+
+  const stripeConfigured = servicesStatus?.stripe ?? false; // Default to false for safety
+  const isCheckoutDisabled = statusLoading || !stripeConfigured; // Disable while loading or if Stripe not configured
 
   const checkoutMutation = useMutation({
     mutationFn: async ({ plan, addOns, assetCount }: { plan: string; addOns?: string[]; assetCount?: number }) => {
@@ -38,15 +48,37 @@ export default function PricingPage() {
       }
     },
     onError: (error: any) => {
+      // Task 9: Extract helpful error message from 503 response
+      const errorMessage = error?.message || error?.error || "Failed to start checkout";
       toast({
-        title: "Error",
-        description: error.message || "Failed to start checkout",
-        variant: "destructive",
+        title: error?.service === "stripe" && !error?.configured ? "Payment System Unavailable" : "Error",
+        description: errorMessage,
+        variant: "default",
       });
     },
   });
 
   const handleSubscribe = (plan: string, tier: string) => {
+    // Task 9: Check Stripe status FIRST (before auth check) to avoid login loops
+    if (!statusLoading && !stripeConfigured) {
+      toast({
+        title: "Payment System Unavailable",
+        description: "Payment processing is currently being configured. Please contact support@fixtrackpro.com to subscribe.",
+        variant: "default",
+      });
+      return;
+    }
+
+    // If status still loading, prevent action
+    if (statusLoading) {
+      toast({
+        title: "Please Wait",
+        description: "Checking payment system availability...",
+        variant: "default",
+      });
+      return;
+    }
+
     if (!isAuthenticated) {
       window.location.href = "/api/login";
       return;
@@ -110,6 +142,28 @@ export default function PricingPage() {
           </span>
         </p>
       </div>
+
+      {/* Task 9: Graceful fallback when Stripe not configured */}
+      {!stripeConfigured && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <Alert variant="default" className="border-orange-500/50 bg-orange-500/5" data-testid="alert-stripe-unavailable">
+            <AlertCircle className="h-5 w-5 text-orange-500" />
+            <AlertDescription className="text-sm">
+              <strong className="font-semibold">Payment processing is currently being configured.</strong>
+              <p className="mt-1">
+                We're setting up secure payment processing for your convenience. To subscribe now, please contact{" "}
+                <a href="mailto:support@fixtrackpro.com" className="underline text-orange-600 dark:text-orange-400 font-medium hover:text-orange-700 dark:hover:text-orange-300">
+                  support@fixtrackpro.com
+                </a>
+                {" "}or call{" "}
+                <a href="tel:+1-555-FIX-TRACK" className="underline text-orange-600 dark:text-orange-400 font-medium hover:text-orange-700 dark:hover:text-orange-300">
+                  (555) FIX-TRACK
+                </a>.
+              </p>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Pricing Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
@@ -215,10 +269,10 @@ export default function PricingPage() {
                 className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
                 size="lg"
                 onClick={() => handleSubscribe('homeowner_base', 'homeowner')}
-                disabled={checkoutMutation.isPending}
+                disabled={isCheckoutDisabled || checkoutMutation.isPending}
                 data-testid="button-subscribe-homeowner"
               >
-                {checkoutMutation.isPending ? "Loading..." : "Get Started"}
+                {statusLoading ? "Loading..." : checkoutMutation.isPending ? "Processing..." : !stripeConfigured ? "Contact Support" : "Get Started"}
               </Button>
             </CardFooter>
           </Card>
@@ -324,19 +378,19 @@ export default function PricingPage() {
                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
                 size="lg"
                 onClick={() => handleSubscribe('contractor_pro', 'contractor')}
-                disabled={checkoutMutation.isPending}
+                disabled={isCheckoutDisabled || checkoutMutation.isPending}
                 data-testid="button-subscribe-contractor-pro"
               >
-                Start Pro Plan
+                {statusLoading ? "Loading..." : checkoutMutation.isPending ? "Processing..." : !stripeConfigured ? "Contact Support" : "Start Pro Plan"}
               </Button>
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSubscribe('contractor_starter', 'contractor')}
-                disabled={checkoutMutation.isPending}
+                disabled={isCheckoutDisabled || checkoutMutation.isPending}
                 data-testid="button-subscribe-contractor-starter"
               >
-                Start Starter Plan
+                {statusLoading ? "Loading..." : checkoutMutation.isPending ? "Processing..." : !stripeConfigured ? "Contact Support" : "Start Starter Plan"}
               </Button>
             </CardFooter>
           </Card>
@@ -431,10 +485,10 @@ export default function PricingPage() {
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 size="lg"
                 onClick={() => handleSubscribe('fleet_base', 'fleet')}
-                disabled={checkoutMutation.isPending || fleetAssetCount >= 10000}
+                disabled={isCheckoutDisabled || checkoutMutation.isPending || fleetAssetCount >= 10000}
                 data-testid="button-subscribe-fleet"
               >
-                {fleetAssetCount >= 10000 ? "Contact Sales" : checkoutMutation.isPending ? "Loading..." : "Get Started"}
+                {fleetAssetCount >= 10000 ? "Contact Sales" : statusLoading ? "Loading..." : checkoutMutation.isPending ? "Processing..." : !stripeConfigured ? "Contact Support" : "Get Started"}
               </Button>
             </CardFooter>
           </Card>

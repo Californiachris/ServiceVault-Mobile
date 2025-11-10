@@ -2259,19 +2259,40 @@ Instructions:
       }
     });
   } else {
-    // Stub routes when Stripe is not configured
-    app.post('/api/stripe/create-checkout-session', (req, res) => {
-      res.status(501).json({ error: "Stripe not configured" });
+    // Task 9: Graceful API fallbacks when Stripe is not configured
+    app.post('/api/stripe/create-checkout-session', isAuthenticated, (req, res) => {
+      res.status(503).json({ 
+        error: "Payment processing is currently being configured. Please contact support@fixtrackpro.com to subscribe.",
+        service: "stripe",
+        configured: false
+      });
     });
 
-    app.post('/api/stripe/customer-portal', (req, res) => {
-      res.status(501).json({ error: "Stripe not configured" });
+    app.post('/api/stripe/customer-portal', isAuthenticated, (req, res) => {
+      res.status(503).json({ 
+        error: "Billing portal is currently being configured. Please contact support@fixtrackpro.com for assistance.",
+        service: "stripe",
+        configured: false
+      });
     });
 
     app.post('/api/webhooks/stripe', (req, res) => {
-      res.status(501).json({ error: "Stripe not configured" });
+      res.status(503).json({ 
+        error: "Stripe webhooks not configured",
+        service: "stripe",
+        configured: false
+      });
     });
   }
+
+  // Task 9: Services status endpoint (public, no auth required)
+  app.get('/api/services/status', (req, res) => {
+    res.json({
+      stripe: !!stripe,
+      email: !!process.env.RESEND_API_KEY,
+      sms: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER)
+    });
+  });
 
   // Public read-only endpoints with PII redaction
   app.get('/api/public/scan/:code', async (req, res) => {
