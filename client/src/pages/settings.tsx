@@ -9,8 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bell, Mail, Smartphone, BellOff } from "lucide-react";
+import { Loader2, Bell, Mail, Smartphone, BellOff, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const notificationSettingsSchema = z.object({
@@ -90,6 +101,29 @@ export default function Settings() {
   const onSubmit = (data: NotificationSettingsForm) => {
     updateSettingsMutation.mutate(data);
   };
+
+  // DEV TESTING MODE: Delete Account
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('/api/user/delete', 'DELETE');
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Account Deleted",
+        description: "Your account and all associated data have been permanently deleted.",
+      });
+      // Logout and redirect to home
+      window.location.href = '/api/logout';
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Deletion failed",
+        description: error.message || "Failed to delete account. Please try again or contact support.",
+      });
+    },
+  });
 
   if (userLoading) {
     return (
@@ -258,6 +292,64 @@ export default function Settings() {
           </div>
         </form>
       </Form>
+
+      {/* DEV TESTING MODE: Delete Account Section */}
+      <Card className="mt-6 border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data (DEV TESTING ONLY)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                disabled={deleteAccountMutation.isPending}
+                data-testid="button-delete-account-trigger"
+              >
+                {deleteAccountMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Account
+                  </>
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your account and remove all your data from our servers, including:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>All properties and assets</li>
+                    <li>All documents and warranties</li>
+                    <li>All maintenance reminders</li>
+                    <li>All service history</li>
+                    <li>Your contractor/fleet profile (if applicable)</li>
+                  </ul>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteAccountMutation.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  data-testid="button-confirm-delete"
+                >
+                  Yes, delete my account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
     </div>
   );
 }

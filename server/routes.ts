@@ -2,8 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, desc, count, and, lte, asc, isNull } from "drizzle-orm";
-import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetOperators } from "@shared/schema";
+import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
+import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -2292,6 +2292,204 @@ Instructions:
       email: !!process.env.RESEND_API_KEY,
       sms: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER)
     });
+  });
+
+  // DEV TESTING MODE: Onboarding endpoint (bypasses Stripe for testing)
+  app.post('/api/onboarding/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { plan, ...onboardingData } = req.body;
+
+      // Map plan to role
+      const roleMap: Record<string, string> = {
+        'homeowner_base': 'HOMEOWNER',
+        'contractor_pro': 'CONTRACTOR',
+        'contractor_starter': 'CONTRACTOR',
+        'fleet_base': 'FLEET',
+      };
+
+      const role = roleMap[plan];
+      if (!role) {
+        return res.status(400).json({ error: 'Invalid plan type' });
+      }
+
+      // Update user with role, phone, and notification preference
+      await db
+        .update(users)
+        .set({
+          role,
+          phone: onboardingData.phone || null,
+          notificationPreference: onboardingData.notificationPreference || 'EMAIL_AND_SMS',
+        })
+        .where(eq(users.id, userId));
+
+      // Handle role-specific onboarding data
+      if (role === 'CONTRACTOR') {
+        // Normalize arrays (forms send arrays, ensure we don't double-wrap)
+        const serviceAreas = Array.isArray(onboardingData.serviceAreas) 
+          ? onboardingData.serviceAreas 
+          : (onboardingData.serviceAreas ? [onboardingData.serviceAreas] : []);
+        const specialties = Array.isArray(onboardingData.specialties)
+          ? onboardingData.specialties
+          : (onboardingData.specialties ? [onboardingData.specialties] : []);
+
+        // Create or update contractor profile
+        await db
+          .insert(contractors)
+          .values({
+            userId,
+            companyName: onboardingData.companyName || 'Unknown Company',
+            licenseNumber: onboardingData.licenseNumber || null,
+            serviceAreas,
+            specialties,
+            monthlyQuota: plan === 'contractor_pro' ? 100 : 50, // Pro gets 100, Starter gets 50
+            quotaUsed: 0,
+          })
+          .onConflictDoUpdate({
+            target: contractors.userId,
+            set: {
+              companyName: onboardingData.companyName || 'Unknown Company',
+              licenseNumber: onboardingData.licenseNumber || null,
+              serviceAreas,
+              specialties,
+            },
+          });
+      } else if (role === 'HOMEOWNER' && onboardingData.address) {
+        // Create initial property for homeowner with address from onboarding
+        await db.insert(properties).values({
+          ownerId: userId,
+          name: onboardingData.propertyName || 'My Home',
+          addressLine1: onboardingData.address,
+          city: onboardingData.city || null,
+          state: onboardingData.state || null,
+          postalCode: onboardingData.zip || null,
+          homePlan: plan,
+          homeStatus: 'ACTIVE',
+        }).onConflictDoNothing();
+      } else if (role === 'FLEET') {
+        // For fleet, industry and categories are stored in onboardingData but not persisted to a specific table
+        // This is acceptable for dev testing - they can add equipment through the dashboard
+        console.log(`[DEV] Fleet user created with industry: ${onboardingData.industry}, categories: ${onboardingData.assetCategories}`);
+      }
+
+      res.json({
+        success: true,
+        role,
+        message: `Account configured as ${role}`,
+      });
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
+      res.status(500).json({ error: 'Failed to complete onboarding' });
+    }
+  });
+
+  // DEV TESTING MODE: Delete Account - Comprehensive multi-table cleanup
+  app.delete('/api/user/delete', isAuthenticated, async (req, res) => {
+    const userId = req.user!.claims.sub;
+
+    try {
+      await db.transaction(async (tx) => {
+        // 1. Delete notification_logs
+        await tx.delete(notificationLogs).where(eq(notificationLogs.userId, userId));
+
+        // 2. Get user's properties to find related assets
+        const userProperties = await tx.select({ id: properties.id }).from(properties).where(eq(properties.ownerId, userId));
+        const propertyIds = userProperties.map(p => p.id);
+
+        if (propertyIds.length > 0) {
+          // 3. Get all assets for these properties
+          const userAssets = await tx.select({ id: assets.id, identifierId: assets.identifierId }).from(assets).where(
+            inArray(assets.propertyId, propertyIds)
+          );
+          const assetIds = userAssets.map(a => a.id);
+          const identifierIds = userAssets.map(a => a.identifierId).filter(Boolean) as string[];
+
+          if (assetIds.length > 0) {
+            // 4. Delete reminders for these assets
+            await tx.delete(reminders).where(inArray(reminders.assetId, assetIds));
+
+            // 5. Delete documents for these assets
+            await tx.delete(documents).where(inArray(documents.assetId, assetIds));
+
+            // 6. Delete events for these assets
+            await tx.delete(events).where(inArray(events.assetId, assetIds));
+
+            // 7. Delete transfers involving these assets
+            await tx.delete(transfers).where(inArray(transfers.assetId, assetIds));
+
+            // 8. Delete assets themselves
+            await tx.delete(assets).where(inArray(assets.propertyId, propertyIds));
+
+            // 9. Delete identifiers that were linked to these assets (unclaim them)
+            if (identifierIds.length > 0) {
+              await tx.update(identifiers)
+                .set({ claimedAt: null })
+                .where(inArray(identifiers.id, identifierIds));
+            }
+          }
+
+          // 10. Delete inspections for these properties
+          await tx.delete(inspections).where(inArray(inspections.propertyId, propertyIds));
+
+          // 11. Delete service sessions for these properties
+          await tx.delete(serviceSessions).where(inArray(serviceSessions.propertyId, propertyIds));
+
+          // 12. Delete properties themselves
+          await tx.delete(properties).where(eq(properties.ownerId, userId));
+        }
+
+        // 13. Get contractor profile if exists
+        const contractorProfile = await tx.select({ id: contractors.id }).from(contractors).where(eq(contractors.userId, userId)).limit(1);
+        if (contractorProfile.length > 0) {
+          const contractorId = contractorProfile[0].id;
+
+          // 14. Delete sticker orders
+          await tx.delete(stickerOrders).where(eq(stickerOrders.contractorId, contractorId));
+
+          // 15. Delete jobs
+          await tx.delete(jobs).where(eq(jobs.contractorId, contractorId));
+
+          // 16. Delete contractor profile
+          await tx.delete(contractors).where(eq(contractors.userId, userId));
+        }
+
+        // 17. Delete jobs where user is the client
+        await tx.delete(jobs).where(eq(jobs.clientId, userId));
+
+        // 18. Delete transfers where user is fromUser or toUser
+        await tx.delete(transfers).where(sql`${transfers.fromUserId} = ${userId} OR ${transfers.toUserId} = ${userId}`);
+
+        // 19. Delete inspections where user is inspector
+        await tx.delete(inspections).where(eq(inspections.inspectorId, userId));
+
+        // 20. Delete service sessions where user is homeowner or worker
+        await tx.delete(serviceSessions).where(sql`${serviceSessions.homeownerId} = ${userId} OR ${serviceSessions.workerId} = ${userId}`);
+
+        // 21. Delete subscriptions
+        await tx.delete(subscriptions).where(eq(subscriptions.userId, userId));
+
+        // 22. Delete fleet operators
+        const fleetOps = await tx.select({ id: fleetOperators.id }).from(fleetOperators).where(eq(fleetOperators.userId, userId));
+        if (fleetOps.length > 0) {
+          const operatorIds = fleetOps.map(o => o.id);
+          await tx.delete(fleetOperatorAssets).where(inArray(fleetOperatorAssets.operatorId, operatorIds));
+          await tx.delete(fleetOperators).where(eq(fleetOperators.userId, userId));
+        }
+
+        // 23. FINALLY: Delete the user record itself
+        await tx.delete(users).where(eq(users.id, userId));
+
+        console.log(`[DEV TESTING] Account deleted for user ${userId}`);
+      });
+
+      // Logout and clear session
+      req.logout(() => {
+        res.json({ success: true, message: 'Account deleted successfully' });
+      });
+    } catch (error: any) {
+      console.error('[DEV TESTING] Account deletion error:', error);
+      res.status(500).json({ error: 'Failed to delete account. Please contact support.' });
+    }
   });
 
   // Public read-only endpoints with PII redaction

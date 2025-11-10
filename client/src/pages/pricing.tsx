@@ -12,10 +12,13 @@ import { Check, Sparkles, Zap, Shield, TrendingUp, Users, Building2, Truck, Phon
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { HomeownerOnboardingForm } from "@/components/onboarding/HomeownerOnboardingForm";
+import { ContractorOnboardingForm } from "@/components/onboarding/ContractorOnboardingForm";
+import { FleetOnboardingForm } from "@/components/onboarding/FleetOnboardingForm";
 
 export default function PricingPage() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, string[]>>({
     homeowner: [],
@@ -23,6 +26,9 @@ export default function PricingPage() {
     fleet: [],
   });
   const [fleetAssetCount, setFleetAssetCount] = useState<number>(100);
+  
+  // DEV TESTING MODE: Onboarding modal state
+  const [onboardingModal, setOnboardingModal] = useState<{ plan: string; type: 'homeowner' | 'contractor' | 'fleet' } | null>(null);
 
   // Task 9: Check services status for graceful fallbacks
   const { data: servicesStatus, isLoading: statusLoading } = useQuery<{ stripe: boolean; email: boolean; sms: boolean }>({
@@ -32,6 +38,28 @@ export default function PricingPage() {
 
   const stripeConfigured = servicesStatus?.stripe ?? false; // Default to false for safety
   const isCheckoutDisabled = statusLoading || !stripeConfigured; // Disable while loading or if Stripe not configured
+
+  // DEV TESTING MODE: Onboarding mutation
+  const onboardingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("/api/onboarding/complete", "POST", data);
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Welcome to FixTrack Pro!",
+        description: "Your account has been set up successfully.",
+      });
+      setLocation("/dashboard");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to complete sign-up",
+        variant: "destructive",
+      });
+    },
+  });
 
   const checkoutMutation = useMutation({
     mutationFn: async ({ plan, addOns, assetCount }: { plan: string; addOns?: string[]; assetCount?: number }) => {
@@ -59,35 +87,24 @@ export default function PricingPage() {
   });
 
   const handleSubscribe = (plan: string, tier: string) => {
-    // Task 9: Check Stripe status FIRST (before auth check) to avoid login loops
-    if (!statusLoading && !stripeConfigured) {
-      toast({
-        title: "Payment System Unavailable",
-        description: "Payment processing is currently being configured. Please contact support@fixtrackpro.com to subscribe.",
-        variant: "default",
-      });
-      return;
-    }
-
-    // If status still loading, prevent action
-    if (statusLoading) {
-      toast({
-        title: "Please Wait",
-        description: "Checking payment system availability...",
-        variant: "default",
-      });
-      return;
-    }
-
+    // Check if user is authenticated first
     if (!isAuthenticated) {
       window.location.href = "/api/login";
       return;
     }
 
-    const addOns = selectedAddOns[tier as keyof typeof selectedAddOns] || [];
-    const assetCount = tier === 'fleet' ? fleetAssetCount : undefined;
-    
-    checkoutMutation.mutate({ plan, addOns, assetCount });
+    // DEV TESTING MODE: Show onboarding form instead of Stripe checkout
+    const modalType = tier === 'homeowner' ? 'homeowner' : tier === 'contractor' ? 'contractor' : 'fleet';
+    setOnboardingModal({ plan, type: modalType });
+  };
+
+  const handleOnboardingComplete = async (data: any) => {
+    if (!onboardingModal) return;
+    await onboardingMutation.mutateAsync({
+      plan: onboardingModal.plan,
+      ...data,
+    });
+    setOnboardingModal(null);
   };
 
   const toggleAddOn = (tier: string, addon: string) => {
@@ -524,6 +541,29 @@ export default function PricingPage() {
           </p>
         </div>
       </div>
+
+      {/* DEV TESTING MODE: Onboarding Modals */}
+      <HomeownerOnboardingForm
+        open={onboardingModal?.type === 'homeowner'}
+        onClose={() => setOnboardingModal(null)}
+        onComplete={handleOnboardingComplete}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
+        userEmail={user?.email || undefined}
+      />
+      <ContractorOnboardingForm
+        open={onboardingModal?.type === 'contractor'}
+        onClose={() => setOnboardingModal(null)}
+        onComplete={handleOnboardingComplete}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
+        userEmail={user?.email || undefined}
+      />
+      <FleetOnboardingForm
+        open={onboardingModal?.type === 'fleet'}
+        onClose={() => setOnboardingModal(null)}
+        onComplete={handleOnboardingComplete}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
+        userEmail={user?.email || undefined}
+      />
     </div>
   );
 }
