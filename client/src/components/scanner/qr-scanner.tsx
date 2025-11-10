@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { X, Camera, AlertCircle, ExternalLink, Lock, Smartphone, Shield } from 'lucide-react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 export type CameraStatus = 'initializing' | 'granted' | 'denied' | 'blocked' | 'error';
 
@@ -22,34 +23,16 @@ interface QRScannerProps {
   onFallbackRequest?: () => void;
 }
 
-// Simple QR code pattern detection for demo purposes
-// In a real implementation, you'd use a proper QR scanning library
-function detectQRPattern(imageData: ImageData): string | null {
-  // This is a simplified mock implementation
-  // Real QR detection would involve complex image processing
-  const mockCodes = [
-    'FT-HVAC-2024-A7K9',
-    'FT-PLUMB-2024-B3M7',
-    'FT-ELEC-2024-C5N2',
-    'M-HOUSE-2024-H1R8'
-  ];
-  
-  // Simulate detection based on random chance for demo
-  if (Math.random() > 0.7) {
-    return mockCodes[Math.floor(Math.random() * mockCodes.length)];
-  }
-  
-  return null;
-}
-
 export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackRequest }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('initializing');
   const isInIframeRef = useRef<boolean>(false);
+  const lastScanTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const inIframe = checkIframeStatus();
@@ -128,6 +111,10 @@ export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackR
   };
 
   const stopCamera = () => {
+    // Stop ZXing reader
+    codeReaderRef.current = null;
+    
+    // Stop media stream
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
@@ -135,41 +122,46 @@ export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackR
     setIsScanning(false);
   };
 
-  const scanFrame = () => {
-    if (!videoRef.current || !canvasRef.current || !isScanning) return;
-    
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    
-    if (!context) return;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0);
-    
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const qrCode = detectQRPattern(imageData);
-    
-    if (qrCode) {
-      setIsScanning(false);
-      stopCamera();
-      onScan(qrCode);
-    } else if (isScanning) {
-      // Continue scanning
-      requestAnimationFrame(scanFrame);
-    }
-  };
-
   useEffect(() => {
-    if (isScanning && videoRef.current) {
+    if (isScanning && videoRef.current && !codeReaderRef.current) {
       const video = videoRef.current;
-      const handleLoadedData = () => {
-        requestAnimationFrame(scanFrame);
+      
+      const handleLoadedData = async () => {
+        try {
+          // Initialize ZXing code reader
+          const codeReader = new BrowserMultiFormatReader();
+          codeReaderRef.current = codeReader;
+          
+          // Start continuous decoding
+          codeReader.decodeFromVideoElement(video, (result, error) => {
+            if (result) {
+              // Debounce successive scans (prevent double firing)
+              const now = Date.now();
+              if (now - lastScanTimeRef.current < 1000) return;
+              lastScanTimeRef.current = now;
+              
+              const qrCode = result.getText();
+              
+              // Haptic feedback on successful scan
+              if (navigator.vibrate) {
+                navigator.vibrate(50);
+              }
+              
+              setIsScanning(false);
+              stopCamera();
+              onScan(qrCode);
+            }
+            // Silently handle decode errors (normal during scanning process)
+          });
+        } catch (err) {
+          console.error('Error initializing QR scanner:', err);
+        }
       };
       
       video.addEventListener('loadeddata', handleLoadedData);
-      return () => video.removeEventListener('loadeddata', handleLoadedData);
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+      };
     }
   }, [isScanning]);
 
@@ -401,14 +393,28 @@ export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackR
         data-testid="canvas-scanner"
       />
       
-      <div className="flex justify-center mt-4">
+      <div className="flex gap-3 mt-4">
+        {onFallbackRequest && (
+          <Button
+            variant="default"
+            className="flex-1"
+            onClick={() => {
+              onFallbackRequest();
+              handleClose();
+            }}
+            data-testid="button-enter-code-manually"
+          >
+            Enter Code Manually
+          </Button>
+        )}
         <Button
           variant="outline"
+          className={onFallbackRequest ? "flex-1" : "w-full"}
           onClick={handleClose}
           data-testid="button-stop-scanning"
         >
-          <Camera className="mr-2 h-4 w-4" />
-          Stop Scanning
+          <X className="mr-2 h-4 w-4" />
+          {onFallbackRequest ? "Cancel" : "Close"}
         </Button>
       </div>
     </div>

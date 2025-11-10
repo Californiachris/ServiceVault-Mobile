@@ -79,13 +79,34 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
       setObjectPath(null);
     },
     onError: (error: any) => {
+      const isAIUnavailable = error.message?.includes("AI") || error.message?.includes("OpenAI") || error.message?.includes("credits");
+      
       toast({
-        title: "Extraction Failed",
-        description: error.message || "Failed to extract data from document",
-        variant: "destructive",
+        title: isAIUnavailable ? "AI Analysis Unavailable" : "Extraction Failed",
+        description: isAIUnavailable 
+          ? "AI document scanning is temporarily unavailable. You can still upload the document and enter details manually."
+          : error.message || "Failed to extract data from document. You can still enter details manually.",
+        variant: "default",
       });
     },
   });
+
+  const handleSkipAI = () => {
+    if (!objectPath) {
+      toast({
+        title: "No file uploaded",
+        description: "Please upload a document first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Call onDataExtracted with just the objectPath, allowing manual entry
+    onDataExtracted({ objectPath });
+    setShowScanner(false);
+    setUploadedFile(null);
+    setObjectPath(null);
+  };
 
   const handleGetUploadParameters = async () => {
     const response = await apiRequest("POST", "/api/objects/upload");
@@ -201,17 +222,27 @@ export function DocumentScanner({ onDataExtracted, extractionType }: DocumentSca
                   )}
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-between gap-3 pt-4">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => {
                       setShowScanner(false);
                       setUploadedFile(null);
+                      setObjectPath(null);
                     }}
                     data-testid="button-cancel-scan"
                   >
                     Cancel
                   </Button>
+                  {uploadedFile && !extractMutation.isPending && (
+                    <Button
+                      variant="default"
+                      onClick={handleSkipAI}
+                      data-testid="button-skip-ai-manual-entry"
+                    >
+                      Skip AI - Enter Manually
+                    </Button>
+                  )}
                 </div>
               </>
             )}

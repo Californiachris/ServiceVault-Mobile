@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Truck,
@@ -19,7 +21,8 @@ import {
   Package,
   TrendingUp,
   CheckCircle2,
-  Clock
+  Clock,
+  Search
 } from "lucide-react";
 
 interface FleetDashboardData {
@@ -51,6 +54,8 @@ interface FleetDashboardData {
 export default function FleetDashboard() {
   const { user } = useAuth();
   const [selectedIndustry, setSelectedIndustry] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   
   const { data, isLoading } = useQuery<FleetDashboardData>({
     queryKey: ["/api/dashboard/fleet"],
@@ -88,6 +93,39 @@ export default function FleetDashboard() {
     () => selectedIndustry ? assetsByIndustry[selectedIndustry] || [] : [],
     [selectedIndustry, assetsByIndustry]
   );
+
+  // Debounced search filtering (300ms) for assets, maintenance, and operators
+  const filteredAssets = useMemo(() => {
+    if (!debouncedSearch) return currentIndustryAssets;
+    const query = debouncedSearch.toLowerCase();
+    return currentIndustryAssets.filter((asset: any) => 
+      asset.name?.toLowerCase().includes(query) ||
+      asset.category?.toLowerCase().includes(query) ||
+      asset.status?.toLowerCase().includes(query)
+    );
+  }, [currentIndustryAssets, debouncedSearch]);
+
+  const filteredOverdue = useMemo(() => {
+    if (!debouncedSearch) return maintenance.overdue;
+    const query = debouncedSearch.toLowerCase();
+    return maintenance.overdue.filter((item: any) => 
+      item.title?.toLowerCase().includes(query) ||
+      item.description?.toLowerCase().includes(query) ||
+      item.assetName?.toLowerCase().includes(query)
+    );
+  }, [maintenance.overdue, debouncedSearch]);
+
+  const filteredUpcoming = useMemo(() => {
+    if (!debouncedSearch) return maintenance.upcoming;
+    const query = debouncedSearch.toLowerCase();
+    return maintenance.upcoming.filter((item: any) => 
+      item.title?.toLowerCase().includes(query) ||
+      item.description?.toLowerCase().includes(query) ||
+      item.assetName?.toLowerCase().includes(query)
+    );
+  }, [maintenance.upcoming, debouncedSearch]);
+
+  const totalResults = filteredAssets.length + filteredOverdue.length + filteredUpcoming.length;
 
   if (isLoading) {
     return (
@@ -147,10 +185,28 @@ export default function FleetDashboard() {
             AI Predicts Maintenance Schedules for All Equipment — FREE
           </Badge>
         </div>
+
+        {/* Search Bar */}
+        <div className="mt-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search equipment, operators, maintenance..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-fleet"
+          />
+          {searchQuery && (
+            <Badge variant="secondary" className="absolute right-3 top-1/2 -translate-y-1/2 text-xs">
+              {totalResults} results
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Overdue Maintenance Alert */}
-      {maintenance.overdue.length > 0 && (
+      {filteredOverdue.length > 0 && (
         <div className="mb-6">
           <Card className="border-l-4 border-l-red-500 bg-red-500/5">
             <CardHeader className="pb-3">
@@ -164,7 +220,7 @@ export default function FleetDashboard() {
                 Critical maintenance past due — immediate attention required
               </p>
               <div className="space-y-2">
-                {maintenance.overdue.slice(0, 3).map((item: any, idx: number) => (
+                {filteredOverdue.slice(0, 3).map((item: any, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border-l-2 border-l-red-500" data-testid={`overdue-maintenance-${idx}`}>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.title}</p>
@@ -179,9 +235,9 @@ export default function FleetDashboard() {
                   </div>
                 ))}
               </div>
-              {maintenance.overdue.length > 3 && (
+              {filteredOverdue.length > 3 && (
                 <p className="text-xs text-red-500 mt-3 text-center font-medium">
-                  +{maintenance.overdue.length - 3} more overdue items
+                  +{filteredOverdue.length - 3} more overdue items
                 </p>
               )}
             </CardContent>
@@ -190,7 +246,7 @@ export default function FleetDashboard() {
       )}
 
       {/* Upcoming Maintenance Alert */}
-      {maintenance.upcoming.length > 0 && (
+      {filteredUpcoming.length > 0 && (
         <div className="mb-6">
           <Card className="border-l-4 border-l-yellow-500">
             <CardHeader className="pb-3">
@@ -201,7 +257,7 @@ export default function FleetDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {maintenance.upcoming.slice(0, 3).map((item: any, idx: number) => (
+                {filteredUpcoming.slice(0, 3).map((item: any, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`upcoming-maintenance-${idx}`}>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{item.title}</p>
@@ -337,7 +393,7 @@ export default function FleetDashboard() {
                         <div>
                           <h3 className="text-lg font-semibold">{industry.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {currentIndustryAssets.length} assets in this category
+                            {filteredAssets.length} assets in this category
                           </p>
                         </div>
                         <Button asChild size="sm">
@@ -348,14 +404,19 @@ export default function FleetDashboard() {
                         </Button>
                       </div>
 
-                      {currentIndustryAssets.length === 0 ? (
+                      {filteredAssets.length === 0 && !searchQuery ? (
                         <div className="text-center py-8 border border-dashed rounded-lg">
                           <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                           <p className="text-sm text-muted-foreground">No assets in this industry yet</p>
                         </div>
+                      ) : filteredAssets.length === 0 && searchQuery ? (
+                        <div className="text-center py-8 border border-dashed rounded-lg">
+                          <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No assets match "{searchQuery}"</p>
+                        </div>
                       ) : (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {currentIndustryAssets.map((asset: any) => (
+                          {filteredAssets.map((asset: any) => (
                             <div
                               key={asset.id}
                               className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"

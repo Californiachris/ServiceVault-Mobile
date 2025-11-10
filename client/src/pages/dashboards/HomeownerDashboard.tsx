@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Home,
   QrCode,
@@ -17,7 +20,8 @@ import {
   Sparkles,
   TrendingUp,
   Shield,
-  Clock
+  Clock,
+  Search
 } from "lucide-react";
 
 interface HomeownerDashboardData {
@@ -32,6 +36,8 @@ interface HomeownerDashboardData {
 
 export default function HomeownerDashboard() {
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   
   const { data, isLoading } = useQuery<HomeownerDashboardData>({
     queryKey: ["/api/dashboard/homeowner"],
@@ -73,6 +79,37 @@ export default function HomeownerDashboard() {
     return <CheckCircle2 className="h-4 w-4" />;
   };
 
+  // Debounced search filtering (300ms) for properties, recent documents, and reminders
+  const filteredProperties = useMemo(() => {
+    if (!debouncedSearch) return properties;
+    const query = debouncedSearch.toLowerCase();
+    return properties.filter((prop: any) => 
+      prop.name?.toLowerCase().includes(query) ||
+      prop.addressLine1?.toLowerCase().includes(query) ||
+      prop.city?.toLowerCase().includes(query)
+    );
+  }, [properties, debouncedSearch]);
+
+  const filteredDocuments = useMemo(() => {
+    if (!debouncedSearch) return recentDocuments;
+    const query = debouncedSearch.toLowerCase();
+    return recentDocuments.filter((doc: any) => 
+      doc.name?.toLowerCase().includes(query) ||
+      doc.type?.toLowerCase().includes(query)
+    );
+  }, [recentDocuments, debouncedSearch]);
+
+  const filteredReminders = useMemo(() => {
+    if (!debouncedSearch) return upcomingReminders;
+    const query = debouncedSearch.toLowerCase();
+    return upcomingReminders.filter((reminder: any) => 
+      reminder.title?.toLowerCase().includes(query) ||
+      reminder.description?.toLowerCase().includes(query)
+    );
+  }, [upcomingReminders, debouncedSearch]);
+
+  const totalResults = filteredProperties.length + filteredDocuments.length + filteredReminders.length;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
       {/* Header */}
@@ -106,6 +143,24 @@ export default function HomeownerDashboard() {
             <Sparkles className="h-3 w-3 mr-1" />
             AI-Powered Warranty Parsing & Maintenance Reminders — FREE
           </Badge>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="mt-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search properties, assets, documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-homeowner"
+          />
+          {searchQuery && (
+            <Badge variant="secondary" className="absolute right-3 top-1/2 -translate-y-1/2 text-xs">
+              {totalResults} results
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -218,7 +273,7 @@ export default function HomeownerDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {properties.length === 0 ? (
+              {filteredProperties.length === 0 && !searchQuery ? (
                 <div className="text-center py-12">
                   <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No properties yet</p>
@@ -229,9 +284,17 @@ export default function HomeownerDashboard() {
                     </Link>
                   </Button>
                 </div>
+              ) : filteredProperties.length === 0 && searchQuery ? (
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No properties match "{searchQuery}"</p>
+                  <Button variant="ghost" onClick={() => setSearchQuery("")} className="mt-2">
+                    Clear Search
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {properties.map((property: any) => (
+                  {filteredProperties.map((property: any) => (
                     <div
                       key={property.id}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
@@ -284,14 +347,19 @@ export default function HomeownerDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {upcomingReminders.length === 0 ? (
+              {filteredReminders.length === 0 && !searchQuery ? (
                 <div className="text-center py-8">
                   <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">No upcoming reminders</p>
                 </div>
+              ) : filteredReminders.length === 0 && searchQuery ? (
+                <div className="text-center py-8">
+                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No reminders match "{searchQuery}"</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {upcomingReminders.map((reminder: any) => (
+                  {filteredReminders.map((reminder: any) => (
                     <div
                       key={reminder.id}
                       className="p-3 bg-muted/50 rounded-lg"

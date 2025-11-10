@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { useState, useMemo } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import {
   Building2,
   QrCode,
@@ -18,7 +21,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Zap
+  Zap,
+  Search
 } from "lucide-react";
 
 interface ContractorDashboardData {
@@ -50,8 +54,10 @@ interface ContractorDashboardData {
 
 export default function ContractorDashboard() {
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
   
-  const { data, isLoading } = useQuery<ContractorDashboardData>({
+  const { data, isLoading} = useQuery<ContractorDashboardData>({
     queryKey: ["/api/dashboard/contractor"],
     retry: false,
   });
@@ -96,6 +102,28 @@ export default function ContractorDashboard() {
     return 'text-green-500 bg-green-500/10 border-green-500/20';
   };
 
+  // Debounced search filtering (300ms) for jobs and service alerts
+  const filteredJobs = useMemo(() => {
+    if (!debouncedSearch) return jobs.recent;
+    const query = debouncedSearch.toLowerCase();
+    return jobs.recent.filter((job: any) => 
+      job.propertyName?.toLowerCase().includes(query) ||
+      job.assetName?.toLowerCase().includes(query) ||
+      job.status?.toLowerCase().includes(query)
+    );
+  }, [jobs.recent, debouncedSearch]);
+
+  const filteredAlerts = useMemo(() => {
+    if (!debouncedSearch) return serviceAlerts;
+    const query = debouncedSearch.toLowerCase();
+    return serviceAlerts.filter((alert: any) => 
+      alert.clientName?.toLowerCase().includes(query) ||
+      alert.assetName?.toLowerCase().includes(query)
+    );
+  }, [serviceAlerts, debouncedSearch]);
+
+  const totalResults = filteredJobs.length + filteredAlerts.length;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
       {/* Header */}
@@ -138,10 +166,28 @@ export default function ContractorDashboard() {
             AI Identifies Service Opportunities in Client Assets — FREE
           </Badge>
         </div>
+
+        {/* Search Bar */}
+        <div className="mt-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search jobs, clients, service alerts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-contractor"
+          />
+          {searchQuery && (
+            <Badge variant="secondary" className="absolute right-3 top-1/2 -translate-y-1/2 text-xs">
+              {totalResults} results
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Service Opportunity Alerts */}
-      {serviceAlerts.length > 0 && (
+      {filteredAlerts.length > 0 && (
         <div className="mb-6">
           <Card className="border-l-4 border-l-orange-500">
             <CardHeader className="pb-3">
@@ -155,7 +201,7 @@ export default function ContractorDashboard() {
                 Client warranties expiring soon — reach out to offer service contracts
               </p>
               <div className="space-y-2">
-                {serviceAlerts.slice(0, 3).map((alert: any, idx: number) => (
+                {filteredAlerts.slice(0, 3).map((alert: any, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`service-alert-${idx}`}>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{alert.assetName}</p>
@@ -169,9 +215,9 @@ export default function ContractorDashboard() {
                   </div>
                 ))}
               </div>
-              {serviceAlerts.length > 3 && (
+              {filteredAlerts.length > 3 && (
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  +{serviceAlerts.length - 3} more opportunities
+                  +{filteredAlerts.length - 3} more opportunities
                 </p>
               )}
             </CardContent>
@@ -303,7 +349,7 @@ export default function ContractorDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {jobs.recent.length === 0 ? (
+              {filteredJobs.length === 0 && !searchQuery ? (
                 <div className="text-center py-12">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No jobs yet</p>
@@ -314,9 +360,14 @@ export default function ContractorDashboard() {
                     </Link>
                   </Button>
                 </div>
+              ) : filteredJobs.length === 0 && searchQuery ? (
+                <div className="text-center py-8">
+                  <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground">No jobs match "{searchQuery}"</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {jobs.recent.slice(0, 5).map((job: any) => (
+                  {filteredJobs.slice(0, 5).map((job: any) => (
                     <div
                       key={job.id}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
