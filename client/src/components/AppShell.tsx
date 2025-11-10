@@ -326,7 +326,7 @@ export default function AppShell({ children }: AppShellProps) {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[100] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
         <div className="grid grid-cols-4 h-16">
           {navLinks.slice(0, 4).map((link) => {
             const Icon = link.icon;
