@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import AppShell from "@/components/AppShell";
 import HomeownerDashboard from "@/pages/dashboards/HomeownerDashboard";
 import ContractorDashboard from "@/pages/dashboards/ContractorDashboard";
 import FleetDashboard from "@/pages/dashboards/FleetDashboard";
@@ -36,20 +35,12 @@ export default function Dashboard() {
   const userRole = user.role || "HOMEOWNER";
 
   // Route to role-specific dashboard
-  const renderDashboard = () => {
-    switch (userRole) {
-      case "CONTRACTOR":
-        return <ContractorDashboard />;
-      case "FLEET":
-        return <FleetDashboard />;
-      default: // HOMEOWNER
-        return <HomeownerDashboard />;
-    }
-  };
-
-  return (
-    <AppShell>
-      {renderDashboard()}
-    </AppShell>
-  );
+  switch (userRole) {
+    case "CONTRACTOR":
+      return <ContractorDashboard />;
+    case "FLEET":
+      return <FleetDashboard />;
+    default: // HOMEOWNER
+      return <HomeownerDashboard />;
+  }
 }
