@@ -1,6 +1,5 @@
 import { ReactNode, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useDevRoleOverride } from "@/hooks/useDevRoleOverride";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,6 @@ import {
   Camera,
   Building2,
   Truck,
-  Users,
   FileText,
   Bell,
   Settings,
@@ -18,16 +16,8 @@ import {
   Menu,
   X,
   LogOut,
-  User,
-  RefreshCw
+  User
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface AppShellProps {
   children: ReactNode;
@@ -37,7 +27,6 @@ export default function AppShell({ children }: AppShellProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { overrideRole, setOverrideRole, isDevMode } = useDevRoleOverride();
 
   const isActive = (path: string) => {
     if (path === '/' && location === '/') return true;
@@ -45,8 +34,7 @@ export default function AppShell({ children }: AppShellProps) {
     return false;
   };
 
-  // Use override role in dev mode for navigation too
-  const userRole = overrideRole || user?.role || "HOMEOWNER";
+  const userRole = user?.role || "HOMEOWNER";
 
   // Role-specific navigation links
   const getNavLinks = (role: string) => {
@@ -275,29 +263,6 @@ export default function AppShell({ children }: AppShellProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Dev Role Switcher */}
-            {isDevMode && (
-              <div className="flex items-center gap-2 mr-2">
-                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs">
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  DEV
-                </Badge>
-                <Select
-                  value={overrideRole || user?.role || "HOMEOWNER"}
-                  onValueChange={(value) => setOverrideRole(value === user?.role ? null : value as any)}
-                >
-                  <SelectTrigger className="w-[140px] h-8 text-xs" data-testid="select-dev-role">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HOMEOWNER">Homeowner</SelectItem>
-                    <SelectItem value="CONTRACTOR">Contractor</SelectItem>
-                    <SelectItem value="FLEET">Fleet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            
             <Button variant="ghost" size="sm" data-testid="button-notifications">
               <Bell className="h-5 w-5" />
             </Button>

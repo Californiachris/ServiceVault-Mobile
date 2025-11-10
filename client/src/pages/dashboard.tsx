@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useDevRoleOverride } from "@/hooks/useDevRoleOverride";
 import AppShell from "@/components/AppShell";
 import HomeownerDashboard from "@/pages/dashboards/HomeownerDashboard";
 import ContractorDashboard from "@/pages/dashboards/ContractorDashboard";
@@ -10,7 +9,6 @@ import FleetDashboard from "@/pages/dashboards/FleetDashboard";
 export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
-  const { overrideRole } = useDevRoleOverride();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -35,8 +33,7 @@ export default function Dashboard() {
     );
   }
 
-  // Use override role in dev mode, otherwise use real role
-  const userRole = overrideRole || user.role || "HOMEOWNER";
+  const userRole = user.role || "HOMEOWNER";
 
   // Route to role-specific dashboard
   const renderDashboard = () => {
