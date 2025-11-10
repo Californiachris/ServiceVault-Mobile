@@ -1331,7 +1331,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { parseWarrantyDocument } = await import('./openaiClient');
       const warrantyInfo = await parseWarrantyDocument(imageBase64);
 
-      res.json({ warrantyInfo });
+      // Task 8: Smart Reminders - Auto-create reminders from AI-parsed warranty dates
+      const createdReminders = [];
+
+      // Create warranty expiration reminder (30 days before end date)
+      if (warrantyInfo.warrantyEndDate && assetId) {
+        try {
+          const asset = await storage.getAsset(assetId);
+          if (asset) {
+            const expiryDate = new Date(warrantyInfo.warrantyEndDate);
+            const reminderDate = new Date(expiryDate);
+            reminderDate.setDate(reminderDate.getDate() - 30); // 30 days before expiration
+
+            const warrantyReminder = await storage.createReminder({
+              assetId,
+              propertyId: asset.propertyId,
+              dueAt: reminderDate,
+              type: 'WARRANTY_EXPIRATION',
+              title: `Warranty Expiring Soon`,
+              description: `Warranty for ${warrantyInfo.productName || 'this asset'} expires on ${expiryDate.toLocaleDateString()}`,
+              source: 'AI_GENERATED',
+              createdBy: userId,
+              notifyHomeowner: true,
+            });
+            createdReminders.push(warrantyReminder);
+          }
+        } catch (err) {
+          console.error("Error creating warranty expiration reminder:", err);
+        }
+      }
+
+      // Create recurring maintenance reminders from schedule
+      if (warrantyInfo.maintenanceSchedule && Array.isArray(warrantyInfo.maintenanceSchedule) && assetId) {
+        try {
+          const asset = await storage.getAsset(assetId);
+          if (asset) {
+            for (const maintenance of warrantyInfo.maintenanceSchedule) {
+              if (maintenance.description && maintenance.intervalMonths) {
+                const firstDue = maintenance.firstDueDate 
+                  ? new Date(maintenance.firstDueDate)
+                  : new Date(); // Start today if no firstDueDate specified
+
+                // Calculate frequency based on interval
+                let frequency = 'CUSTOM';
+                if (maintenance.intervalMonths === 1) frequency = 'MONTHLY';
+                else if (maintenance.intervalMonths === 3) frequency = 'QUARTERLY';
+                else if (maintenance.intervalMonths === 12) frequency = 'ANNUALLY';
+
+                const maintenanceReminder = await storage.createReminder({
+                  assetId,
+                  propertyId: asset.propertyId,
+                  dueAt: firstDue,
+                  type: 'MAINTENANCE',
+                  title: `Scheduled Maintenance: ${maintenance.description}`,
+                  description: `${maintenance.description} - Recommended every ${maintenance.intervalMonths} month(s)`,
+                  frequency,
+                  intervalDays: frequency === 'CUSTOM' ? maintenance.intervalMonths * 30 : undefined,
+                  source: 'AI_GENERATED',
+                  createdBy: userId,
+                  notifyHomeowner: true,
+                });
+                createdReminders.push(maintenanceReminder);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error creating maintenance reminders:", err);
+        }
+      }
+
+      res.json({ warrantyInfo, createdReminders });
     } catch (error) {
       console.error("Error parsing warranty:", error);
       res.status(500).json({ error: "Failed to parse warranty document" });
