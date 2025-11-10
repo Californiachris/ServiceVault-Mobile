@@ -123,6 +123,13 @@ export default function PricingPage() {
             AI Predictive Maintenance Reminders Included FREE for Everyone
           </span>
         </p>
+        {!isAuthenticated && (
+          <div className="max-w-xl mx-auto mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+              💡 Sign in first, then click Subscribe to preview the onboarding flow
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Pricing Cards */}
