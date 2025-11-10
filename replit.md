@@ -89,11 +89,21 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
   - **Backend Integration:** All dashboards fetch real-time data from role-specific API endpoints (/api/dashboard/homeowner, /api/dashboard/contractor, /api/dashboard/fleet) with proper multi-tenant isolation
   - **Design Quality:** Silicon Valley-level polish with role color coding (blue/orange/purple), consistent spacing/typography, proper loading states, all data-testid attributes for testing
 
-- **Professional Camera Permission Handling:**
-  - **QRScanner Component:** Enterprise-grade permission detection with 5 status states (initializing, granted, denied, blocked, error)
-  - **Iframe Detection:** Synchronous detection via useRef prevents getUserMedia calls in embedded contexts (Replit preview), eliminating race conditions
-  - **Professional Error UI:** Context-aware messaging with "Open in New Tab" button for iframe blocking, troubleshooting steps for permission denials, manual entry fallback
-  - **Toast Notifications:** Destructive toasts surface camera blocking and permission denial with actionable guidance
-  - **Status Callbacks:** Structured onStatusChange(status, message) and onFallbackRequest() propagate camera state to parent components
-  - **Mobile-First:** Works seamlessly on mobile browsers when opened in full tab, handles all MediaDevices error types (NotAllowedError, NotFoundError, NotReadableError)
-  - **User Flow:** Preview (iframe) → Error with "Open in New Tab" → New tab → Camera permissions work → QR scanning functional
+- **Elite Camera Permission System (World-Class Quality):**
+  - **Smart Browser Detection:** Detects Chrome, Safari, Firefox and shows tailored step-by-step instructions for each browser
+  - **Premium Error Card Design:** Gradient header with Shield icon, professional spacing, exceeds Instagram/Facebook quality standards
+  - **Clear Messaging:** "To scan QR codes or warranties on your equipment and assets" - explains purpose upfront
+  - **Numbered Visual Steps:** Circular numbered indicators with exact instructions (e.g., "Tap the lock icon 🔒 in the address bar")
+  - **Color-Coded Warnings:** Amber for iframe blocking, blue for privacy notes, proper dark mode support
+  - **Privacy Note:** "We never record or store camera footage" - builds trust
+  - **Iframe Handling:** Detects preview mode, shows "Open in New Tab" button with explanation
+  - **Multi-State Support:** Handles initializing, granted, denied, blocked, error with appropriate UI for each
+  - **Mobile-Optimized:** Responsive button layout, touch-friendly targets, works flawlessly on all devices
+  - **Fallback Always Available:** "Enter Code Manually" button ensures users never get stuck
+
+- **Mobile Z-Index Layering (Production-Grade):**
+  - **Top Header:** z-[100] - Always visible, never obscured by content
+  - **Bottom Navigation:** z-[100] - Always on top, smooth scrolling behind it
+  - **Sidebar Overlay:** z-[90] - Proper layering hierarchy
+  - **Content Padding:** pb-20 on main ensures content doesn't hide under bottom nav
+  - **Smooth Interactions:** All fixed elements stay accessible during scrolling, no overlap issues
