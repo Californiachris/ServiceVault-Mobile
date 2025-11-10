@@ -26,25 +26,19 @@ export default function Landing() {
       {/* Header */}
       <div className="border-b bg-background/80 backdrop-blur-lg sticky top-0 z-50 h-16">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <div className="flex items-center gap-2" data-testid="logo-fixtrack">
+          <div className="flex items-center gap-3" data-testid="logo-fixtrack">
             <img 
               src="/logo.png" 
               alt="FixTrack Logo" 
-              className="h-10 w-10 object-contain"
+              className="h-14 w-14 object-contain"
             />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
+            <span className="text-2xl font-extrabold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
               FixTrack Pro
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div>
             <Button 
-              variant="ghost" 
-              onClick={() => setLocation("/pricing")}
-              data-testid="button-nav-pricing"
-            >
-              Pricing
-            </Button>
-            <Button 
+              size="lg"
               onClick={() => setLocation("/pricing")}
               data-testid="button-nav-get-started"
             >
