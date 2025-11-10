@@ -172,8 +172,8 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
-          <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="lg:hidden fixed inset-0 z-[150] bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
+          <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl z-[160]" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col h-full">
               {/* Mobile Logo */}
               <div className="flex items-center gap-2 h-16 px-6 border-b border-border">
