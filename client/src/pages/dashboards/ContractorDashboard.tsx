@@ -27,15 +27,24 @@ interface ContractorDashboardData {
     pending: number;
     scheduled: number;
     completed: number;
+    recent: any[];
   };
   revenue: number;
+  revenueStats: {
+    current: number;
+    previous: number;
+    delta: number;
+    deltaPct: number;
+    trend: 'UP' | 'DOWN' | 'FLAT';
+  };
+  serviceAlerts: any[];
   quota: {
     total: number;
     used: number;
     remaining: number;
+    isQuotaLow: boolean;
   };
   clientCount: number;
-  recentJobs: any[];
   subscription: any;
 }
 
@@ -64,15 +73,28 @@ export default function ContractorDashboard() {
   }
 
   const contractor = data?.contractor;
-  const jobs = data?.jobs || { pending: 0, scheduled: 0, completed: 0 };
+  const jobs = data?.jobs || { pending: 0, scheduled: 0, completed: 0, recent: [] };
   const revenue = data?.revenue || 0;
-  const quota = data?.quota || { total: 50, used: 0, remaining: 50 };
+  const revenueStats = data?.revenueStats || { current: 0, previous: 0, delta: 0, deltaPct: 0, trend: 'FLAT' };
+  const serviceAlerts = data?.serviceAlerts || [];
+  const quota = data?.quota || { total: 50, used: 0, remaining: 50, isQuotaLow: false };
   const clientCount = data?.clientCount || 0;
-  const recentJobs = data?.recentJobs || [];
   const subscription = data?.subscription;
 
   const quotaPercentage = quota.total > 0 ? (quota.used / quota.total) * 100 : 0;
-  const quotaColor = quotaPercentage > 90 ? "text-red-500" : quotaPercentage > 70 ? "text-orange-500" : "text-green-500";
+  const quotaColor = quota.isQuotaLow ? "text-red-500" : quotaPercentage > 70 ? "text-orange-500" : "text-green-500";
+  
+  const getTrendIcon = (trend: string) => {
+    if (trend === 'UP') return <TrendingUp className="h-4 w-4 text-green-500" />;
+    if (trend === 'DOWN') return <TrendingUp className="h-4 w-4 text-red-500 rotate-180" />;
+    return <TrendingUp className="h-4 w-4 text-muted-foreground" />;
+  };
+  
+  const getUrgencyColor = (urgency: string) => {
+    if (urgency === 'RED') return 'text-red-500 bg-red-500/10 border-red-500/20';
+    if (urgency === 'YELLOW') return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+    return 'text-green-500 bg-green-500/10 border-green-500/20';
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -118,6 +140,69 @@ export default function ContractorDashboard() {
         </div>
       </div>
 
+      {/* Service Opportunity Alerts */}
+      {serviceAlerts.length > 0 && (
+        <div className="mb-6">
+          <Card className="border-l-4 border-l-orange-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-500" />
+                <span>Service Opportunities — Potential Revenue</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Client warranties expiring soon — reach out to offer service contracts
+              </p>
+              <div className="space-y-2">
+                {serviceAlerts.slice(0, 3).map((alert: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`service-alert-${idx}`}>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{alert.assetName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {alert.documentName} expires in {alert.daysUntilExpiry} days
+                      </p>
+                    </div>
+                    <Badge className={getUrgencyColor(alert.urgency)}>
+                      {alert.urgency === 'RED' ? 'Urgent' : 'Soon'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {serviceAlerts.length > 3 && (
+                <p className="text-xs text-muted-foreground mt-3 text-center">
+                  +{serviceAlerts.length - 3} more opportunities
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Quota Low Warning */}
+      {quota.isQuotaLow && (
+        <div className="mb-6">
+          <Card className="border-l-4 border-l-red-500 bg-red-500/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-500">Low QR Code Quota</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You have only {quota.remaining} stickers remaining. Order more to avoid service disruptions.
+                  </p>
+                </div>
+                <Button variant="destructive" size="sm" asChild data-testid="button-order-now">
+                  <Link href="/pricing">
+                    Order Now
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
@@ -159,16 +244,26 @@ export default function ContractorDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              Total Revenue
+              Revenue (30 Days)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold" data-testid="stat-revenue">
-              ${revenue.toLocaleString()}
+              ${revenueStats.current.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              All completed jobs
-            </p>
+            <div className="flex items-center gap-1 mt-1">
+              {getTrendIcon(revenueStats.trend)}
+              <p className={`text-xs font-medium ${
+                revenueStats.trend === 'UP' ? 'text-green-500' : 
+                revenueStats.trend === 'DOWN' ? 'text-red-500' : 
+                'text-muted-foreground'
+              }`} data-testid="stat-revenue-trend">
+                {revenueStats.trend === 'FLAT' ? 'No change' : `${Math.abs(revenueStats.deltaPct).toFixed(1)}%`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                vs previous 30 days
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card className="hover:shadow-lg transition-shadow">
@@ -208,11 +303,11 @@ export default function ContractorDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {recentJobs.length === 0 ? (
+              {jobs.recent.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-4">No jobs yet</p>
-                  <Button asChild>
+                  <Button asChild data-testid="button-start-first-install">
                     <Link href="/scan">
                       <QrCode className="mr-2 h-4 w-4" />
                       Start First Installation
@@ -221,7 +316,7 @@ export default function ContractorDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentJobs.map((job: any) => (
+                  {jobs.recent.slice(0, 5).map((job: any) => (
                     <div
                       key={job.id}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"

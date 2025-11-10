@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { eq, desc, count, and, lte, asc, isNull } from "drizzle-orm";
 import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetOperators } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import Stripe from "stripe";
@@ -203,40 +203,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Role-specific dashboard endpoints
-  app.get('/api/dashboard/homeowner', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/homeowner', isAuthenticated, requireRole('HOMEOWNER'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user || user.role !== 'HOMEOWNER') {
-        return res.status(403).json({ error: "Access denied" });
-      }
 
       const properties = await storage.getProperties(userId);
       const subscription = await storage.getUserSubscription(userId);
       
-      // Get counts
+      // Get counts and all documents
       let totalAssets = 0;
-      let documentsCount = 0;
+      let allDocuments: any[] = [];
       for (const property of properties) {
-        const assets = await storage.getAssets(property.id);
-        totalAssets += assets.length;
+        const propertyAssets = await storage.getAssets(property.id);
+        totalAssets += propertyAssets.length;
         const docs = await storage.getPropertyDocuments(property.id);
-        documentsCount += docs.length;
+        allDocuments = allDocuments.concat(docs);
       }
 
-      const upcomingReminders = await db
+      // Calculate warranty alerts
+      const now = new Date();
+      const warrantyDocs = allDocuments.filter((doc: any) => doc.type === 'WARRANTY' && doc.expiryDate);
+      const warrantyAlerts = warrantyDocs
+        .map((doc: any) => {
+          const expiryDate = new Date(doc.expiryDate);
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          let urgency = 'GREEN';
+          if (daysUntilExpiry < 30) urgency = 'RED';
+          else if (daysUntilExpiry < 90) urgency = 'YELLOW';
+          
+          return {
+            ...doc,
+            daysUntilExpiry,
+            urgency,
+          };
+        })
+        .sort((a: any, b: any) => a.daysUntilExpiry - b.daysUntilExpiry)
+        .slice(0, 5);
+
+      // Get recent uploads
+      const recentDocuments = allDocuments
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.uploadedAt || a.createdAt).getTime();
+          const dateB = new Date(b.uploadedAt || b.createdAt).getTime();
+          return dateB - dateA;
+        })
+        .slice(0, 5);
+
+      // Enrich reminders with urgency
+      const rawReminders = await db
         .select()
         .from(reminders)
         .where(eq(reminders.createdBy, userId))
-        .orderBy(desc(reminders.dueAt))
+        .orderBy(asc(reminders.dueAt))
         .limit(5);
+
+      const enrichedReminders = rawReminders.map((reminder: any) => {
+        const dueDate = new Date(reminder.dueAt);
+        const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        let urgency = 'GREEN';
+        if (daysUntilDue < 30) urgency = 'RED';
+        else if (daysUntilDue < 90) urgency = 'YELLOW';
+        
+        return {
+          ...reminder,
+          daysUntilDue,
+          urgency,
+        };
+      });
 
       res.json({
         properties,
         totalAssets,
-        documentsCount,
-        upcomingReminders,
+        documentsCount: allDocuments.length,
+        warrantyAlerts,
+        recentDocuments,
+        upcomingReminders: enrichedReminders,
         subscription: subscription || null,
       });
     } catch (error) {
@@ -245,16 +286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/contractor', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/contractor', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      const effectiveRole = req.devRoleOverride || user?.role;
-      
-      if (!user || effectiveRole !== 'CONTRACTOR') {
-        return res.status(403).json({ error: "Access denied" });
-      }
 
       const contractor = await storage.getContractor(userId);
       if (!contractor) {
@@ -262,12 +296,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const subscription = await storage.getUserSubscription(userId);
+      const now = new Date();
       
       // Get jobs statistics
       const allJobs = await db.select().from(jobs).where(eq(jobs.contractorId, contractor.id));
       const pendingJobs = allJobs.filter(j => j.status === 'PENDING').length;
       const scheduledJobs = allJobs.filter(j => j.status === 'SCHEDULED').length;
       const completedJobs = allJobs.filter(j => j.status === 'COMPLETED').length;
+      
+      // Calculate revenue trends (last 30 days vs previous 30 days)
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const previous60Days = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      
+      const recentRevenue = allJobs
+        .filter(j => j.revenue && j.createdAt && j.createdAt >= last30Days)
+        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
+      
+      const previousRevenue = allJobs
+        .filter(j => j.revenue && j.createdAt && j.createdAt >= previous60Days && j.createdAt < last30Days)
+        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
+      
+      const revenueDelta = recentRevenue - previousRevenue;
+      const revenueDeltaPct = previousRevenue > 0 ? (revenueDelta / previousRevenue) * 100 : 0;
+      const trend = revenueDelta > 0 ? 'UP' : revenueDelta < 0 ? 'DOWN' : 'FLAT';
       
       // Calculate total revenue
       const totalRevenue = allJobs
@@ -279,17 +330,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
         .slice(0, 10);
 
-      // Get quota usage
+      // Get quota usage and check if low
       const quotaTotal = subscription?.quotaTotal || 0;
       const quotaUsed = subscription?.quotaUsed || 0;
+      const quotaRemaining = quotaTotal - quotaUsed;
+      const isQuotaLow = quotaRemaining < 10;
 
-      // Get client properties
+      // Get service opportunities: assets installed by this contractor with expiring warranties
       const installedAssets = await db
         .select()
         .from(assets)
         .where(eq(assets.installerId, contractor.id));
       
       const uniquePropertyIds = Array.from(new Set(installedAssets.map(a => a.propertyId).filter(Boolean)));
+
+      // Get warranty documents for all client assets
+      const serviceAlerts: any[] = [];
+      for (const asset of installedAssets) {
+        if (!asset.id) continue;
+        
+        const assetDocs = await storage.getAssetDocuments(asset.id);
+        const warrantyDocs = assetDocs.filter((doc: any) => doc.type === 'WARRANTY' && doc.expiryDate);
+        
+        for (const doc of warrantyDocs) {
+          const expiryDate = new Date(doc.expiryDate);
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let urgency = 'GREEN';
+          if (daysUntilExpiry < 30) urgency = 'RED';
+          else if (daysUntilExpiry < 90) urgency = 'YELLOW';
+          
+          if (urgency !== 'GREEN') {
+            serviceAlerts.push({
+              assetId: asset.id,
+              assetName: asset.name,
+              propertyId: asset.propertyId,
+              documentId: doc.id,
+              documentName: doc.name,
+              expiryDate: doc.expiryDate,
+              daysUntilExpiry,
+              urgency,
+            });
+          }
+        }
+      }
+      
+      serviceAlerts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 
       res.json({
         contractor,
@@ -301,10 +387,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recent: recentJobs,
         },
         revenue: totalRevenue,
+        revenueStats: {
+          current: recentRevenue,
+          previous: previousRevenue,
+          delta: revenueDelta,
+          deltaPct: revenueDeltaPct,
+          trend,
+        },
+        serviceAlerts: serviceAlerts.slice(0, 10),
         quota: {
           total: quotaTotal,
           used: quotaUsed,
-          remaining: quotaTotal - quotaUsed,
+          remaining: quotaRemaining,
+          isQuotaLow,
         },
         clientCount: uniquePropertyIds.length,
         subscription: subscription || null,
@@ -315,23 +410,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/fleet', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/fleet', isAuthenticated, requireRole('FLEET'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      const effectiveRole = req.devRoleOverride || user?.role;
-      
-      if (!user || effectiveRole !== 'FLEET') {
-        return res.status(403).json({ error: "Access denied" });
-      }
+      const now = new Date();
 
       // Get all fleet industries (public reference data)
       const industries = await db.select().from(fleetIndustries).orderBy(asc(fleetIndustries.displayOrder));
       
       // Get fleet assets created by this user only
-      // Note: Assets created via scan/install will have createdBy field from events
-      // For proper multi-tenant fleet, we need to track asset ownership
       const userAssets = await db
         .select()
         .from(assets)
@@ -348,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new Map(userAssets.map(ua => [ua.assets.id, ua.assets])).values()
       );
       
-      // Group assets by industry and category
+      // Group assets by industry
       const assetsByIndustry: any = {};
       for (const asset of fleetAssets) {
         if (asset.fleetIndustryId) {
@@ -359,33 +446,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Get maintenance reminders created by this user only
-      const upcomingMaintenance = await db
-        .select()
-        .from(reminders)
-        .where(
-          and(
-            eq(reminders.createdBy, userId),
-            eq(reminders.status, 'PENDING'),
-            lte(reminders.dueAt, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) // Next 30 days
-          )
-        )
-        .orderBy(asc(reminders.dueAt))
-        .limit(10);
-
-      // Get operators for this user's fleet only (using userId as org identifier for now)
+      // Get operators for this user's fleet
       const operators = await db
         .select()
         .from(fleetOperators)
         .where(eq(fleetOperators.userId, userId));
 
+      // Get operator assignments
+      const operatorAssignments = await db
+        .select()
+        .from(fleetOperatorAssets)
+        .innerJoin(fleetOperators, eq(fleetOperatorAssets.operatorId, fleetOperators.id))
+        .where(eq(fleetOperators.userId, userId));
+
+      const assignedAssetIds = new Set(operatorAssignments.map(oa => oa.fleet_operator_assets.assetId));
+
+      // Calculate utilization
+      const activeAssets = fleetAssets.filter(a => a.status === 'ACTIVE');
+      const maintenanceAssets = fleetAssets.filter(a => a.status === 'MAINTENANCE');
+      const deployedAssets = activeAssets.filter(a => assignedAssetIds.has(a.id || ''));
+      const idleAssets = activeAssets.filter(a => !assignedAssetIds.has(a.id || ''));
+      const utilizationPercent = activeAssets.length > 0 
+        ? Math.round((deployedAssets.length / activeAssets.length) * 100) 
+        : 0;
+
+      // Get unassigned assets
+      const unassignedAssets = idleAssets.map(a => ({
+        id: a.id,
+        name: a.name,
+        industryId: a.fleetIndustryId,
+        categoryId: a.fleetCategoryId,
+      }));
+
+      // Get all maintenance reminders
+      const allReminders = await db
+        .select()
+        .from(reminders)
+        .where(
+          and(
+            eq(reminders.createdBy, userId),
+            eq(reminders.status, 'PENDING')
+          )
+        )
+        .orderBy(asc(reminders.dueAt));
+
+      // Categorize maintenance by urgency
+      const next30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const next90Days = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+      const overdueReminders = allReminders
+        .filter(r => r.dueAt && r.dueAt < now)
+        .map(r => {
+          const daysLate = Math.ceil((now.getTime() - r.dueAt!.getTime()) / (1000 * 60 * 60 * 24));
+          return { ...r, daysLate, urgency: 'RED' as const };
+        });
+
+      const upcomingReminders = allReminders
+        .filter(r => r.dueAt && r.dueAt >= now && r.dueAt <= next30Days)
+        .map(r => {
+          const daysUntil = Math.ceil((r.dueAt!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          return { ...r, daysUntil, urgency: 'YELLOW' as const };
+        });
+
+      const futureReminders = allReminders
+        .filter(r => r.dueAt && r.dueAt > next30Days && r.dueAt <= next90Days)
+        .map(r => {
+          const daysUntil = Math.ceil((r.dueAt!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          return { ...r, daysUntil, urgency: 'GREEN' as const };
+        });
+
+      // Create calendar items from reminders
+      const calendarItems = allReminders
+        .filter(r => r.dueAt && r.dueAt <= next90Days)
+        .map(r => {
+          const daysUntil = r.dueAt ? Math.ceil((r.dueAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+          let urgency = 'GREEN';
+          if (r.dueAt && r.dueAt < now) urgency = 'RED';
+          else if (daysUntil <= 30) urgency = 'YELLOW';
+          
+          return {
+            id: r.id,
+            title: r.title,
+            start: r.dueAt,
+            assetId: r.assetId,
+            description: r.description,
+            urgency,
+          };
+        });
+
       res.json({
         industries,
         totalAssets: fleetAssets.length,
         assetsByIndustry,
-        upcomingMaintenance,
-        operatorCount: operators.length,
-        activeAssets: fleetAssets.filter(a => a.status === 'ACTIVE').length,
+        maintenance: {
+          overdue: overdueReminders.slice(0, 10),
+          upcoming: upcomingReminders.slice(0, 10),
+          future: futureReminders.slice(0, 10),
+        },
+        utilization: {
+          deployed: deployedAssets.length,
+          idle: idleAssets.length,
+          maintenance: maintenanceAssets.length,
+          percent: utilizationPercent,
+        },
+        operators: {
+          total: operators.length,
+          unassignedAssets: unassignedAssets.slice(0, 20),
+          available: operators.filter(o => o.status === 'ACTIVE'),
+        },
+        calendar: {
+          items: calendarItems,
+          lastUpdated: now.toISOString(),
+        },
       });
     } catch (error) {
       console.error("Error fetching fleet dashboard:", error);

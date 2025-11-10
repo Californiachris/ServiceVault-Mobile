@@ -24,6 +24,8 @@ interface HomeownerDashboardData {
   properties: any[];
   totalAssets: number;
   documentsCount: number;
+  warrantyAlerts: any[];
+  recentDocuments: any[];
   upcomingReminders: any[];
   subscription: any;
 }
@@ -54,8 +56,22 @@ export default function HomeownerDashboard() {
   const properties = data?.properties || [];
   const totalAssets = data?.totalAssets || 0;
   const documentsCount = data?.documentsCount || 0;
+  const warrantyAlerts = data?.warrantyAlerts || [];
+  const recentDocuments = data?.recentDocuments || [];
   const upcomingReminders = data?.upcomingReminders || [];
   const subscription = data?.subscription;
+
+  const getUrgencyColor = (urgency: string) => {
+    if (urgency === 'RED') return 'text-red-500 bg-red-500/10 border-red-500/20';
+    if (urgency === 'YELLOW') return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+    return 'text-green-500 bg-green-500/10 border-green-500/20';
+  };
+
+  const getUrgencyIcon = (urgency: string) => {
+    if (urgency === 'RED') return <AlertTriangle className="h-4 w-4" />;
+    if (urgency === 'YELLOW') return <Clock className="h-4 w-4" />;
+    return <CheckCircle2 className="h-4 w-4" />;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
@@ -146,6 +162,41 @@ export default function HomeownerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Warranty Alerts Banner */}
+      {warrantyAlerts.length > 0 && warrantyAlerts.some((w: any) => w.urgency !== 'GREEN') && (
+        <div className="mb-6">
+          <Card className="border-l-4 border-l-red-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <span>Warranty Expiration Alerts</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {warrantyAlerts
+                  .filter((w: any) => w.urgency !== 'GREEN')
+                  .slice(0, 3)
+                  .map((warranty: any) => (
+                    <div key={warranty.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`warranty-alert-${warranty.id}`}>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{warranty.name || 'Warranty Document'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {warranty.daysUntilExpiry > 0 ? `Expires in ${warranty.daysUntilExpiry} days` : 'Expired'}
+                        </p>
+                      </div>
+                      <Badge className={getUrgencyColor(warranty.urgency)}>
+                        {getUrgencyIcon(warranty.urgency)}
+                        <span className="ml-1">{warranty.urgency === 'RED' ? 'Urgent' : 'Soon'}</span>
+                      </Badge>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
@@ -246,19 +297,27 @@ export default function HomeownerDashboard() {
                       className="p-3 bg-muted/50 rounded-lg"
                       data-testid={`reminder-${reminder.id}`}
                     >
-                      <div className="flex items-start gap-2">
-                        <Bell className="h-4 w-4 text-primary mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {reminder.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {reminder.description}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Due: {new Date(reminder.dueAt).toLocaleDateString()}
-                          </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          {getUrgencyIcon(reminder.urgency)}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {reminder.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {reminder.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Due: {new Date(reminder.dueAt).toLocaleDateString()}
+                              {reminder.daysUntilDue > 0 && ` (${reminder.daysUntilDue} days)`}
+                            </p>
+                          </div>
                         </div>
+                        {reminder.urgency !== 'GREEN' && (
+                          <Badge className={getUrgencyColor(reminder.urgency)} data-testid={`badge-urgency-${reminder.id}`}>
+                            {reminder.urgency === 'RED' ? 'Urgent' : 'Soon'}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}

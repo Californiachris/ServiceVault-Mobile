@@ -155,3 +155,33 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return;
   }
 };
+
+export function requireRole(...allowedRoles: string[]): RequestHandler {
+  return async (req: any, res, next) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const effectiveRole = req.devRoleOverride || user.role;
+      
+      req.userRole = effectiveRole;
+      req.userRecord = user;
+
+      if (!allowedRoles.includes(effectiveRole)) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Error in requireRole middleware:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+}

@@ -26,9 +26,26 @@ interface FleetDashboardData {
   industries: any[];
   totalAssets: number;
   assetsByIndustry: Record<string, any[]>;
-  upcomingMaintenance: any[];
-  operatorCount: number;
-  activeAssets: number;
+  maintenance: {
+    overdue: any[];
+    upcoming: any[];
+    future: any[];
+  };
+  utilization: {
+    deployed: number;
+    idle: number;
+    maintenance: number;
+    percent: number;
+  };
+  operators: {
+    total: number;
+    unassignedAssets: any[];
+    available: any[];
+  };
+  calendar: {
+    items: any[];
+    lastUpdated: string;
+  };
 }
 
 export default function FleetDashboard() {
@@ -43,9 +60,22 @@ export default function FleetDashboard() {
   const industries = data?.industries || [];
   const totalAssets = data?.totalAssets || 0;
   const assetsByIndustry = data?.assetsByIndustry || {};
-  const upcomingMaintenance = data?.upcomingMaintenance || [];
-  const operatorCount = data?.operatorCount || 0;
-  const activeAssets = data?.activeAssets || 0;
+  const maintenance = data?.maintenance || { overdue: [], upcoming: [], future: [] };
+  const utilization = data?.utilization || { deployed: 0, idle: 0, maintenance: 0, percent: 0 };
+  const operators = data?.operators || { total: 0, unassignedAssets: [], available: [] };
+  const calendar = data?.calendar || { items: [], lastUpdated: new Date().toISOString() };
+
+  const getUrgencyColor = (urgency: string) => {
+    if (urgency === 'RED') return 'text-red-500 bg-red-500/10 border-red-500/20';
+    if (urgency === 'YELLOW') return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+    return 'text-green-500 bg-green-500/10 border-green-500/20';
+  };
+
+  const getUrgencyIcon = (urgency: string) => {
+    if (urgency === 'RED') return <AlertTriangle className="h-4 w-4" />;
+    if (urgency === 'YELLOW') return <Clock className="h-4 w-4" />;
+    return <CheckCircle2 className="h-4 w-4" />;
+  };
 
   // Initialize selected industry when data loads
   useEffect(() => {
@@ -119,6 +149,77 @@ export default function FleetDashboard() {
         </div>
       </div>
 
+      {/* Overdue Maintenance Alert */}
+      {maintenance.overdue.length > 0 && (
+        <div className="mb-6">
+          <Card className="border-l-4 border-l-red-500 bg-red-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-500">
+                <AlertTriangle className="h-5 w-5" />
+                <span>URGENT: Overdue Maintenance</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                Critical maintenance past due — immediate attention required
+              </p>
+              <div className="space-y-2">
+                {maintenance.overdue.slice(0, 3).map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border-l-2 border-l-red-500" data-testid={`overdue-maintenance-${idx}`}>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
+                      <p className="text-xs text-red-500 font-medium mt-1">
+                        {item.daysLate} {item.daysLate === 1 ? 'day' : 'days'} overdue
+                      </p>
+                    </div>
+                    <Badge className="bg-red-500 text-white">
+                      OVERDUE
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {maintenance.overdue.length > 3 && (
+                <p className="text-xs text-red-500 mt-3 text-center font-medium">
+                  +{maintenance.overdue.length - 3} more overdue items
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Upcoming Maintenance Alert */}
+      {maintenance.upcoming.length > 0 && (
+        <div className="mb-6">
+          <Card className="border-l-4 border-l-yellow-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2 text-yellow-600">
+                <Clock className="h-5 w-5" />
+                <span>Upcoming Maintenance (Next 30 Days)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {maintenance.upcoming.slice(0, 3).map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg" data-testid={`upcoming-maintenance-${idx}`}>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Due in {item.daysUntil} {item.daysUntil === 1 ? 'day' : 'days'}
+                      </p>
+                    </div>
+                    <Badge className={getUrgencyColor(item.urgency)}>
+                      Soon
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
@@ -133,7 +234,7 @@ export default function FleetDashboard() {
               {totalAssets}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {activeAssets} active assets
+              {utilization.deployed + utilization.idle} active assets
             </p>
           </CardContent>
         </Card>
@@ -164,10 +265,13 @@ export default function FleetDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-orange-500" data-testid="stat-maintenance-due">
-              {upcomingMaintenance.length}
+              {maintenance.overdue.length + maintenance.upcoming.length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Next 30 days
+              {maintenance.overdue.length > 0 && (
+                <span className="text-red-500 font-medium">{maintenance.overdue.length} overdue, </span>
+              )}
+              {maintenance.upcoming.length} upcoming
             </p>
           </CardContent>
         </Card>
@@ -175,17 +279,24 @@ export default function FleetDashboard() {
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Operators
+              <TrendingUp className="h-4 w-4" />
+              Fleet Utilization
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold" data-testid="stat-operators">
-              {operatorCount}
+            <div className="text-3xl font-bold" data-testid="stat-utilization">
+              {utilization.percent}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Active team members
-            </p>
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-green-500">{utilization.deployed} deployed</span>
+                <span className="text-yellow-500">{utilization.idle} idle</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-red-500">{utilization.maintenance} down</span>
+                <span className="text-muted-foreground">{operators.total} operators</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -297,14 +408,14 @@ export default function FleetDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {upcomingMaintenance.length === 0 ? (
+              {maintenance.upcoming.length === 0 && maintenance.future.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
                   <p className="text-muted-foreground">All caught up! No maintenance due.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {upcomingMaintenance.map((reminder: any) => (
+                  {[...maintenance.upcoming, ...maintenance.future].slice(0, 5).map((reminder: any) => (
                     <div
                       key={reminder.id}
                       className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
@@ -346,13 +457,13 @@ export default function FleetDashboard() {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-muted-foreground">Active Rate</span>
                   <span className="text-sm font-semibold">
-                    {totalAssets > 0 ? Math.round((activeAssets / totalAssets) * 100) : 0}%
+                    {totalAssets > 0 ? Math.round(((utilization.deployed + utilization.idle) / totalAssets) * 100) : 0}%
                   </span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-green-500"
-                    style={{ width: `${totalAssets > 0 ? (activeAssets / totalAssets) * 100 : 0}%` }}
+                    style={{ width: `${totalAssets > 0 ? ((utilization.deployed + utilization.idle) / totalAssets) * 100 : 0}%` }}
                   />
                 </div>
               </div>
