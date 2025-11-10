@@ -154,7 +154,7 @@ export default function AppShell({ children }: AppShellProps) {
       </aside>
 
       {/* Mobile Top Bar */}
-      <div className="lg:hidden sticky top-0 z-50 flex items-center justify-between h-16 px-4 border-b border-border bg-card/80 backdrop-blur-lg">
+      <div className="lg:hidden sticky top-0 z-[100] flex items-center justify-between h-16 px-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">
           <img 
             src="/logo.png" 
@@ -184,7 +184,7 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
           <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col h-full">
               {/* Mobile Logo */}
@@ -258,7 +258,7 @@ export default function AppShell({ children }: AppShellProps) {
       )}
 
       {/* Desktop Top Bar */}
-      <div className="hidden lg:block lg:pl-64 sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border">
+      <div className="hidden lg:block lg:pl-64 sticky top-0 z-[100] bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="h-16 px-6 flex items-center justify-between gap-4">
           {/* Search */}
           <div className="flex-1 max-w-md">
@@ -326,7 +326,7 @@ export default function AppShell({ children }: AppShellProps) {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[100] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
         <div className="grid grid-cols-4 h-16">
           {navLinks.slice(0, 4).map((link) => {
             const Icon = link.icon;

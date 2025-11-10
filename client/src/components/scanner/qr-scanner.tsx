@@ -1,9 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, Camera, AlertCircle, ExternalLink } from 'lucide-react';
+import { X, Camera, AlertCircle, ExternalLink, Lock, Smartphone, Shield } from 'lucide-react';
 
 export type CameraStatus = 'initializing' | 'granted' | 'denied' | 'blocked' | 'error';
+
+type BrowserType = 'chrome' | 'safari' | 'firefox' | 'other';
+
+function detectBrowser(): BrowserType {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('chrome') && !ua.includes('edg')) return 'chrome';
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'safari';
+  if (ua.includes('firefox')) return 'firefox';
+  return 'other';
+}
 
 interface QRScannerProps {
   onScan: (code: string) => void;
@@ -169,66 +179,165 @@ export default function QRScanner({ onScan, onClose, onStatusChange, onFallbackR
   };
 
   if (error) {
+    const browser = detectBrowser();
+    
+    const getBrowserInstructions = () => {
+      if (browser === 'chrome') {
+        return [
+          'Tap the lock icon or "View site information" in the address bar',
+          'Find "Camera" in the permissions list',
+          'Change from "Block" to "Allow"',
+          'Refresh this page to start scanning'
+        ];
+      } else if (browser === 'safari') {
+        return [
+          'Tap "aA" in the address bar (top left)',
+          'Select "Website Settings"',
+          'Tap "Camera" and choose "Allow"',
+          'Refresh this page to start scanning'
+        ];
+      } else if (browser === 'firefox') {
+        return [
+          'Tap the lock icon in the address bar',
+          'Tap "Connection" or "Permissions"',
+          'Find Camera and change to "Allow"',
+          'Refresh this page to start scanning'
+        ];
+      } else {
+        return [
+          'Look for a camera or lock icon in your address bar',
+          'Find camera permissions in your browser settings',
+          'Change permission from "Block" to "Allow"',
+          'Refresh this page to start scanning'
+        ];
+      }
+    };
+
     return (
-      <Card className="border-destructive/50">
-        <CardContent className="p-6 text-center space-y-4">
-          <AlertCircle className="h-16 w-16 text-destructive mx-auto" />
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Camera Error</h3>
-            <p className="text-muted-foreground text-sm mb-4">{error}</p>
+      <Card className="border-border shadow-xl">
+        <CardContent className="p-0">
+          {/* Header Section */}
+          <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-background p-6 border-b border-border">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-primary/10 rounded-full shrink-0">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3 className="text-xl font-semibold">Camera Access Needed</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  To scan QR codes or warranties on your equipment and assets
+                </p>
+              </div>
+            </div>
           </div>
 
-          {isInIframeRef.current && (
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-left space-y-3">
-              <p className="font-medium flex items-center gap-2">
-                <ExternalLink className="h-4 w-4" />
-                Solution: Open in New Tab
-              </p>
-              <p className="text-muted-foreground text-xs">
-                Camera access is blocked in embedded views. Click below to open this page in a full browser tab where camera permissions will work.
-              </p>
-              <Button 
-                className="w-full"
-                onClick={() => window.open(window.location.href, '_blank')}
-                data-testid="button-open-new-tab"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open in New Tab
-              </Button>
-            </div>
-          )}
-
-          {cameraStatus === 'denied' && (
-            <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm text-left space-y-2">
-              <p className="font-medium">Need Help?</p>
-              <ul className="text-muted-foreground text-xs space-y-1 list-disc list-inside">
-                <li>Check browser settings for camera permissions</li>
-                <li>Look for a camera icon in the address bar</li>
-                <li>Refresh the page after granting permissions</li>
-              </ul>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            {onFallbackRequest && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  onFallbackRequest();
-                  handleClose();
-                }}
-                data-testid="button-use-fallback"
-              >
-                Enter Code Manually
-              </Button>
+          {/* Body Section */}
+          <div className="p-6 space-y-6">
+            {/* Iframe Error */}
+            {isInIframeRef.current && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <ExternalLink className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <p className="font-semibold text-amber-900 dark:text-amber-100">
+                      Preview Mode Detected
+                    </p>
+                    <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">
+                      Camera access is restricted in embedded previews. Open this page in a new tab to enable scanning.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
+                  onClick={() => window.open(window.location.href, '_blank')}
+                  data-testid="button-open-new-tab"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open in New Tab
+                </Button>
+              </div>
             )}
-            <Button 
-              variant={onFallbackRequest ? "outline" : "default"}
-              onClick={handleClose} 
-              data-testid="button-close-scanner"
-            >
-              Close Scanner
-            </Button>
+
+            {/* Permission Denied Instructions */}
+            {cameraStatus === 'denied' && !isInIframeRef.current && (
+              <div className="space-y-5">
+                <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border">
+                  <Lock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm mb-1">Permission Currently Blocked</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      You previously denied camera access. Follow the steps below to enable it.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Smartphone className="h-4 w-4 text-primary" />
+                    <span>How to Enable Camera Access</span>
+                  </div>
+                  
+                  <ol className="space-y-3.5">
+                    {getBrowserInstructions().map((instruction, index) => (
+                      <li key={index} className="flex gap-3 items-start">
+                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary font-semibold text-xs shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm text-foreground leading-relaxed pt-0.5">
+                          {instruction}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <p className="text-xs text-blue-900 dark:text-blue-100 leading-relaxed">
+                    <strong className="font-semibold">Privacy Note:</strong> Your camera access is only used to scan QR codes. 
+                    We never record or store camera footage.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Other Errors */}
+            {cameraStatus === 'error' && !isInIframeRef.current && (
+              <div className="bg-muted/30 border border-border rounded-lg p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <p className="font-semibold text-sm">Technical Issue</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              {onFallbackRequest && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1 shadow-sm"
+                  onClick={() => {
+                    onFallbackRequest();
+                    handleClose();
+                  }}
+                  data-testid="button-use-fallback"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Enter Code Manually
+                </Button>
+              )}
+              <Button 
+                variant={onFallbackRequest ? "outline" : "default"}
+                className={onFallbackRequest ? "flex-1 shadow-sm" : "w-full shadow-sm"}
+                onClick={handleClose} 
+                data-testid="button-close-scanner"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
