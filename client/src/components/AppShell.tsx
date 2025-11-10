@@ -292,28 +292,30 @@ export default function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
-        <div className="grid grid-cols-4 h-16">
-          {navLinks.slice(0, 4).map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
-                  active ? 'text-primary' : 'text-muted-foreground'
-                }`}
-                data-testid={`bottom-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Mobile Bottom Navigation - Hidden when sidebar is open */}
+      {!sidebarOpen && (
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
+          <div className="grid grid-cols-4 h-16">
+            {navLinks.slice(0, 4).map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
+                    active ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                  data-testid={`bottom-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* Bottom spacing for mobile nav */}
       <div className="lg:hidden h-16" />
