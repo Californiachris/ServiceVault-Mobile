@@ -49,6 +49,7 @@ export default function AppShell({ children }: AppShellProps) {
         { href: "/tools/assets", label: "Jobs", icon: Building2 },
         { href: "/tools/reminders", label: "Reminders", icon: Bell },
         { href: "/pricing", label: "Quota & Billing", icon: Zap },
+        { href: "/settings", label: "Settings", icon: Settings },
       ];
     }
 
@@ -58,6 +59,7 @@ export default function AppShell({ children }: AppShellProps) {
         { href: "/tools/assets", label: "Fleet Assets", icon: Truck },
         { href: "/tools/reminders", label: "Maintenance", icon: Bell },
         { href: "/pricing", label: "Billing", icon: Zap },
+        { href: "/settings", label: "Settings", icon: Settings },
       ];
     }
 
