@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import Navigation from "@/components/ui/navigation";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -150,8 +149,6 @@ export default function DocumentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

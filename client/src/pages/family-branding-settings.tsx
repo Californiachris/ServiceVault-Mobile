@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import Navigation from "@/components/ui/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,7 +129,6 @@ export default function FamilyBrandingSettingsPage() {
   if (!subscription?.featureFamilyBranding) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardHeader>
@@ -160,7 +158,6 @@ export default function FamilyBrandingSettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>

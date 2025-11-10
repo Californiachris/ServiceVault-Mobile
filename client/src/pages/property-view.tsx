@@ -1,7 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import Navigation from "@/components/ui/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,6 @@ export default function PropertyViewPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
@@ -72,7 +70,6 @@ export default function PropertyViewPage() {
   if (!property) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardContent className="pt-6">
@@ -95,8 +92,6 @@ export default function PropertyViewPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Property Header */}
         <div className="mb-8">

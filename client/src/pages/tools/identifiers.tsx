@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import Navigation from "@/components/ui/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { QrCode, Package, AlertCircle } from "lucide-react";
@@ -28,8 +27,6 @@ export default function IdentifiersPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
