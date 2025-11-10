@@ -127,7 +127,7 @@ export default function Settings() {
 
   if (userLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="settings-loading">
+      <div className="flex items-center justify-center py-20" data-testid="settings-loading">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -161,7 +161,7 @@ export default function Settings() {
   ];
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-3xl">
+    <div className="container mx-auto py-8 px-4 max-w-3xl pb-24">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="settings-title">Settings</h1>
         <p className="text-muted-foreground">
