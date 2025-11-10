@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToolModalProvider } from "@/contexts/ToolModalContext";
 import { useAuth } from "@/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
@@ -32,18 +33,20 @@ function Router() {
     window.scrollTo(0, 0);
   }, [location]);
 
-  return (
-    <Switch>
-      {isLoading || !isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/scan" component={Scan} />
-          <Route path="/asset/:id" component={AssetView} />
-          <Route path="/property/:id" component={PropertyView} />
-          <Route path="/pricing" component={Pricing} />
-        </>
-      ) : (
-        <>
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // AUTHENTICATED: Wrap in AppShell with top bar + bottom nav
+  if (isAuthenticated) {
+    return (
+      <AppShell>
+        <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/scan" component={Scan} />
@@ -59,8 +62,20 @@ function Router() {
           <Route path="/tools/inspections" component={InspectionsPage} />
           <Route path="/tools/reminders" component={RemindersPage} />
           <Route path="/tools/admin-fulfillment" component={AdminFulfillmentPage} />
-        </>
-      )}
+          <Route component={NotFound} />
+        </Switch>
+      </AppShell>
+    );
+  }
+
+  // UNAUTHENTICATED: No AppShell
+  return (
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/scan" component={Scan} />
+      <Route path="/asset/:id" component={AssetView} />
+      <Route path="/property/:id" component={PropertyView} />
+      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );
