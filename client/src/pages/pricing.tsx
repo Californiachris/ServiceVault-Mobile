@@ -102,9 +102,26 @@ export default function PricingPage() {
               FixTrack Pro
             </span>
           </div>
-          <Button variant="ghost" onClick={() => setLocation("/")}>
-            Back to Home
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAuthenticated && user && (
+              <div className="hidden sm:flex items-center gap-2 mr-2 text-sm text-muted-foreground">
+                <span>Logged in as {user.firstName || user.email}</span>
+              </div>
+            )}
+            {isAuthenticated ? (
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = "/api/logout"}
+                data-testid="button-logout"
+              >
+                Logout
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={() => setLocation("/")}>
+                Back to Home
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
