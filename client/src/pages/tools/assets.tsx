@@ -383,167 +383,116 @@ export default function AssetsPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Claim Asset Dialog */}
+        {/* Add Asset Dialog - Simplified */}
         <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Claim Asset</DialogTitle>
+              <DialogTitle>Add Asset</DialogTitle>
               <DialogDescription>
-                Bind a QR code to an asset and property to start tracking its history.
+                Track a new asset in your property
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleClaimSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <form onSubmit={handleClaimSubmit} className="space-y-6">
+              {/* Scan QR Button - Primary Action */}
+              <div className="space-y-3">
+                <Button 
+                  type="button"
+                  size="lg"
+                  className="w-full h-16 text-lg"
+                  onClick={() => {
+                    setShowClaimDialog(false);
+                    window.location.href = '/scan';
+                  }}
+                  data-testid="button-scan-qr-asset"
+                >
+                  <QrCode className="mr-3 h-6 w-6" />
+                  Scan Asset QR Code
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Recommended - Fastest way to add an asset
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or enter manually
+                  </span>
+                </div>
+              </div>
+
+              {/* Simplified 3-Field Form */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">QR Code *</Label>
+                  <Label htmlFor="code" className="text-base">QR Code (optional)</Label>
                   <Input
                     id="code"
-                    placeholder="e.g., FT-HVAC-2024-A7K9"
+                    placeholder="Scan or enter code"
                     value={claimForm.code}
                     onChange={(e) => setClaimForm(prev => ({ ...prev, code: e.target.value }))}
-                    required
+                    className="h-12 text-base"
                     data-testid="input-claim-code"
                   />
+                  <p className="text-xs text-muted-foreground">Leave blank if you don't have a QR sticker</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assetName">Asset Name *</Label>
+                  <Label htmlFor="assetName" className="text-base">What is it? *</Label>
                   <Input
                     id="assetName"
-                    placeholder="e.g., Water Heater"
+                    placeholder="e.g., Water Heater, HVAC Unit"
                     value={claimForm.assetName}
                     onChange={(e) => setClaimForm(prev => ({ ...prev, assetName: e.target.value }))}
                     required
+                    className="h-12 text-base"
                     data-testid="input-asset-name"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="assetCategory">Category</Label>
-                  <Select 
-                    value={claimForm.assetCategory} 
-                    onValueChange={(value) => setClaimForm(prev => ({ ...prev, assetCategory: value }))}
-                  >
-                    <SelectTrigger data-testid="select-asset-category">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ASSET_CATEGORIES.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category.replace('_', ' ')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="assetBrand">Brand</Label>
+                  <Label htmlFor="propertyName" className="text-base">Where is it? *</Label>
                   <Input
-                    id="assetBrand"
-                    placeholder="e.g., Rheem"
-                    value={claimForm.assetBrand}
-                    onChange={(e) => setClaimForm(prev => ({ ...prev, assetBrand: e.target.value }))}
-                    data-testid="input-asset-brand"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="assetModel">Model</Label>
-                  <Input
-                    id="assetModel"
-                    placeholder="e.g., XR16"
-                    value={claimForm.assetModel}
-                    onChange={(e) => setClaimForm(prev => ({ ...prev, assetModel: e.target.value }))}
-                    data-testid="input-asset-model"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="assetSerial">Serial Number</Label>
-                  <Input
-                    id="assetSerial"
-                    placeholder="e.g., ABC123456"
-                    value={claimForm.assetSerial}
-                    onChange={(e) => setClaimForm(prev => ({ ...prev, assetSerial: e.target.value }))}
-                    data-testid="input-asset-serial"
+                    id="propertyName"
+                    placeholder="e.g., Main House, Rental Property"
+                    value={claimForm.propertyName}
+                    onChange={(e) => setClaimForm(prev => ({ ...prev, propertyName: e.target.value }))}
+                    required
+                    className="h-12 text-base"
+                    data-testid="input-property-name"
                   />
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">Property Information</h4>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="propertyName">Property Name *</Label>
-                    <Input
-                      id="propertyName"
-                      placeholder="e.g., Main Residence"
-                      value={claimForm.propertyName}
-                      onChange={(e) => setClaimForm(prev => ({ ...prev, propertyName: e.target.value }))}
-                      required
-                      data-testid="input-property-name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="propertyAddress">Address</Label>
-                    <Input
-                      id="propertyAddress"
-                      placeholder="e.g., 123 Main Street"
-                      value={claimForm.propertyAddress}
-                      onChange={(e) => setClaimForm(prev => ({ ...prev, propertyAddress: e.target.value }))}
-                      data-testid="input-property-address"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="propertyCity">City</Label>
-                    <Input
-                      id="propertyCity"
-                      placeholder="e.g., Anytown"
-                      value={claimForm.propertyCity}
-                      onChange={(e) => setClaimForm(prev => ({ ...prev, propertyCity: e.target.value }))}
-                      data-testid="input-property-city"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="propertyState">State</Label>
-                    <Input
-                      id="propertyState"
-                      placeholder="e.g., CA"
-                      value={claimForm.propertyState}
-                      onChange={(e) => setClaimForm(prev => ({ ...prev, propertyState: e.target.value }))}
-                      data-testid="input-property-state"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setShowClaimDialog(false)}
-                  data-testid="button-cancel-claim"
-                >
-                  Cancel
-                </Button>
+              <div className="flex flex-col gap-3 pt-4">
                 <Button 
                   type="submit" 
+                  size="lg"
                   disabled={claimMutation.isPending}
+                  className="w-full h-12"
                   data-testid="button-submit-claim"
                 >
                   {claimMutation.isPending ? (
                     <>
                       <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
-                      Claiming...
+                      Saving...
                     </>
                   ) : (
-                    'Claim Asset'
+                    'Add Asset'
                   )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => setShowClaimDialog(false)}
+                  className="w-full h-12"
+                  data-testid="button-cancel-claim"
+                >
+                  Cancel
                 </Button>
               </div>
             </form>
