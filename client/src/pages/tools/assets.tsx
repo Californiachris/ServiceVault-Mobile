@@ -137,10 +137,10 @@ export default function AssetsPage() {
 
   const handleClaimSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!claimForm.code || !claimForm.assetName || !claimForm.propertyName) {
+    if (!claimForm.assetName || !claimForm.propertyName) {
       toast({
         title: "Missing Information",
-        description: "Please fill in the code, asset name, and property name",
+        description: "Please fill in the asset name and property name",
         variant: "destructive",
       });
       return;

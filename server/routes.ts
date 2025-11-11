@@ -755,23 +755,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { code, asset, property, photos } = req.body;
 
-      if (!code) {
-        return res.status(400).json({ error: "Code is required" });
+      let identifier = null;
+      
+      // Code is optional - only validate if provided
+      if (code) {
+        identifier = await storage.getIdentifier(code);
+        if (!identifier) {
+          return res.status(404).json({ error: "Identifier not found" });
+        }
+
+        if (identifier.claimedAt) {
+          return res.status(400).json({ error: "Identifier already claimed" });
+        }
       }
 
-      // Find the identifier
-      const identifier = await storage.getIdentifier(code);
-      if (!identifier) {
-        return res.status(404).json({ error: "Identifier not found" });
-      }
-
-      if (identifier.claimedAt) {
-        return res.status(400).json({ error: "Identifier already claimed" });
-      }
-
-      // Check quota for contractors
+      // Check quota for contractors only if claiming a sticker
       const user = await storage.getUser(userId);
-      if (user?.role === 'CONTRACTOR') {
+      if (code && user?.role === 'CONTRACTOR') {
         const subscription = await storage.getUserSubscription(userId);
         if (subscription) {
           const quotaUsed = subscription.quotaUsed || 0;
@@ -818,21 +818,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         model: asset?.model,
         serial: asset?.serial,
         notes: asset?.notes,
-        identifierId: identifier.id,
+        identifierId: identifier?.id || null,
         installedAt: asset?.installedAt ? new Date(asset.installedAt) : new Date(),
         status: "ACTIVE",
       });
 
-      // Update identifier as claimed
-      await storage.updateIdentifier(identifier.id, { claimedAt: new Date() });
-
-      // Increment quota for contractors
-      if (user?.role === 'CONTRACTOR') {
-        const subscription = await storage.getUserSubscription(userId);
-        if (subscription) {
-          await storage.updateSubscription(subscription.id, {
-            quotaUsed: (subscription.quotaUsed || 0) + 1
-          });
+      // Update identifier as claimed (only if code was provided)
+      if (identifier) {
+        await storage.updateIdentifier(identifier.id, { claimedAt: new Date() });
+        
+        // Increment quota for contractors
+        if (user?.role === 'CONTRACTOR') {
+          const subscription = await storage.getUserSubscription(userId);
+          if (subscription) {
+            await storage.updateSubscription(subscription.id, {
+              quotaUsed: (subscription.quotaUsed || 0) + 1
+            });
+          }
         }
       }
 
@@ -841,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assetId: assetRecord.id,
         type: "INSTALL",
         data: { 
-          note: asset?.notes || "Initial claim and installation",
+          note: asset?.notes || "Initial asset registration",
           installDate: asset?.installedAt || new Date().toISOString(),
         },
         photoUrls: photos && photos.length > 0 ? photos : null,
