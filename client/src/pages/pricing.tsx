@@ -54,7 +54,9 @@ export default function PricingPage() {
   const handleSubscribe = (plan: string, tier: string) => {
     // Check if user is authenticated first
     if (!isAuthenticated) {
-      window.location.href = "/api/login";
+      // Redirect to login with return URL
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `/api/login?returnTo=${returnUrl}`;
       return;
     }
 
