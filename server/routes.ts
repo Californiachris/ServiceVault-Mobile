@@ -2467,7 +2467,16 @@ Instructions:
         return res.status(400).json({ error: 'Invalid plan type' });
       }
 
-      // Update user with role, email, phone, and notification preference
+      // Normalize propertyTypes and industries arrays for all roles
+      const propertyTypes = Array.isArray(onboardingData.propertyTypes) 
+        ? onboardingData.propertyTypes 
+        : (onboardingData.propertyTypes ? [onboardingData.propertyTypes] : null);
+      
+      const industries = Array.isArray(onboardingData.industries) 
+        ? onboardingData.industries 
+        : (onboardingData.industries ? [onboardingData.industries] : null);
+
+      // Update user with role, email, phone, notification preference, and property preferences
       await db
         .update(users)
         .set({
@@ -2475,6 +2484,8 @@ Instructions:
           email: onboardingData.email || null,
           phone: onboardingData.phone || null,
           notificationPreference: onboardingData.notificationPreference || 'EMAIL_AND_SMS',
+          propertyTypes: propertyTypes, // Save full array for homeowners
+          industries: industries, // Save full array for fleet managers
         })
         .where(eq(users.id, userId));
 

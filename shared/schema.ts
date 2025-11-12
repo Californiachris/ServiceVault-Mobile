@@ -43,6 +43,12 @@ export const users = pgTable("users", {
   familyName: varchar("family_name"),
   familyLogoUrl: varchar("family_logo_url"),
   
+  // Homeowner property preferences from onboarding
+  propertyTypes: text("property_types").array(), // ["SINGLE_FAMILY", "CONDO", "MULTI_FAMILY", "COMMERCIAL"]
+  
+  // Fleet manager industry preferences from onboarding
+  industries: text("industries").array(), // Industry selections from onboarding
+  
   // Notification settings
   phone: varchar("phone"),
   notificationPreference: varchar("notification_preference").default("EMAIL_AND_SMS"), // EMAIL_ONLY, SMS_ONLY, EMAIL_AND_SMS, NONE
@@ -81,6 +87,7 @@ export const properties = pgTable("properties", {
   state: varchar("state"),
   postalCode: varchar("postal_code"),
   country: varchar("country"),
+  propertyType: varchar("property_type"), // SINGLE_FAMILY, CONDO, MULTI_FAMILY, COMMERCIAL
   masterIdentifierId: uuid("master_identifier_id").references(() => identifiers.id),
   homePlan: varchar("home_plan"), // home_lifetime, home_annual
   homeStatus: varchar("home_status").default("ACTIVE"),
