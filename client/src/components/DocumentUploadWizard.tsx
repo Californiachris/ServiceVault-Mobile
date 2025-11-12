@@ -272,7 +272,7 @@ export function DocumentUploadWizard({
       </Button>
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
@@ -285,7 +285,7 @@ export function DocumentUploadWizard({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4">
             {/* Step 1: Upload File */}
             {currentStep === 'upload' && (
               <>
