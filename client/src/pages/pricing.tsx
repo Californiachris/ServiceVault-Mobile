@@ -32,7 +32,7 @@ export default function PricingPage() {
   // DEV TESTING MODE: Onboarding mutation
   const onboardingMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("/api/onboarding/complete", "POST", data);
+      const response = await apiRequest("POST", "/api/onboarding/complete", data);
       return response;
     },
     onSuccess: () => {
