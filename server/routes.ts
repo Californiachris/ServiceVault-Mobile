@@ -1187,7 +1187,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const documents = await storage.getUserDocuments(userId);
-      res.json(documents);
+      
+      // Enrich documents with signed view URLs and metadata
+      const enrichedDocuments = await Promise.all(
+        documents.map(async (doc) => {
+          try {
+            const [signedUrl, metadata] = await Promise.all([
+              objectStorageService.getSignedViewURL(doc.path),
+              objectStorageService.getObjectMetadata(doc.path),
+            ]);
+            
+            return {
+              id: doc.id,
+              title: doc.title,
+              type: doc.type,
+              description: doc.description,
+              uploadedAt: doc.uploadedAt,
+              issueDate: doc.issueDate,
+              expiryDate: doc.expiryDate,
+              amount: doc.amount,
+              objectPath: signedUrl, // Signed URL for viewing
+              mimeType: metadata.contentType,
+              size: metadata.size,
+            };
+          } catch (error) {
+            console.error(`Failed to generate signed URL for document ${doc.id}:`, error);
+            // Return document with null URL if signing fails
+            return {
+              id: doc.id,
+              title: doc.title,
+              type: doc.type,
+              description: doc.description,
+              uploadedAt: doc.uploadedAt,
+              issueDate: doc.issueDate,
+              expiryDate: doc.expiryDate,
+              amount: doc.amount,
+              objectPath: null,
+              mimeType: "application/octet-stream",
+              size: 0,
+            };
+          }
+        })
+      );
+      
+      res.json(enrichedDocuments);
     } catch (error) {
       console.error("Error fetching documents:", error);
       res.status(500).json({ error: "Failed to fetch documents" });

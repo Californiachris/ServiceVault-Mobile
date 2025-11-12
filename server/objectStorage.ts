@@ -257,6 +257,48 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  // Gets a signed view URL for an object entity (1-hour TTL).
+  async getSignedViewURL(objectPath: string): Promise<string> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    const { bucketName, objectName } = parseObjectPath(
+      await this.getFullObjectPath(objectPath)
+    );
+
+    return signObjectURL({
+      bucketName,
+      objectName,
+      method: "GET",
+      ttlSec: 3600, // 1 hour
+    });
+  }
+
+  // Gets the full object path from a normalized path.
+  private async getFullObjectPath(normalizedPath: string): Promise<string> {
+    if (!normalizedPath.startsWith("/objects/")) {
+      throw new ObjectNotFoundError();
+    }
+
+    const entityId = normalizedPath.slice("/objects/".length);
+    let entityDir = this.getPrivateObjectDir();
+    if (!entityDir.endsWith("/")) {
+      entityDir = `${entityDir}/`;
+    }
+    return `${entityDir}${entityId}`;
+  }
+
+  // Gets object metadata including MIME type.
+  async getObjectMetadata(objectPath: string): Promise<{
+    contentType: string;
+    size: number;
+  }> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    const [metadata] = await objectFile.getMetadata();
+    return {
+      contentType: metadata.contentType || "application/octet-stream",
+      size: Number(metadata.size) || 0,
+    };
+  }
 }
 
 function parseObjectPath(path: string): {

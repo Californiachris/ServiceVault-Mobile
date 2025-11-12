@@ -189,110 +189,104 @@ export default function DocumentsPage() {
             )}
             
             {!documentsLoading && documents && documents.length > 0 && (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid sm:grid-cols-2 gap-8">
                 {documents.map((doc: any) => {
-                  const isImage = doc.objectPath?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-                  const isPDF = doc.objectPath?.match(/\.pdf$/i);
+                  const isImage = doc.mimeType?.startsWith('image/');
+                  const isPDF = doc.mimeType === 'application/pdf';
+                  const hasValidUrl = doc.objectPath !== null;
                   
                   return (
                     <div
                       key={doc.id}
-                      className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200"
+                      className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:border-primary/50 transition-all duration-300"
                       data-testid={`document-card-${doc.id}`}
                     >
-                      {/* Document Preview */}
-                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                        {isImage ? (
+                      {/* Document Preview - Click to Open */}
+                      <div 
+                        className="aspect-[16/10] bg-gradient-to-br from-muted/50 to-muted relative overflow-hidden cursor-pointer"
+                        onClick={() => hasValidUrl && window.open(doc.objectPath, '_blank')}
+                      >
+                        {!hasValidUrl ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                            <FileText className="h-20 w-20 text-destructive/50 mb-4" />
+                            <p className="text-sm text-destructive">Preview unavailable</p>
+                          </div>
+                        ) : isImage ? (
                           <img
                             src={doc.objectPath}
                             alt={doc.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                             data-testid={`document-image-${doc.id}`}
                           />
                         ) : isPDF ? (
-                          <div className="w-full h-full flex items-center justify-center bg-red-50 dark:bg-red-950/20">
-                            <FileText className="h-16 w-16 text-red-500" />
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/30">
+                            <FileText className="h-24 w-24 text-red-500" />
                           </div>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <FileText className="h-16 w-16 text-muted-foreground" />
+                            <FileText className="h-24 w-24 text-muted-foreground/50" />
                           </div>
                         )}
                         
-                        {/* Hover Overlay - Desktop */}
-                        <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => window.open(doc.objectPath, '_blank')}
-                            data-testid={`button-view-${doc.id}`}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = doc.objectPath;
-                              link.download = doc.title || 'document';
-                              link.click();
-                            }}
-                            data-testid={`button-download-${doc.id}`}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
-                        
-                        {/* Quick Action Buttons - Mobile */}
-                        <div className="sm:hidden absolute top-2 right-2 flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-8 w-8 shadow-lg"
-                            onClick={() => window.open(doc.objectPath, '_blank')}
-                            data-testid={`button-view-mobile-${doc.id}`}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-8 w-8 shadow-lg"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = doc.objectPath;
-                              link.download = doc.title || 'document';
-                              link.click();
-                            }}
-                            data-testid={`button-download-mobile-${doc.id}`}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {/* Hover Overlay with Gradient */}
+                        {hasValidUrl && (
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end pb-8">
+                            <p className="text-white text-sm font-medium mb-3">Click to view full size</p>
+                            <div className="flex gap-3">
+                              <Button
+                                size="lg"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(doc.objectPath, '_blank');
+                                }}
+                                className="shadow-xl"
+                                data-testid={`button-view-${doc.id}`}
+                              >
+                                <ExternalLink className="h-5 w-5 mr-2" />
+                                Open
+                              </Button>
+                              <Button
+                                size="lg"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const link = document.createElement('a');
+                                  link.href = doc.objectPath;
+                                  link.download = doc.title || 'document';
+                                  link.click();
+                                }}
+                                className="shadow-xl bg-white/90 dark:bg-black/90"
+                                data-testid={`button-download-${doc.id}`}
+                              >
+                                <Download className="h-5 w-5 mr-2" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Document Info */}
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-sm line-clamp-2" data-testid={`document-title-${doc.id}`}>
+                      {/* Document Info - Premium Design */}
+                      <div className="p-6">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <h3 className="font-semibold text-lg line-clamp-2 leading-tight" data-testid={`document-title-${doc.id}`}>
                             {doc.title}
                           </h3>
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full whitespace-nowrap">
+                          <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 rounded-full whitespace-nowrap font-medium border border-blue-200/50 dark:border-blue-800/50">
                             {doc.type}
                           </span>
                         </div>
                         
                         {doc.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                             {doc.description}
                           </p>
                         )}
                         
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <FileCheck className="h-3.5 w-3.5" />
+                          <span>Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </div>
                     </div>
