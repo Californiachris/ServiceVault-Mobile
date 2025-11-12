@@ -105,7 +105,7 @@ export default function Settings() {
   // DEV TESTING MODE: Delete Account
   const deleteAccountMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/user/delete', 'DELETE');
+      const response = await apiRequest('DELETE', '/api/user/delete');
       return response;
     },
     onSuccess: () => {

@@ -7,6 +7,7 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import { seedDemoData } from "./seedDemoData";
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -56,6 +57,7 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
+  role?: string,
 ) {
   await storage.upsertUser({
     id: claims["sub"],
@@ -63,6 +65,7 @@ async function upsertUser(
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    role: role || "HOMEOWNER",
   });
 }
 
@@ -84,6 +87,45 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
+  // Verify function with request access for tier-based provisioning
+  const verifyWithRequest = async (
+    req: any,
+    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+    verified: passport.AuthenticateCallback
+  ) => {
+    const user = {};
+    updateUserSession(user, tokens);
+    
+    // Read selected tier from session (set by /api/auth/selection)
+    const selectedTier = req.session?.selectedTier;
+    let role = "HOMEOWNER"; // default
+    
+    if (selectedTier) {
+      if (selectedTier.includes('contractor')) {
+        role = "CONTRACTOR";
+      } else if (selectedTier.includes('fleet')) {
+        role = "FLEET";
+      }
+      // Clear the tier from session after use
+      delete req.session.selectedTier;
+    }
+    
+    const claims = tokens.claims();
+    const userId = claims["sub"];
+    await upsertUser(claims, role);
+    
+    // In demo mode, seed data synchronously
+    if (process.env.NODE_ENV === 'development' && userId) {
+      try {
+        await seedDemoData(userId);
+      } catch (error) {
+        console.error("Error seeding demo data during auth:", error);
+      }
+    }
+    
+    verified(null, user);
+  };
+
   for (const domain of process.env
     .REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
@@ -92,8 +134,9 @@ export async function setupAuth(app: Express) {
         config,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
+        passReqToCallback: true,
       },
-      verify,
+      verifyWithRequest,
     );
     passport.use(strategy);
   }
@@ -110,7 +153,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
+      successRedirect: "/dashboard",
       failureRedirect: "/api/login",
     })(req, res, next);
   });

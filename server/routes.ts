@@ -57,6 +57,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize object storage service
   const objectStorageService = new ObjectStorageService();
 
+  // Auth tier selection endpoint (stores tier in session before login redirect)
+  app.post('/api/auth/selection', (req: any, res) => {
+    const { tier } = req.body;
+    if (tier) {
+      req.session.selectedTier = tier;
+    }
+    res.json({ success: true });
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -64,10 +73,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        seedDemoData(userId).catch(err => console.error("Demo data seed error:", err));
       }
       
       res.json(user);

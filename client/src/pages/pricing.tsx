@@ -51,12 +51,22 @@ export default function PricingPage() {
     },
   });
 
-  const handleSubscribe = (plan: string, tier: string) => {
+  const handleSubscribe = async (plan: string, tier: string) => {
     // Check if user is authenticated first
     if (!isAuthenticated) {
-      // Redirect to login with return URL
-      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/api/login?returnTo=${returnUrl}`;
+      // Store tier selection in session before redirecting to login
+      try {
+        await fetch('/api/auth/selection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ tier: plan }),
+        });
+      } catch (error) {
+        console.error("Error storing tier selection:", error);
+      }
+      // Redirect to login (will auto-provision with correct role)
+      window.location.href = '/api/login';
       return;
     }
 
