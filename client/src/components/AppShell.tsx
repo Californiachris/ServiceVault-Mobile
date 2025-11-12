@@ -146,6 +146,16 @@ export default function AppShell({ children }: AppShellProps) {
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
+            
+            {/* Patent Notice */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-[10px] text-muted-foreground/60 text-center px-2 leading-tight">
+                Patent Pending
+              </p>
+              <p className="text-[9px] text-muted-foreground/40 text-center px-2 mt-1">
+                © {new Date().getFullYear()} FixTrack Pro
+              </p>
+            </div>
           </div>
         </div>
       </aside>
@@ -253,6 +263,16 @@ export default function AppShell({ children }: AppShellProps) {
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
+                
+                {/* Patent Notice */}
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground/60 text-center px-2 leading-tight">
+                    Patent Pending
+                  </p>
+                  <p className="text-[9px] text-muted-foreground/40 text-center px-2 mt-1">
+                    © {new Date().getFullYear()} FixTrack Pro
+                  </p>
+                </div>
               </div>
             </div>
           </aside>

@@ -210,7 +210,7 @@ export function FleetOnboardingForm({
                     <SelectTrigger className="h-11" data-testid="select-fleet-industry">
                       <SelectValue placeholder="Select your industry" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[100]">
                       {INDUSTRIES.map((industry) => (
                         <SelectItem key={industry.value} value={industry.value}>
                           <div className="flex items-center gap-2">

@@ -2509,15 +2509,16 @@ Instructions:
               specialties,
             },
           });
-      } else if (role === 'HOMEOWNER' && onboardingData.address) {
+      } else if (role === 'HOMEOWNER' && onboardingData.propertyAddress) {
         // Create initial property for homeowner with address from onboarding
         await db.insert(properties).values({
           ownerId: userId,
           name: onboardingData.propertyName || 'My Home',
-          addressLine1: onboardingData.address,
+          addressLine1: onboardingData.propertyAddress,
           city: onboardingData.city || null,
           state: onboardingData.state || null,
           postalCode: onboardingData.zip || null,
+          propertyType: onboardingData.propertyType || null,
           homePlan: plan,
           homeStatus: 'ACTIVE',
         }).onConflictDoNothing();

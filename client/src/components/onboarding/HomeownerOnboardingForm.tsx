@@ -205,7 +205,7 @@ export function HomeownerOnboardingForm({
                     <SelectTrigger className="h-11" data-testid="select-property-type">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[100]">
                       <SelectItem value="SINGLE_FAMILY">Single Family Home</SelectItem>
                       <SelectItem value="CONDO">Condo/Townhouse</SelectItem>
                       <SelectItem value="MULTI_FAMILY">Multi-Family</SelectItem>
