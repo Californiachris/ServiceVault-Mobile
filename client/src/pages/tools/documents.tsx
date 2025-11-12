@@ -261,32 +261,26 @@ export default function DocumentsPage() {
                   </div>
                 )}
 
-                {/* File Upload */}
-                <div className="space-y-3">
-                  <Label className="text-base">Upload Document</Label>
-                  
-                  {/* Photo Upload Button */}
+                {/* File Upload - Premium Layout */}
+                <div className="space-y-4">
+                  {/* Photo Upload Button - Camera First (Most Common) */}
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={50 * 1024 * 1024}
                     acceptedFileTypes={['.jpg', '.jpeg', '.png']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
-                    buttonClassName="w-full"
+                    buttonClassName="w-full bg-card hover:bg-accent border-2 border-border hover:border-primary/50 rounded-xl p-6 transition-all duration-200 shadow-sm hover:shadow-md group"
                   >
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="w-full h-14 justify-start text-left"
-                      data-testid="button-upload-photo"
-                    >
-                      <Camera className="mr-3 h-5 w-5" />
-                      <div className="flex-1">
-                        <div className="font-semibold">Take Photo of Warranty</div>
-                        <div className="text-xs text-muted-foreground">JPG, PNG</div>
+                    <div className="flex items-center gap-4" data-testid="button-upload-photo">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                        <Camera className="h-6 w-6 text-blue-500" />
                       </div>
-                    </Button>
+                      <div className="flex-1 text-left">
+                        <div className="text-base font-semibold mb-0.5">Take Photo of Warranty</div>
+                        <div className="text-sm text-muted-foreground">JPG, PNG</div>
+                      </div>
+                    </div>
                   </ObjectUploader>
 
                   {/* PDF Upload Button */}
@@ -296,21 +290,17 @@ export default function DocumentsPage() {
                     acceptedFileTypes={['.pdf', '.doc', '.docx']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
-                    buttonClassName="w-full"
+                    buttonClassName="w-full bg-card hover:bg-accent border-2 border-border hover:border-primary/50 rounded-xl p-6 transition-all duration-200 shadow-sm hover:shadow-md group"
                   >
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="w-full h-14 justify-start text-left"
-                      data-testid="button-upload-pdf"
-                    >
-                      <FileText className="mr-3 h-5 w-5" />
-                      <div className="flex-1">
-                        <div className="font-semibold">Upload PDF Document</div>
-                        <div className="text-xs text-muted-foreground">PDF, DOC, DOCX</div>
+                    <div className="flex items-center gap-4" data-testid="button-upload-pdf">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                        <FileText className="h-6 w-6 text-emerald-500" />
                       </div>
-                    </Button>
+                      <div className="flex-1 text-left">
+                        <div className="text-base font-semibold mb-0.5">Upload PDF Document</div>
+                        <div className="text-sm text-muted-foreground">PDF, DOC, DOCX</div>
+                      </div>
+                    </div>
                   </ObjectUploader>
                   
                   {uploadedFiles.length > 0 && (
