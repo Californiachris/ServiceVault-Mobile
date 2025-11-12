@@ -42,17 +42,30 @@ function Router() {
     );
   }
 
-  // AUTHENTICATED: Wrap in AppShell with top bar + bottom nav
+  // Public routes without AppShell (landing, pricing, scan, asset/property views)
+  const publicRoutes = ["/", "/pricing", "/scan"];
+  const isPublicRoute = publicRoutes.includes(location) || 
+                        location.startsWith("/asset/") || 
+                        location.startsWith("/property/");
+
+  if (isPublicRoute) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/scan" component={Scan} />
+        <Route path="/asset/:id" component={AssetView} />
+        <Route path="/property/:id" component={PropertyView} />
+      </Switch>
+    );
+  }
+
+  // AUTHENTICATED routes: Wrap in AppShell with top bar + bottom nav
   if (isAuthenticated) {
     return (
       <AppShell>
         <Switch>
-          <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/scan" component={Scan} />
-          <Route path="/asset/:id" component={AssetView} />
-          <Route path="/property/:id" component={PropertyView} />
-          <Route path="/pricing" component={Pricing} />
           <Route path="/settings" component={Settings} />
           <Route path="/settings/branding" component={FamilyBrandingSettings} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />
@@ -68,14 +81,14 @@ function Router() {
     );
   }
 
-  // UNAUTHENTICATED: No AppShell
+  // UNAUTHENTICATED fallback
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/pricing" component={Pricing} />
       <Route path="/scan" component={Scan} />
       <Route path="/asset/:id" component={AssetView} />
       <Route path="/property/:id" component={PropertyView} />
-      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );
