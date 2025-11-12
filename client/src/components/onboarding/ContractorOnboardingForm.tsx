@@ -98,7 +98,7 @@ export function ContractorOnboardingForm({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-screen md:max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-orange-500 to-red-500 flex-shrink-0">
           <DialogTitle className="text-2xl text-white flex items-center gap-2">
             <Users className="h-6 w-6" />
@@ -240,19 +240,18 @@ export function ContractorOnboardingForm({
                     {SPECIALTIES.map((specialty) => (
                       <div
                         key={specialty.id}
-                        className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        className={`flex items-center space-x-2 p-3 rounded-lg border transition-colors ${
                           selectedSpecialties.includes(specialty.id)
                             ? "border-primary bg-primary/5"
                             : "hover:bg-muted/50"
                         }`}
-                        onClick={() => toggleSpecialty(specialty.id)}
                       >
                         <Checkbox
                           checked={selectedSpecialties.includes(specialty.id)}
                           onCheckedChange={() => toggleSpecialty(specialty.id)}
                           data-testid={`checkbox-specialty-${specialty.id}`}
                         />
-                        <Label className="cursor-pointer flex-1 flex items-center gap-2">
+                        <Label className="cursor-pointer flex-1 flex items-center gap-2" onClick={() => toggleSpecialty(specialty.id)}>
                           <span>{specialty.icon}</span>
                           <span className="text-sm">{specialty.label}</span>
                         </Label>
