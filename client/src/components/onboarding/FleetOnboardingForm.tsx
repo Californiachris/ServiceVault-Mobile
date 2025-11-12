@@ -15,7 +15,7 @@ const onboardingSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   companyName: z.string().min(2, "Company name is required"),
-  industry: z.string().min(1, "Please select an industry"),
+  industries: z.array(z.string()).min(1, "Please select at least one industry"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   fleetSize: z.number().min(1).max(10000),
   assetCategories: z.array(z.string()).min(1, "Please select at least one asset category"),
@@ -59,7 +59,6 @@ export function FleetOnboardingForm({
 }: FleetOnboardingFormProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<OnboardingData>({
@@ -68,7 +67,7 @@ export function FleetOnboardingForm({
       name: userName || "",
       email: userEmail || "",
       companyName: "",
-      industry: "",
+      industries: [],
       phone: "",
       fleetSize: 10,
       assetCategories: [],
@@ -81,12 +80,20 @@ export function FleetOnboardingForm({
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
 
+  const toggleIndustry = (industryValue: string) => {
+    const currentIndustries = form.watch("industries") || [];
+    const updated = currentIndustries.includes(industryValue)
+      ? currentIndustries.filter(i => i !== industryValue)
+      : [...currentIndustries, industryValue];
+    form.setValue("industries", updated, { shouldValidate: true });
+  };
+
   const toggleCategory = (categoryId: string) => {
-    const updated = selectedCategories.includes(categoryId)
-      ? selectedCategories.filter(c => c !== categoryId)
-      : [...selectedCategories, categoryId];
-    setSelectedCategories(updated);
-    form.setValue("assetCategories", updated);
+    const currentCategories = form.watch("assetCategories") || [];
+    const updated = currentCategories.includes(categoryId)
+      ? currentCategories.filter(c => c !== categoryId)
+      : [...currentCategories, categoryId];
+    form.setValue("assetCategories", updated, { shouldValidate: true });
   };
 
   const onSubmit = async (data: OnboardingData) => {
@@ -100,7 +107,7 @@ export function FleetOnboardingForm({
 
   const nextStep = async () => {
     const fields = step === 1 
-      ? ["name", "email", "companyName", "industry"] 
+      ? ["name", "email", "companyName", "industries"] 
       : step === 2 
       ? ["phone", "fleetSize", "assetCategories", "numberOfOperators"]
       : ["notificationPreference"];
@@ -216,37 +223,37 @@ export function FleetOnboardingForm({
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    Industry
+                    Industries (select all that apply)
                   </Label>
-                  <RadioGroup
-                    value={form.watch("industry")}
-                    onValueChange={(value) => form.setValue("industry", value, { shouldValidate: true })}
-                    className="space-y-2"
-                  >
+                  <div className="grid grid-cols-1 gap-2">
                     {INDUSTRIES.map((industry) => {
-                      const id = `industry-${industry.value.toLowerCase().replace(/\s+|&/g, '-').replace(/--+/g, '-')}`;
+                      const selectedIndustries = form.watch("industries") || [];
+                      const isSelected = selectedIndustries.includes(industry.value);
+                      
                       return (
                         <div
                           key={industry.value}
-                          className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                            form.watch("industry") === industry.value
+                          className={`flex items-center space-x-2 p-3 rounded-lg border transition-colors ${
+                            isSelected
                               ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/50 hover:bg-muted/50"
+                              : "hover:bg-muted/50"
                           }`}
-                          onClick={() => form.setValue("industry", industry.value, { shouldValidate: true })}
-                          data-testid={`radio-${id}`}
                         >
-                          <RadioGroupItem value={industry.value} id={id} />
-                          <Label className="flex items-center gap-2 flex-1 cursor-pointer font-normal pointer-events-none">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleIndustry(industry.value)}
+                            data-testid={`checkbox-industry-${industry.value.toLowerCase().replace(/\s+|&/g, '-').replace(/--+/g, '-')}`}
+                          />
+                          <Label className="cursor-pointer flex-1 flex items-center gap-2" onClick={() => toggleIndustry(industry.value)}>
                             <span className="text-xl">{industry.icon}</span>
                             <span>{industry.label}</span>
                           </Label>
                         </div>
                       );
                     })}
-                  </RadioGroup>
-                  {form.formState.errors.industry && (
-                    <p className="text-sm text-destructive">{form.formState.errors.industry.message}</p>
+                  </div>
+                  {form.formState.errors.industries && (
+                    <p className="text-sm text-destructive">{form.formState.errors.industries.message}</p>
                   )}
                   </div>
                 </motion.div>
@@ -296,26 +303,31 @@ export function FleetOnboardingForm({
                 <div className="space-y-3">
                   <Label>Asset Categories (select all that apply)</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {ASSET_CATEGORIES.map((category) => (
-                      <div
-                        key={category.id}
-                        className={`flex items-center space-x-2 p-3 rounded-lg border transition-colors ${
-                          selectedCategories.includes(category.id)
-                            ? "border-primary bg-primary/5"
-                            : "hover:bg-muted/50"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedCategories.includes(category.id)}
-                          onCheckedChange={() => toggleCategory(category.id)}
-                          data-testid={`checkbox-asset-${category.id}`}
-                        />
-                        <Label className="cursor-pointer flex-1 flex items-center gap-2" onClick={() => toggleCategory(category.id)}>
-                          <span>{category.icon}</span>
-                          <span className="text-sm">{category.label}</span>
-                        </Label>
-                      </div>
-                    ))}
+                    {ASSET_CATEGORIES.map((category) => {
+                      const selectedCategories = form.watch("assetCategories") || [];
+                      const isSelected = selectedCategories.includes(category.id);
+                      
+                      return (
+                        <div
+                          key={category.id}
+                          className={`flex items-center space-x-2 p-3 rounded-lg border transition-colors ${
+                            isSelected
+                              ? "border-primary bg-primary/5"
+                              : "hover:bg-muted/50"
+                          }`}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleCategory(category.id)}
+                            data-testid={`checkbox-asset-${category.id}`}
+                          />
+                          <Label className="cursor-pointer flex-1 flex items-center gap-2" onClick={() => toggleCategory(category.id)}>
+                            <span>{category.icon}</span>
+                            <span className="text-sm">{category.label}</span>
+                          </Label>
+                        </div>
+                      );
+                    })}
                   </div>
                   {form.formState.errors.assetCategories && (
                     <p className="text-sm text-destructive">{form.formState.errors.assetCategories.message}</p>

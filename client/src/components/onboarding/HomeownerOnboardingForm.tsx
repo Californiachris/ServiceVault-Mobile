@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Home, Phone, Mail, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +16,7 @@ const onboardingSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   propertyAddress: z.string().min(5, "Please enter your property address"),
-  propertyType: z.enum(["SINGLE_FAMILY", "CONDO", "MULTI_FAMILY", "COMMERCIAL"]),
+  propertyTypes: z.array(z.string()).min(1, "Please select at least one property type"),
   numberOfProperties: z.number().min(1).max(100),
   notificationPreference: z.enum(["EMAIL_ONLY", "SMS_ONLY", "EMAIL_AND_SMS", "NONE"]),
 });
@@ -29,6 +30,13 @@ interface HomeownerOnboardingFormProps {
   userName?: string;
   userEmail?: string;
 }
+
+const PROPERTY_TYPES = [
+  { id: "SINGLE_FAMILY", label: "Single Family Home", icon: "🏠" },
+  { id: "CONDO", label: "Condo/Townhouse", icon: "🏢" },
+  { id: "MULTI_FAMILY", label: "Multi-Family", icon: "🏘️" },
+  { id: "COMMERCIAL", label: "Commercial Property", icon: "🏭" },
+];
 
 export function HomeownerOnboardingForm({
   open,
@@ -48,7 +56,7 @@ export function HomeownerOnboardingForm({
       email: userEmail || "",
       phone: "",
       propertyAddress: "",
-      propertyType: "SINGLE_FAMILY",
+      propertyTypes: [],
       numberOfProperties: 1,
       notificationPreference: "EMAIL_AND_SMS",
     },
@@ -57,6 +65,14 @@ export function HomeownerOnboardingForm({
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
+
+  const togglePropertyType = (typeId: string) => {
+    const currentTypes = form.watch("propertyTypes") || [];
+    const updated = currentTypes.includes(typeId)
+      ? currentTypes.filter(t => t !== typeId)
+      : [...currentTypes, typeId];
+    form.setValue("propertyTypes", updated, { shouldValidate: true });
+  };
 
   const onSubmit = async (data: OnboardingData) => {
     setIsSubmitting(true);
@@ -71,7 +87,7 @@ export function HomeownerOnboardingForm({
     const fields = step === 1 
       ? ["name", "email", "phone"] 
       : step === 2 
-      ? ["propertyAddress", "propertyType", "numberOfProperties"]
+      ? ["propertyAddress", "propertyTypes", "numberOfProperties"]
       : ["notificationPreference"];
     
     const isValid = await form.trigger(fields as any);
@@ -201,69 +217,37 @@ export function HomeownerOnboardingForm({
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Property Type</Label>
-                  <RadioGroup
-                    value={form.watch("propertyType")}
-                    onValueChange={(value: any) => form.setValue("propertyType", value, { shouldValidate: true })}
-                    className="space-y-2"
-                  >
-                    <div
-                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                        form.watch("propertyType") === "SINGLE_FAMILY"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      }`}
-                      onClick={() => form.setValue("propertyType", "SINGLE_FAMILY", { shouldValidate: true })}
-                      data-testid="radio-property-single-family"
-                    >
-                      <RadioGroupItem value="SINGLE_FAMILY" id="property-single-family" />
-                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
-                        🏠 Single Family Home
-                      </Label>
-                    </div>
-                    <div
-                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                        form.watch("propertyType") === "CONDO"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      }`}
-                      onClick={() => form.setValue("propertyType", "CONDO", { shouldValidate: true })}
-                      data-testid="radio-property-condo"
-                    >
-                      <RadioGroupItem value="CONDO" id="property-condo" />
-                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
-                        🏢 Condo/Townhouse
-                      </Label>
-                    </div>
-                    <div
-                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                        form.watch("propertyType") === "MULTI_FAMILY"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      }`}
-                      onClick={() => form.setValue("propertyType", "MULTI_FAMILY", { shouldValidate: true })}
-                      data-testid="radio-property-multi-family"
-                    >
-                      <RadioGroupItem value="MULTI_FAMILY" id="property-multi-family" />
-                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
-                        🏘️ Multi-Family
-                      </Label>
-                    </div>
-                    <div
-                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                        form.watch("propertyType") === "COMMERCIAL"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50 hover:bg-muted/50"
-                      }`}
-                      onClick={() => form.setValue("propertyType", "COMMERCIAL", { shouldValidate: true })}
-                      data-testid="radio-property-commercial"
-                    >
-                      <RadioGroupItem value="COMMERCIAL" id="property-commercial" />
-                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
-                        🏭 Commercial Property
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  <Label>Property Type (select all that apply)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PROPERTY_TYPES.map((type) => {
+                      const selectedTypes = form.watch("propertyTypes") || [];
+                      const isSelected = selectedTypes.includes(type.id);
+                      
+                      return (
+                        <div
+                          key={type.id}
+                          className={`flex items-center space-x-2 p-3 rounded-lg border transition-colors ${
+                            isSelected
+                              ? "border-primary bg-primary/5"
+                              : "hover:bg-muted/50"
+                          }`}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => togglePropertyType(type.id)}
+                            data-testid={`checkbox-property-${type.id.toLowerCase().replace(/_/g, '-')}`}
+                          />
+                          <Label className="cursor-pointer flex-1 flex items-center gap-2" onClick={() => togglePropertyType(type.id)}>
+                            <span>{type.icon}</span>
+                            <span className="text-sm">{type.label}</span>
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {form.formState.errors.propertyTypes && (
+                    <p className="text-sm text-destructive">{form.formState.errors.propertyTypes.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

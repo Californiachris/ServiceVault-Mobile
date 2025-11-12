@@ -2510,7 +2510,18 @@ Instructions:
             },
           });
       } else if (role === 'HOMEOWNER' && onboardingData.propertyAddress) {
+        // Normalize property types array
+        const propertyTypes = Array.isArray(onboardingData.propertyTypes) 
+          ? onboardingData.propertyTypes 
+          : (onboardingData.propertyTypes ? [onboardingData.propertyTypes] : []);
+        
+        // Guard against empty array
+        if (propertyTypes.length === 0) {
+          return res.status(400).json({ error: 'Please select at least one property type' });
+        }
+        
         // Create initial property for homeowner with address from onboarding
+        // Use first property type from array for the initial property
         await db.insert(properties).values({
           ownerId: userId,
           name: onboardingData.propertyName || 'My Home',
@@ -2518,14 +2529,26 @@ Instructions:
           city: onboardingData.city || null,
           state: onboardingData.state || null,
           postalCode: onboardingData.zip || null,
-          propertyType: onboardingData.propertyType || null,
+          propertyType: propertyTypes[0],
           homePlan: plan,
           homeStatus: 'ACTIVE',
         }).onConflictDoNothing();
+        
+        console.log(`[DEV] Homeowner created with property types: ${propertyTypes.join(', ')}`);
       } else if (role === 'FLEET') {
+        // Normalize industries array
+        const industries = Array.isArray(onboardingData.industries) 
+          ? onboardingData.industries 
+          : (onboardingData.industries ? [onboardingData.industries] : []);
+        
+        // Guard against empty array
+        if (industries.length === 0) {
+          return res.status(400).json({ error: 'Please select at least one industry' });
+        }
+        
         // For fleet, industry and categories are stored in onboardingData but not persisted to a specific table
         // This is acceptable for dev testing - they can add equipment through the dashboard
-        console.log(`[DEV] Fleet user created with industry: ${onboardingData.industry}, categories: ${onboardingData.assetCategories}`);
+        console.log(`[DEV] Fleet user created with industries: ${industries.join(', ')}, categories: ${onboardingData.assetCategories}`);
       }
 
       res.json({
