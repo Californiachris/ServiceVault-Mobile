@@ -9,7 +9,11 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { seedDemoData } from "./seedDemoData";
 
-if (!process.env.REPLIT_DOMAINS) {
+// Public mode: Skip authentication entirely
+const AUTH_MODE = process.env.AUTH_MODE || 'public';
+const DEMO_USER_ID = 'demo-user-public';
+
+if (!process.env.REPLIT_DOMAINS && AUTH_MODE === 'protected') {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
 }
 
@@ -69,7 +73,50 @@ async function upsertUser(
   });
 }
 
+// Middleware to inject demo user in public mode
+async function injectDemoUser(req: any, res: any, next: any) {
+  if (AUTH_MODE === 'public') {
+    // Create or get demo user
+    const existingUser = await storage.getUser(DEMO_USER_ID);
+    
+    if (!existingUser) {
+      await storage.upsertUser({
+        id: DEMO_USER_ID,
+        email: 'demo@fix-track.app',
+        firstName: 'Demo',
+        lastName: 'User',
+        profileImageUrl: null,
+        role: 'HOMEOWNER',
+      });
+      
+      // Seed demo data for this user
+      await seedDemoData(DEMO_USER_ID);
+    }
+    
+    // Inject fake user session
+    req.user = {
+      claims: {
+        sub: DEMO_USER_ID,
+        email: 'demo@fix-track.app',
+        first_name: 'Demo',
+        last_name: 'User',
+      }
+    };
+  }
+  next();
+}
+
 export async function setupAuth(app: Express) {
+  if (AUTH_MODE === 'public') {
+    // Public mode: Skip Replit Auth completely, just inject demo user
+    app.set("trust proxy", 1);
+    app.use(getSession());
+    app.use(injectDemoUser);
+    console.log('🔓 AUTH MODE: PUBLIC - Authentication disabled, using shared demo user');
+    return;
+  }
+  
+  // Protected mode: Normal Replit Auth flow
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -171,6 +218,11 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // In public mode, always pass authentication
+  if (AUTH_MODE === 'public') {
+    return next();
+  }
+  
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
@@ -202,6 +254,14 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 export function requireRole(...allowedRoles: string[]): RequestHandler {
   return async (req: any, res, next) => {
     try {
+      // In public mode, inject demo user as HOMEOWNER
+      if (AUTH_MODE === 'public') {
+        const demoUser = await storage.getUser(DEMO_USER_ID);
+        req.userRole = demoUser?.role || 'HOMEOWNER';
+        req.userRecord = demoUser;
+        return next();
+      }
+      
       const userId = req.user?.claims?.sub;
       if (!userId) {
         return res.status(401).json({ error: "Unauthorized" });
