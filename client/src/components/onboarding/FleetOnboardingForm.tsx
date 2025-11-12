@@ -100,18 +100,8 @@ export function FleetOnboardingForm({
       ? ["phone", "fleetSize", "assetCategories", "numberOfOperators"]
       : ["notificationPreference"];
     
-    console.log('Validating step', step, 'fields:', fields);
-    console.log('Current form values:', form.getValues());
-    
     const isValid = await form.trigger(fields as any);
-    console.log('Validation result:', isValid);
-    console.log('Form errors:', form.formState.errors);
-    
-    if (isValid) {
-      setStep(step + 1);
-    } else {
-      console.error('Validation failed! Errors:', form.formState.errors);
-    }
+    if (isValid) setStep(step + 1);
   };
 
   return (
