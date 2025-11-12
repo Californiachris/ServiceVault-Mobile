@@ -295,7 +295,7 @@ export default function Landing() {
           <p className="text-xs font-medium text-muted-foreground tracking-wide">
             PATENT PENDING
           </p>
-          <p className="text-sm text-muted-foreground">&copy; 2025 FixTrack Pro. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} FixTrack Pro. All rights reserved.</p>
         </div>
       </div>
 
