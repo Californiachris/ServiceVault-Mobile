@@ -261,45 +261,35 @@ export default function DocumentsPage() {
                   </div>
                 )}
 
-                {/* File Upload - Premium Layout */}
+                {/* File Upload - Premium Gradient Buttons */}
                 <div className="space-y-4">
-                  {/* Photo Upload Button - Camera First (Most Common) */}
+                  {/* Photo Upload Button - Bold Gradient */}
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={50 * 1024 * 1024}
                     acceptedFileTypes={['.jpg', '.jpeg', '.png']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
-                    buttonClassName="w-full bg-card hover:bg-accent border-2 border-border hover:border-primary/50 rounded-xl p-6 transition-all duration-200 shadow-sm hover:shadow-md group"
+                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                   >
-                    <div className="flex items-center gap-4" data-testid="button-upload-photo">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                        <Camera className="h-6 w-6 text-blue-500" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-base font-semibold mb-0.5">Take Photo of Warranty</div>
-                        <div className="text-sm text-muted-foreground">JPG, PNG</div>
-                      </div>
+                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-photo">
+                      <Camera className="h-6 w-6" />
+                      <span>Take Photo of Warranty</span>
                     </div>
                   </ObjectUploader>
 
-                  {/* PDF Upload Button */}
+                  {/* PDF Upload Button - Bold Gradient */}
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={50 * 1024 * 1024}
                     acceptedFileTypes={['.pdf', '.doc', '.docx']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
-                    buttonClassName="w-full bg-card hover:bg-accent border-2 border-border hover:border-primary/50 rounded-xl p-6 transition-all duration-200 shadow-sm hover:shadow-md group"
+                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
                   >
-                    <div className="flex items-center gap-4" data-testid="button-upload-pdf">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                        <FileText className="h-6 w-6 text-emerald-500" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-base font-semibold mb-0.5">Upload PDF Document</div>
-                        <div className="text-sm text-muted-foreground">PDF, DOC, DOCX</div>
-                      </div>
+                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-pdf">
+                      <FileText className="h-6 w-6" />
+                      <span>Upload PDF Document</span>
                     </div>
                   </ObjectUploader>
                   
