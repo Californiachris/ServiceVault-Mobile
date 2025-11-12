@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Home, Phone, Mail, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -196,22 +195,70 @@ export function HomeownerOnboardingForm({
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="propertyType">Property Type</Label>
-                  <Select
+                <div className="space-y-3">
+                  <Label>Property Type</Label>
+                  <RadioGroup
                     value={form.watch("propertyType")}
-                    onValueChange={(value: any) => form.setValue("propertyType", value)}
+                    onValueChange={(value: any) => form.setValue("propertyType", value, { shouldValidate: true })}
+                    className="space-y-2"
                   >
-                    <SelectTrigger className="h-11" data-testid="select-property-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="z-[100]">
-                      <SelectItem value="SINGLE_FAMILY">Single Family Home</SelectItem>
-                      <SelectItem value="CONDO">Condo/Townhouse</SelectItem>
-                      <SelectItem value="MULTI_FAMILY">Multi-Family</SelectItem>
-                      <SelectItem value="COMMERCIAL">Commercial Property</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div
+                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                        form.watch("propertyType") === "SINGLE_FAMILY"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                      onClick={() => form.setValue("propertyType", "SINGLE_FAMILY", { shouldValidate: true })}
+                      data-testid="radio-property-single-family"
+                    >
+                      <RadioGroupItem value="SINGLE_FAMILY" id="property-single-family" />
+                      <Label htmlFor="property-single-family" className="flex-1 cursor-pointer font-normal">
+                        🏠 Single Family Home
+                      </Label>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                        form.watch("propertyType") === "CONDO"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                      onClick={() => form.setValue("propertyType", "CONDO", { shouldValidate: true })}
+                      data-testid="radio-property-condo"
+                    >
+                      <RadioGroupItem value="CONDO" id="property-condo" />
+                      <Label htmlFor="property-condo" className="flex-1 cursor-pointer font-normal">
+                        🏢 Condo/Townhouse
+                      </Label>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                        form.watch("propertyType") === "MULTI_FAMILY"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                      onClick={() => form.setValue("propertyType", "MULTI_FAMILY", { shouldValidate: true })}
+                      data-testid="radio-property-multi-family"
+                    >
+                      <RadioGroupItem value="MULTI_FAMILY" id="property-multi-family" />
+                      <Label htmlFor="property-multi-family" className="flex-1 cursor-pointer font-normal">
+                        🏘️ Multi-Family
+                      </Label>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                        form.watch("propertyType") === "COMMERCIAL"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                      onClick={() => form.setValue("propertyType", "COMMERCIAL", { shouldValidate: true })}
+                      data-testid="radio-property-commercial"
+                    >
+                      <RadioGroupItem value="COMMERCIAL" id="property-commercial" />
+                      <Label htmlFor="property-commercial" className="flex-1 cursor-pointer font-normal">
+                        🏭 Commercial Property
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
                 <div className="space-y-2">

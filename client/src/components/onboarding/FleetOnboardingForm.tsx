@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Truck, Phone, Mail, Briefcase, Building2 } from "lucide-react";
@@ -198,29 +197,41 @@ export function FleetOnboardingForm({
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="industry" className="flex items-center gap-2">
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
                     Industry
                   </Label>
-                  <Select
+                  <RadioGroup
                     value={form.watch("industry")}
-                    onValueChange={(value) => form.setValue("industry", value)}
+                    onValueChange={(value) => form.setValue("industry", value, { shouldValidate: true })}
+                    className="space-y-2"
                   >
-                    <SelectTrigger className="h-11" data-testid="select-fleet-industry">
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="z-[100]">
-                      {INDUSTRIES.map((industry) => (
-                        <SelectItem key={industry.value} value={industry.value}>
-                          <div className="flex items-center gap-2">
-                            <span>{industry.icon}</span>
+                    {INDUSTRIES.map((industry) => {
+                      const id = `industry-${industry.value.toLowerCase().replace(/\s+|&/g, '-').replace(/--+/g, '-')}`;
+                      return (
+                        <div
+                          key={industry.value}
+                          className={`flex items-center space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                            form.watch("industry") === industry.value
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50 hover:bg-muted/50"
+                          }`}
+                          onClick={() => form.setValue("industry", industry.value, { shouldValidate: true })}
+                          data-testid={`radio-${id}`}
+                        >
+                          <RadioGroupItem value={industry.value} id={id} />
+                          <Label
+                            htmlFor={id}
+                            className="flex items-center gap-2 flex-1 cursor-pointer font-normal"
+                          >
+                            <span className="text-xl">{industry.icon}</span>
                             <span>{industry.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
                   {form.formState.errors.industry && (
                     <p className="text-sm text-destructive">{form.formState.errors.industry.message}</p>
                   )}
