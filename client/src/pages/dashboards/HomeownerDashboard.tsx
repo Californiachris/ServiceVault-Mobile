@@ -21,7 +21,8 @@ import {
   TrendingUp,
   Shield,
   Clock,
-  Search
+  Search,
+  ChevronRight
 } from "lucide-react";
 
 interface HomeownerDashboardData {
@@ -396,39 +397,91 @@ export default function HomeownerDashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Button variant="outline" className="h-auto py-6 flex-col gap-2" asChild data-testid="button-upload-warranty">
-          <Link href="/tools/documents">
-            <FileText className="h-6 w-6" />
-            <span className="font-semibold">Upload Warranty</span>
-            <span className="text-xs text-muted-foreground">AI parses dates</span>
+      {/* Quick Actions - Premium Design with Visual Hierarchy */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Quick Actions</h2>
+        
+        <div className="grid sm:grid-cols-2 gap-4">
+          {/* PRIMARY ACTION: Upload Warranty - Bold Gradient */}
+          <Link href="/tools/documents" data-testid="button-upload-warranty">
+            <Card className="group relative overflow-hidden border-2 border-transparent bg-gradient-to-br from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <FileText className="h-8 w-8 text-white" />
+                  </div>
+                  <ChevronRight className="h-6 w-6 text-white/80 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-1">Upload Warranty</h3>
+                <p className="text-sm text-white/90">AI parses dates automatically</p>
+              </CardContent>
+            </Card>
           </Link>
-        </Button>
 
-        <Button variant="outline" className="h-auto py-6 flex-col gap-2" asChild data-testid="button-view-assets">
-          <Link href="/tools/assets">
-            <Shield className="h-6 w-6" />
-            <span className="font-semibold">View All Assets</span>
-            <span className="text-xs text-muted-foreground">Complete history</span>
+          {/* PRIMARY ACTION: Scan QR - Bold Gradient */}
+          <Link href="/scan" data-testid="button-scan-qr-quick">
+            <Card className="group relative overflow-hidden border-2 border-transparent bg-gradient-to-br from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <QrCode className="h-8 w-8 text-white" />
+                  </div>
+                  <ChevronRight className="h-6 w-6 text-white/80 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-1">Scan QR Code</h3>
+                <p className="text-sm text-white/90">Quick asset lookup</p>
+              </CardContent>
+            </Card>
           </Link>
-        </Button>
+        </div>
 
-        <Button variant="outline" className="h-auto py-6 flex-col gap-2" asChild data-testid="button-generate-report">
-          <Link href="/tools/reports">
-            <TrendingUp className="h-6 w-6" />
-            <span className="font-semibold">Health Report</span>
-            <span className="text-xs text-muted-foreground">Property certificate</span>
+        {/* SECONDARY ACTIONS: Professional Cards with Borders */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link href="/tools/assets" data-testid="button-view-assets">
+            <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Shield className="h-7 w-7 text-primary" />
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">View All Assets</h3>
+                <p className="text-sm text-muted-foreground">Complete history & details</p>
+              </CardContent>
+            </Card>
           </Link>
-        </Button>
 
-        <Button variant="outline" className="h-auto py-6 flex-col gap-2" asChild data-testid="button-manage-settings">
-          <Link href="/settings">
-            <Bell className="h-6 w-6" />
-            <span className="font-semibold">Notifications</span>
-            <span className="text-xs text-muted-foreground">Email & SMS</span>
+          <Link href="/tools/reports" data-testid="button-generate-report">
+            <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <TrendingUp className="h-7 w-7 text-primary" />
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">Health Report</h3>
+                <p className="text-sm text-muted-foreground">Property certificate</p>
+              </CardContent>
+            </Card>
           </Link>
-        </Button>
+
+          <Link href="/settings" data-testid="button-manage-settings">
+            <Card className="group relative overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Bell className="h-7 w-7 text-primary" />
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">Notifications</h3>
+                <p className="text-sm text-muted-foreground">Email & SMS settings</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
       </div>
     </div>
   );
