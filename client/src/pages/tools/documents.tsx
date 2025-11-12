@@ -219,8 +219,8 @@ export default function DocumentsPage() {
                           </div>
                         )}
                         
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                        {/* Hover Overlay - Desktop */}
+                        <div className="hidden sm:flex absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center gap-2">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -243,6 +243,33 @@ export default function DocumentsPage() {
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download
+                          </Button>
+                        </div>
+                        
+                        {/* Quick Action Buttons - Mobile */}
+                        <div className="sm:hidden absolute top-2 right-2 flex gap-2">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 shadow-lg"
+                            onClick={() => window.open(doc.objectPath, '_blank')}
+                            data-testid={`button-view-mobile-${doc.id}`}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 shadow-lg"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = doc.objectPath;
+                              link.download = doc.title || 'document';
+                              link.click();
+                            }}
+                            data-testid={`button-download-mobile-${doc.id}`}
+                          >
+                            <Download className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
