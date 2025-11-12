@@ -100,8 +100,18 @@ export function FleetOnboardingForm({
       ? ["phone", "fleetSize", "assetCategories", "numberOfOperators"]
       : ["notificationPreference"];
     
+    console.log('Validating step', step, 'fields:', fields);
+    console.log('Current form values:', form.getValues());
+    
     const isValid = await form.trigger(fields as any);
-    if (isValid) setStep(step + 1);
+    console.log('Validation result:', isValid);
+    console.log('Form errors:', form.formState.errors);
+    
+    if (isValid) {
+      setStep(step + 1);
+    } else {
+      console.error('Validation failed! Errors:', form.formState.errors);
+    }
   };
 
   return (
@@ -135,6 +145,17 @@ export function FleetOnboardingForm({
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
           <div className="px-6 py-6 overflow-y-auto flex-1">
+            {/* Error Summary */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm font-medium text-destructive mb-2">Please fix the following errors:</p>
+                <ul className="text-sm text-destructive space-y-1 list-disc list-inside">
+                  {Object.entries(form.formState.errors).map(([field, error]) => (
+                    <li key={field}>{field}: {error?.message as string}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
