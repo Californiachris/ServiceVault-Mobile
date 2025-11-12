@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, File, CheckCircle2, AlertCircle, X, Shield, FileText, Receipt, BookOpen, Clipboard, DollarSign } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 const DOCUMENT_TYPES = [
   { value: 'RECEIPT', label: 'Receipt', icon: Receipt },
@@ -66,6 +66,22 @@ export function DocumentUploadWizard({
   const [description, setDescription] = useState('');
   const [assetId, setAssetId] = useState('');
   const [propertyId, setPropertyId] = useState('');
+
+  // Fetch user's properties and assets
+  const { data: dashboardData } = useQuery<{
+    properties: Array<{
+      id: string;
+      name: string;
+      assets: Array<{
+        id: string;
+        name: string;
+        category: string;
+      }>;
+    }>;
+  }>({
+    queryKey: ['/api/dashboard/homeowner'],
+    enabled: showModal, // Only fetch when modal is open
+  });
 
   // Initialize metadata from scanned warranty data when modal opens
   useEffect(() => {
@@ -188,12 +204,12 @@ export function DocumentUploadWizard({
 
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (variables?: { assetId?: string; propertyId?: string }) => {
       if (!uploadFile?.uploadURL) throw new Error("No file uploaded");
 
       const payload: any = {
-        assetId: assetId || undefined,
-        propertyId: propertyId || undefined,
+        assetId: variables?.assetId || assetId || undefined,
+        propertyId: variables?.propertyId || propertyId || undefined,
         type: documentType,
         title: title || uploadFile.file.name,
         description: description || undefined,
@@ -230,16 +246,17 @@ export function DocumentUploadWizard({
       return;
     }
 
-    if (!assetId && !propertyId) {
-      toast({
-        title: "Missing Association",
-        description: "Please specify an Asset ID or Property ID",
-        variant: "destructive",
-      });
-      return;
+    // If no asset or property selected, auto-select first property
+    let finalAssetId = assetId;
+    let finalPropertyId = propertyId;
+    
+    if (!finalAssetId && !finalPropertyId && dashboardData?.properties.length) {
+      finalPropertyId = dashboardData.properties[0].id;
+      console.log(`[DocumentUploadWizard] No selection, auto-selecting property: ${finalPropertyId}`);
     }
 
-    saveMutation.mutate();
+    // Pass computed values directly to mutation (avoids async state update issues)
+    saveMutation.mutate({ assetId: finalAssetId, propertyId: finalPropertyId });
   };
 
   const resetAndClose = () => {
@@ -410,27 +427,49 @@ export function DocumentUploadWizard({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="assetId">Asset ID</Label>
-                    <Input
-                      id="assetId"
-                      placeholder="e.g., clm1234567890abcdef"
-                      value={assetId}
-                      onChange={(e) => setAssetId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">Link to a specific asset</p>
+                    <Label htmlFor="propertyId">Property (Optional)</Label>
+                    <Select 
+                      value={propertyId} 
+                      onValueChange={(value) => {
+                        setPropertyId(value);
+                        setAssetId(''); // Clear asset when property changes
+                      }}
+                    >
+                      <SelectTrigger id="propertyId">
+                        <SelectValue placeholder="Select a property or leave blank for default" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dashboardData?.properties.map(property => (
+                          <SelectItem key={property.id} value={property.id}>
+                            {property.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Link to entire property (optional)</p>
                   </div>
 
-                  <div className="text-center text-xs text-muted-foreground">OR</div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="propertyId">Property ID</Label>
-                    <Input
-                      id="propertyId"
-                      placeholder="e.g., clm0987654321fedcba"
-                      value={propertyId}
-                      onChange={(e) => setPropertyId(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">Link to entire property</p>
+                    <Label htmlFor="assetId">Asset (Optional)</Label>
+                    <Select 
+                      value={assetId} 
+                      onValueChange={setAssetId}
+                      disabled={!propertyId}
+                    >
+                      <SelectTrigger id="assetId">
+                        <SelectValue placeholder={propertyId ? "Select a specific asset" : "Select a property first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {propertyId && dashboardData?.properties
+                          .find(p => p.id === propertyId)
+                          ?.assets.map(asset => (
+                            <SelectItem key={asset.id} value={asset.id}>
+                              {asset.name} ({asset.category})
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Link to a specific asset (optional)</p>
                   </div>
                 </div>
 
