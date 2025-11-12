@@ -35,6 +35,7 @@ function generateCode(type: 'ASSET' | 'MASTER', length = 8): string {
 
 import { seedFleetData } from "./seedFleetData";
 import { seedDemoData } from "./seedDemoData";
+import { parseWarrantyDocument } from "./openaiClient";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -1305,25 +1306,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const asset = await storage.getAsset(assetId);
             if (!asset) return;
             
-            const downloadUrl = await objectStorageService.getDownloadUrl(normalizedPath);
+            // Download the file as a buffer and convert to base64
+            const fileBuffer = await objectStorageService.downloadObjectAsBuffer(normalizedPath);
+            const base64Image = fileBuffer.toString('base64');
             
             // Parse warranty using OpenAI Vision API
-            const parsedData = await parseWarrantyWithAI(downloadUrl);
+            const parsedData = await parseWarrantyDocument(base64Image);
             
             if (parsedData) {
               // Update document with parsed warranty dates
-              if (parsedData.expiryDate) {
+              if (parsedData.warrantyEndDate) {
                 await db.update(documents)
                   .set({ 
-                    expiryDate: new Date(parsedData.expiryDate),
-                    issueDate: parsedData.issueDate ? new Date(parsedData.issueDate) : undefined,
+                    expiryDate: new Date(parsedData.warrantyEndDate),
+                    issueDate: parsedData.warrantyStartDate ? new Date(parsedData.warrantyStartDate) : undefined,
                   })
                   .where(eq(documents.id, document.id));
               }
               
               // Create warranty expiration reminder (30 days before expiry)
-              if (parsedData.expiryDate) {
-                const expiryDate = new Date(parsedData.expiryDate);
+              if (parsedData.warrantyEndDate) {
+                const expiryDate = new Date(parsedData.warrantyEndDate);
                 const reminderDate = new Date(expiryDate);
                 reminderDate.setDate(reminderDate.getDate() - 30);
                 
@@ -1344,24 +1347,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Create maintenance reminders from parsed data
               if (parsedData.maintenanceSchedule && Array.isArray(parsedData.maintenanceSchedule)) {
                 for (const maintenance of parsedData.maintenanceSchedule) {
-                  if (maintenance.task && maintenance.intervalDays) {
-                    const nextDue = new Date(Date.now() + maintenance.intervalDays * 24 * 60 * 60 * 1000);
+                  if (maintenance.description && maintenance.intervalMonths) {
+                    // Convert interval from months to days (assuming 30 days per month)
+                    const intervalDays = maintenance.intervalMonths * 30;
+                    const nextDue = maintenance.firstDueDate 
+                      ? new Date(maintenance.firstDueDate)
+                      : new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000);
                     
                     // Determine frequency based on interval
                     let frequency = 'CUSTOM';
-                    if (maintenance.intervalDays === 30) frequency = 'MONTHLY';
-                    else if (maintenance.intervalDays === 90) frequency = 'QUARTERLY';
-                    else if (maintenance.intervalDays === 365) frequency = 'ANNUALLY';
+                    if (maintenance.intervalMonths === 1) frequency = 'MONTHLY';
+                    else if (maintenance.intervalMonths === 3) frequency = 'QUARTERLY';
+                    else if (maintenance.intervalMonths === 12) frequency = 'ANNUALLY';
                     
                     await storage.createReminder({
                       assetId: asset.id,
                       propertyId: asset.propertyId,
                       type: 'MAINTENANCE',
-                      title: maintenance.task,
-                      description: `Recommended maintenance every ${maintenance.intervalDays} days`,
+                      title: maintenance.description,
+                      description: `Recommended maintenance every ${maintenance.intervalMonths} month(s)`,
                       dueAt: nextDue,
                       frequency,
-                      intervalDays: frequency === 'CUSTOM' ? maintenance.intervalDays : undefined,
+                      intervalDays: frequency === 'CUSTOM' ? intervalDays : undefined,
                       nextDueAt: nextDue,
                       source: 'AI_GENERATED',
                       createdBy: userId,
