@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
-import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets } from "@shared/schema";
+import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -116,6 +116,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching subscription status:", error);
       res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+
+  // Get user onboarding preferences for dashboard tab generation
+  app.get('/api/user/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return user's onboarding selections for dynamic dashboard tabs
+      res.json({
+        role: user.role,
+        propertyTypes: user.propertyTypes || [],
+        industries: user.industries || [],
+        // For contractors, get specialties from contractor profile
+        specialties: user.role === 'CONTRACTOR' 
+          ? (await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1))[0]?.specialties || []
+          : [],
+      });
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+      res.status(500).json({ message: "Failed to fetch preferences" });
+    }
+  });
+
+  // Get fleet industry taxonomy (industries with their asset categories)
+  app.get('/api/fleet/taxonomy', async (req, res) => {
+    try {
+      const industries = await db
+        .select()
+        .from(fleetIndustries)
+        .orderBy(fleetIndustries.displayOrder);
+
+      const taxonomy = await Promise.all(
+        industries.map(async (industry) => {
+          const categories = await db
+            .select()
+            .from(fleetAssetCategories)
+            .where(eq(fleetAssetCategories.industryId, industry.id));
+
+          return {
+            ...industry,
+            categories,
+          };
+        })
+      );
+
+      res.json(taxonomy);
+    } catch (error) {
+      console.error("Error fetching fleet taxonomy:", error);
+      res.status(500).json({ message: "Failed to fetch taxonomy" });
     }
   });
 
