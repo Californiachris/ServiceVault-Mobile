@@ -2467,11 +2467,12 @@ Instructions:
         return res.status(400).json({ error: 'Invalid plan type' });
       }
 
-      // Update user with role, phone, and notification preference
+      // Update user with role, email, phone, and notification preference
       await db
         .update(users)
         .set({
           role,
+          email: onboardingData.email || null,
           phone: onboardingData.phone || null,
           notificationPreference: onboardingData.notificationPreference || 'EMAIL_AND_SMS',
         })

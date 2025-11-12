@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const onboardingSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   propertyAddress: z.string().min(5, "Please enter your property address"),
   propertyType: z.enum(["SINGLE_FAMILY", "CONDO", "MULTI_FAMILY", "COMMERCIAL"]),
@@ -44,6 +45,7 @@ export function HomeownerOnboardingForm({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       name: userName || "",
+      email: userEmail || "",
       phone: "",
       propertyAddress: "",
       propertyType: "SINGLE_FAMILY",
@@ -63,7 +65,7 @@ export function HomeownerOnboardingForm({
 
   const nextStep = async () => {
     const fields = step === 1 
-      ? ["name", "phone"] 
+      ? ["name", "email", "phone"] 
       : step === 2 
       ? ["propertyAddress", "propertyType", "numberOfProperties"]
       : ["notificationPreference"];
@@ -113,42 +115,57 @@ export function HomeownerOnboardingForm({
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    Full Name
-                  </Label>
-                  <Input
-                    id="name"
-                    {...form.register("name")}
-                    placeholder="John Doe"
-                    className="h-11"
-                    data-testid="input-onboarding-name"
-                  />
-                  {form.formState.errors.name && (
-                    <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-                  )}
-                  {userEmail && (
-                    <p className="text-xs text-muted-foreground">Account email: {userEmail}</p>
-                  )}
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Full Name
+                    </Label>
+                    <Input
+                      id="name"
+                      {...form.register("name")}
+                      placeholder="John Doe"
+                      className="h-11"
+                      data-testid="input-onboarding-name"
+                    />
+                    {form.formState.errors.name && (
+                      <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    Phone Number
-                  </Label>
-                  <Input
-                    id="phone"
-                    {...form.register("phone")}
-                    placeholder="(555) 123-4567"
-                    type="tel"
-                    className="h-11"
-                    data-testid="input-onboarding-phone"
-                  />
-                  {form.formState.errors.phone && (
-                    <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      {...form.register("email")}
+                      type="email"
+                      placeholder="john@example.com"
+                      className="h-11"
+                      data-testid="input-homeowner-email"
+                    />
+                    {form.formState.errors.email && (
+                      <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      Phone Number
+                    </Label>
+                    <Input
+                      id="phone"
+                      {...form.register("phone")}
+                      placeholder="(555) 123-4567"
+                      type="tel"
+                      className="h-11"
+                      data-testid="input-onboarding-phone"
+                    />
+                    {form.formState.errors.phone && (
+                      <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
+                    )}
                   </div>
                 </motion.div>
               )}

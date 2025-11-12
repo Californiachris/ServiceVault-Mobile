@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const onboardingSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
   companyName: z.string().min(2, "Company name is required"),
   licenseNumber: z.string().min(3, "License number is required"),
   phone: z.string().min(10, "Please enter a valid phone number"),
@@ -58,6 +59,7 @@ export function ContractorOnboardingForm({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       name: userName || "",
+      email: userEmail || "",
       companyName: "",
       licenseNumber: "",
       phone: "",
@@ -87,7 +89,7 @@ export function ContractorOnboardingForm({
 
   const nextStep = async () => {
     const fields = step === 1 
-      ? ["name", "companyName", "licenseNumber"] 
+      ? ["name", "email", "companyName", "licenseNumber"] 
       : step === 2 
       ? ["phone", "serviceAreas", "specialties", "crewSize"]
       : ["notificationPreference"];
@@ -152,16 +154,31 @@ export function ContractorOnboardingForm({
                   {form.formState.errors.name && (
                     <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                   )}
-                  {userEmail && (
-                    <p className="text-xs text-muted-foreground">Account email: {userEmail}</p>
-                  )}
-                </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    Company Name
-                  </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      {...form.register("email")}
+                      type="email"
+                      placeholder="john@example.com"
+                      className="h-11"
+                      data-testid="input-contractor-email"
+                    />
+                    {form.formState.errors.email && (
+                      <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName" className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      Company Name
+                    </Label>
                   <Input
                     id="companyName"
                     {...form.register("companyName")}

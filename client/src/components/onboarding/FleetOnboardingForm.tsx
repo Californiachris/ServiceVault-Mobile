@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const onboardingSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
   companyName: z.string().min(2, "Company name is required"),
   industry: z.string().min(1, "Please select an industry"),
   phone: z.string().min(10, "Please enter a valid phone number"),
@@ -65,6 +66,7 @@ export function FleetOnboardingForm({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       name: userName || "",
+      email: userEmail || "",
       companyName: "",
       industry: "",
       phone: "",
@@ -94,7 +96,7 @@ export function FleetOnboardingForm({
 
   const nextStep = async () => {
     const fields = step === 1 
-      ? ["name", "companyName", "industry"] 
+      ? ["name", "email", "companyName", "industry"] 
       : step === 2 
       ? ["phone", "fleetSize", "assetCategories", "numberOfOperators"]
       : ["notificationPreference"];
@@ -159,16 +161,31 @@ export function FleetOnboardingForm({
                   {form.formState.errors.name && (
                     <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                   )}
-                  {userEmail && (
-                    <p className="text-xs text-muted-foreground">Account email: {userEmail}</p>
-                  )}
-                </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    Company Name
-                  </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      {...form.register("email")}
+                      type="email"
+                      placeholder="john@example.com"
+                      className="h-11"
+                      data-testid="input-fleet-email"
+                    />
+                    {form.formState.errors.email && (
+                      <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName" className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      Company Name
+                    </Label>
                   <Input
                     id="companyName"
                     {...form.register("companyName")}

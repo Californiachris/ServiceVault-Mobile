@@ -54,7 +54,7 @@ export const users = pgTable("users", {
 // Contractor profiles
 export const contractors = pgTable("contractors", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
   companyName: varchar("company_name").notNull(),
   logoUrl: varchar("logo_url"),
   phone: varchar("phone"),
@@ -62,6 +62,11 @@ export const contractors = pgTable("contractors", {
   website: varchar("website"),
   licenseNumber: varchar("license_number"),
   plan: varchar("plan"), // contractor_starter, contractor_pro
+  serviceAreas: text("service_areas").array(),
+  specialties: text("specialties").array(),
+  crewSize: integer("crew_size"),
+  monthlyQuota: integer("monthly_quota").default(50),
+  quotaUsed: integer("quota_used").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
