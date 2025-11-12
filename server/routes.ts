@@ -1238,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/documents/upload', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { assetId, propertyId, type, title, objectPath } = req.body;
+      const { assetId, propertyId, type, title, description, objectPath, scannedWarrantyMetadata } = req.body;
 
       if (!objectPath) {
         return res.status(400).json({ error: "Object path is required" });
@@ -1268,15 +1268,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visibility: "private",
       });
 
+      // Create document with user description OR auto-generate from scanned QR metadata
+      let finalDescription = description;
+      if (!finalDescription && scannedWarrantyMetadata) {
+        finalDescription = `Manufacturer: ${scannedWarrantyMetadata.manufacturer || 'N/A'}\nModel: ${scannedWarrantyMetadata.model || 'N/A'}\nSerial: ${scannedWarrantyMetadata.serial || 'N/A'}`;
+      }
+
       const document = await storage.createDocument({
         assetId: assetId || undefined,
         propertyId: propertyId || undefined,
         type: type || "OTHER",
         title: title || "Document",
         path: normalizedPath,
+        description: finalDescription || undefined,
+        uploadedBy: userId,
       });
 
-      res.json({ document });
+      res.json({ document, scannedMetadata: scannedWarrantyMetadata });
+
+      // If this is a WARRANTY document with an assetId, auto-trigger AI parsing in the background
+      // This creates automatic maintenance reminders based on the warranty document
+      if (type === 'WARRANTY' && assetId) {
+        setImmediate(async () => {
+          try {
+            console.log(`Auto-triggering AI warranty parsing for document ${document.id}`);
+            if (scannedWarrantyMetadata) {
+              console.log('QR metadata available:', scannedWarrantyMetadata);
+            }
+            
+            // Call the AI warranty parsing system
+            const asset = await storage.getAsset(assetId);
+            if (!asset) return;
+            
+            const downloadUrl = await objectStorageService.getDownloadUrl(normalizedPath);
+            
+            // Parse warranty using OpenAI Vision API
+            const parsedData = await parseWarrantyWithAI(downloadUrl);
+            
+            if (parsedData) {
+              // Update document with parsed warranty dates
+              if (parsedData.expiryDate) {
+                await db.update(documents)
+                  .set({ 
+                    expiryDate: new Date(parsedData.expiryDate),
+                    issueDate: parsedData.issueDate ? new Date(parsedData.issueDate) : undefined,
+                  })
+                  .where(eq(documents.id, document.id));
+              }
+              
+              // Create warranty expiration reminder (30 days before expiry)
+              if (parsedData.expiryDate) {
+                const expiryDate = new Date(parsedData.expiryDate);
+                const reminderDate = new Date(expiryDate);
+                reminderDate.setDate(reminderDate.getDate() - 30);
+                
+                await storage.createReminder({
+                  assetId: asset.id,
+                  propertyId: asset.propertyId,
+                  type: 'WARRANTY_EXPIRATION',
+                  title: `Warranty Expiring: ${asset.name}`,
+                  description: `Warranty expires on ${expiryDate.toLocaleDateString()}`,
+                  dueAt: reminderDate,
+                  frequency: 'ONE_TIME',
+                  source: 'AI_GENERATED',
+                  createdBy: userId,
+                  notifyHomeowner: true,
+                });
+              }
+              
+              // Create maintenance reminders from parsed data
+              if (parsedData.maintenanceSchedule && Array.isArray(parsedData.maintenanceSchedule)) {
+                for (const maintenance of parsedData.maintenanceSchedule) {
+                  if (maintenance.task && maintenance.intervalDays) {
+                    const nextDue = new Date(Date.now() + maintenance.intervalDays * 24 * 60 * 60 * 1000);
+                    
+                    // Determine frequency based on interval
+                    let frequency = 'CUSTOM';
+                    if (maintenance.intervalDays === 30) frequency = 'MONTHLY';
+                    else if (maintenance.intervalDays === 90) frequency = 'QUARTERLY';
+                    else if (maintenance.intervalDays === 365) frequency = 'ANNUALLY';
+                    
+                    await storage.createReminder({
+                      assetId: asset.id,
+                      propertyId: asset.propertyId,
+                      type: 'MAINTENANCE',
+                      title: maintenance.task,
+                      description: `Recommended maintenance every ${maintenance.intervalDays} days`,
+                      dueAt: nextDue,
+                      frequency,
+                      intervalDays: frequency === 'CUSTOM' ? maintenance.intervalDays : undefined,
+                      nextDueAt: nextDue,
+                      source: 'AI_GENERATED',
+                      createdBy: userId,
+                      notifyHomeowner: true,
+                    });
+                  }
+                }
+              }
+              
+              console.log(`AI warranty parsing complete for document ${document.id}. Created reminders.`);
+            }
+          } catch (parseError) {
+            console.error('Background AI warranty parsing failed:', parseError);
+            // Don't fail the upload if parsing fails
+          }
+        });
+      }
     } catch (error) {
       console.error("Error uploading document:", error);
       res.status(500).json({ error: "Failed to upload document" });

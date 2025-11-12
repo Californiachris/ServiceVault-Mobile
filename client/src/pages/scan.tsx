@@ -113,16 +113,24 @@ export default function Scan() {
   const [servicePhotos, setServicePhotos] = useState<UploadedPhoto[]>([]);
   const [claimSuccess, setClaimSuccess] = useState<any>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus | null>(null);
+  const [warrantyMode, setWarrantyMode] = useState(false);
   const manualInputRef = useRef<HTMLInputElement>(null);
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
-  // Check URL for code parameter
+  // Check URL for code and mode parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const mode = urlParams.get('mode');
+    
     if (code) {
       setScannedCode(code);
+    }
+    
+    if (mode === 'warranty') {
+      setWarrantyMode(true);
+      setIsScanning(true); // Auto-open camera in warranty mode
     }
   }, []);
 
@@ -316,6 +324,60 @@ export default function Scan() {
   });
 
   const handleScan = (code: string) => {
+    // Check if in warranty mode and code is a URL (appliance QR)
+    if (warrantyMode && (code.startsWith('http://') || code.startsWith('https://'))) {
+      try {
+        const url = new URL(code);
+        const params = new URLSearchParams(url.search);
+        
+        // Extract manufacturer from domain
+        let manufacturer = '';
+        if (url.hostname.includes('samsung')) {
+          manufacturer = 'Samsung';
+        } else if (url.hostname.includes('geappliances') || url.hostname.includes('ge.com')) {
+          manufacturer = 'GE Appliances';
+        } else if (url.hostname.includes('kitchenaid')) {
+          manufacturer = 'KitchenAid';
+        } else if (url.hostname.includes('whirlpool')) {
+          manufacturer = 'Whirlpool';
+        } else if (url.hostname.includes('lg')) {
+          manufacturer = 'LG';
+        } else {
+          manufacturer = url.hostname;
+        }
+        
+        // Try to extract model and serial from URL parameters
+        const model = params.get('model') || params.get('modelNumber') || params.get('product') || '';
+        const serial = params.get('serial') || params.get('serialNumber') || params.get('sn') || '';
+        
+        // Store warranty data in sessionStorage for documents page
+        const warrantyData = {
+          manufacturer,
+          model,
+          serial,
+          qrUrl: code,
+          scannedAt: new Date().toISOString()
+        };
+        
+        sessionStorage.setItem('scannedWarrantyData', JSON.stringify(warrantyData));
+        
+        toast({
+          title: "Warranty QR Scanned!",
+          description: `${manufacturer} appliance detected. Redirecting...`,
+        });
+        
+        // Redirect to documents page with warranty data
+        setTimeout(() => {
+          setLocation('/tools/documents?warranty=scanned');
+        }, 1500);
+        
+        return;
+      } catch (error) {
+        console.error('Error parsing warranty QR URL:', error);
+      }
+    }
+    
+    // Normal FixTrack asset code handling
     setScannedCode(code);
     setIsScanning(false);
     setShowInstallForm(false);

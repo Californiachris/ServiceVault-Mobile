@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, Receipt, Shield, BookOpen, Clipboard, DollarSign, AlertCircle } from "lucide-react";
+import { Upload, FileText, Receipt, Shield, BookOpen, Clipboard, DollarSign, AlertCircle, QrCode, Camera } from "lucide-react";
 
 const DOCUMENT_TYPES = [
   { value: 'RECEIPT', label: 'Receipt', icon: Receipt },
@@ -34,16 +34,73 @@ export default function DocumentsPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<Array<{ uploadURL: string; name: string }>>([]);
+  
+  // QR-scanned warranty data
+  const [scannedWarrantyData, setScannedWarrantyData] = useState<{
+    manufacturer?: string;
+    model?: string;
+    serial?: string;
+    qrUrl?: string;
+  } | null>(null);
+  
+  // Check for scanned warranty data
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const warrantyScanned = urlParams.get('warranty');
+    
+    if (warrantyScanned === 'scanned') {
+      const warrantyDataStr = sessionStorage.getItem('scannedWarrantyData');
+      if (warrantyDataStr) {
+        try {
+          const warrantyData = JSON.parse(warrantyDataStr);
+          
+          // Store the scanned data for backend submission
+          setScannedWarrantyData(warrantyData);
+          
+          // Auto-populate title with manufacturer and model
+          const autoTitle = `${warrantyData.manufacturer} ${warrantyData.model} Warranty`.trim();
+          setTitle(autoTitle);
+          
+          // Auto-populate description with scanned details
+          const autoDescription = `Model: ${warrantyData.model}\nSerial: ${warrantyData.serial}\n\nScanned from appliance QR code on ${new Date(warrantyData.scannedAt).toLocaleString()}`;
+          setDescription(autoDescription);
+          
+          // Clear the session storage
+          sessionStorage.removeItem('scannedWarrantyData');
+          
+          toast({
+            title: "Warranty Data Loaded",
+            description: `${warrantyData.manufacturer} appliance information populated. Upload warranty document or photo to complete.`,
+          });
+        } catch (error) {
+          console.error('Error loading warranty data:', error);
+        }
+      }
+    }
+  }, [toast]);
 
   const uploadMutation = useMutation({
     mutationFn: async (objectPath: string) => {
-      const response = await apiRequest("POST", "/api/documents/upload", {
+      const payload: any = {
         assetId: assetId || undefined,
         propertyId: propertyId || undefined,
         type: documentType,
         title: title || uploadedFiles[0]?.name || 'Document',
+        description: description || undefined,
         objectPath,
-      });
+      };
+      
+      // Include scanned warranty metadata if available
+      if (scannedWarrantyData) {
+        payload.scannedWarrantyMetadata = {
+          manufacturer: scannedWarrantyData.manufacturer,
+          model: scannedWarrantyData.model,
+          serial: scannedWarrantyData.serial,
+          qrUrl: scannedWarrantyData.qrUrl,
+        };
+      }
+      
+      const response = await apiRequest("POST", "/api/documents/upload", payload);
       return response.json();
     },
     onSuccess: () => {
@@ -168,32 +225,105 @@ export default function DocumentsPage() {
                   Upload Document
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* QR Scanner - Primary Action */}
+                {documentType === 'WARRANTY' && (
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Fastest Option</Label>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                      onClick={() => {
+                        window.location.href = '/scan?mode=warranty';
+                      }}
+                      data-testid="button-scan-warranty-qr"
+                    >
+                      <QrCode className="mr-3 h-6 w-6" />
+                      Scan Warranty QR Code
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Scan QR code from appliance to auto-extract model, serial, and warranty info
+                    </p>
+                  </div>
+                )}
+
+                {documentType === 'WARRANTY' && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or Upload Manually
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* File Upload */}
-                <div className="space-y-2">
-                  <Label>Document File</Label>
+                <div className="space-y-3">
+                  <Label className="text-base">Upload Document</Label>
+                  
+                  {/* Photo Upload Button */}
                   <ObjectUploader
                     maxNumberOfFiles={1}
-                    maxFileSize={50 * 1024 * 1024} // 50MB
-                    acceptedFileTypes={['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']}
+                    maxFileSize={50 * 1024 * 1024}
+                    acceptedFileTypes={['.jpg', '.jpeg', '.png']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
                     buttonClassName="w-full"
                   >
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploadedFiles.length > 0 ? 'Replace File' : 'Choose File'}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="w-full h-14 justify-start text-left"
+                      data-testid="button-upload-photo"
+                    >
+                      <Camera className="mr-3 h-5 w-5" />
+                      <div className="flex-1">
+                        <div className="font-semibold">Take Photo of Warranty</div>
+                        <div className="text-xs text-muted-foreground">JPG, PNG</div>
+                      </div>
+                    </Button>
+                  </ObjectUploader>
+
+                  {/* PDF Upload Button */}
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={50 * 1024 * 1024}
+                    acceptedFileTypes={['.pdf', '.doc', '.docx']}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={handleUploadComplete}
+                    buttonClassName="w-full"
+                  >
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="w-full h-14 justify-start text-left"
+                      data-testid="button-upload-pdf"
+                    >
+                      <FileText className="mr-3 h-5 w-5" />
+                      <div className="flex-1">
+                        <div className="font-semibold">Upload PDF Document</div>
+                        <div className="text-xs text-muted-foreground">PDF, DOC, DOCX</div>
+                      </div>
+                    </Button>
                   </ObjectUploader>
                   
                   {uploadedFiles.length > 0 && (
-                    <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-                      <p className="text-sm text-green-400">
-                        ✓ {uploadedFiles[0].name} uploaded successfully
+                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        <span className="font-medium">{uploadedFiles[0].name}</span> uploaded successfully
                       </p>
                     </div>
                   )}
                   
                   <p className="text-xs text-muted-foreground">
-                    Supported: PDF, Images (JPG, PNG), Word Documents. Max 50MB.
+                    Max file size: 50MB
                   </p>
                 </div>
 
