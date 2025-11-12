@@ -133,7 +133,14 @@ export default function AppShell({ children }: AppShellProps) {
               variant="outline"
               size="sm"
               className="w-full justify-start"
-              onClick={() => window.location.href = "/api/logout"}
+              onClick={async () => {
+                try {
+                  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                } catch (e) {
+                  // Logout endpoint doesn't exist in PUBLIC mode - that's ok
+                }
+                window.location.href = "/";
+              }}
               data-testid="button-sidebar-logout"
             >
               <LogOut className="h-4 w-4 mr-2" />
@@ -232,9 +239,14 @@ export default function AppShell({ children }: AppShellProps) {
                   variant="outline"
                   size="sm"
                   className="w-full justify-start"
-                  onClick={() => {
+                  onClick={async () => {
                     setSidebarOpen(false);
-                    window.location.href = "/api/logout";
+                    try {
+                      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                    } catch (e) {
+                      // Logout endpoint doesn't exist in PUBLIC mode - that's ok
+                    }
+                    window.location.href = "/";
                   }}
                   data-testid="button-mobile-sidebar-logout"
                 >

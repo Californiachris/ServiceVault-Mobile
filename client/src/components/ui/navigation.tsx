@@ -126,7 +126,14 @@ export default function Navigation() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.location.href = "/api/logout"}
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                    } catch (e) {
+                      // Logout endpoint doesn't exist in PUBLIC mode - that's ok
+                    }
+                    window.location.href = "/";
+                  }}
                   data-testid="button-logout"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
@@ -208,9 +215,14 @@ export default function Navigation() {
                   <Button 
                     variant="outline" 
                     className="w-full mx-3"
-                    onClick={() => {
+                    onClick={async () => {
                       setIsMobileMenuOpen(false);
-                      window.location.href = "/api/logout";
+                      try {
+                        await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                      } catch (e) {
+                        // Logout endpoint doesn't exist in PUBLIC mode - that's ok
+                      }
+                      window.location.href = "/";
                     }}
                     data-testid="button-mobile-logout"
                   >

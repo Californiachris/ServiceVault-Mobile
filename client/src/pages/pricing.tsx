@@ -123,7 +123,14 @@ export default function PricingPage() {
             {isAuthenticated ? (
               <Button 
                 variant="outline" 
-                onClick={() => window.location.href = "/api/logout"}
+                onClick={async () => {
+                  try {
+                    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                  } catch (e) {
+                    // Logout endpoint doesn't exist in PUBLIC mode - that's ok
+                  }
+                  window.location.href = "/";
+                }}
                 data-testid="button-logout"
               >
                 Logout

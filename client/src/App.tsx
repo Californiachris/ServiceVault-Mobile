@@ -42,8 +42,8 @@ function Router() {
     );
   }
 
-  // Public routes without AppShell (landing, pricing, scan, asset/property views)
-  const publicRoutes = ["/", "/pricing", "/scan"];
+  // Public routes without AppShell (landing, pricing, asset/property views)
+  const publicRoutes = ["/", "/pricing"];
   const isPublicRoute = publicRoutes.includes(location) || 
                         location.startsWith("/asset/") || 
                         location.startsWith("/property/");
@@ -53,7 +53,6 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
-        <Route path="/scan" component={Scan} />
         <Route path="/asset/:id" component={AssetView} />
         <Route path="/property/:id" component={PropertyView} />
       </Switch>
@@ -66,6 +65,7 @@ function Router() {
       <AppShell>
         <Switch>
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/scan" component={Scan} />
           <Route path="/settings" component={Settings} />
           <Route path="/settings/branding" component={FamilyBrandingSettings} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />
