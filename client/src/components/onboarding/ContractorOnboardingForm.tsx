@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -54,6 +54,7 @@ export function ContractorOnboardingForm({
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
@@ -69,6 +70,10 @@ export function ContractorOnboardingForm({
       notificationPreference: "EMAIL_AND_SMS",
     },
   });
+
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
 
   const toggleSpecialty = (specialtyId: string) => {
     const updated = selectedSpecialties.includes(specialtyId)
@@ -128,7 +133,7 @@ export function ContractorOnboardingForm({
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="px-6 py-6 overflow-y-auto flex-1">
+          <div ref={scrollContainerRef} className="px-6 py-6 overflow-y-auto flex-1">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div

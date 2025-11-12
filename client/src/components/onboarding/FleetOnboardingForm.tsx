@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -60,6 +60,7 @@ export function FleetOnboardingForm({
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
@@ -75,6 +76,10 @@ export function FleetOnboardingForm({
       notificationPreference: "EMAIL_AND_SMS",
     },
   });
+
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
 
   const toggleCategory = (categoryId: string) => {
     const updated = selectedCategories.includes(categoryId)
@@ -134,7 +139,7 @@ export function FleetOnboardingForm({
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="px-6 py-6 overflow-y-auto flex-1">
+          <div ref={scrollContainerRef} className="px-6 py-6 overflow-y-auto flex-1">
             {/* Error Summary */}
             {Object.keys(form.formState.errors).length > 0 && (
               <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -232,10 +237,7 @@ export function FleetOnboardingForm({
                           data-testid={`radio-${id}`}
                         >
                           <RadioGroupItem value={industry.value} id={id} />
-                          <Label
-                            htmlFor={id}
-                            className="flex items-center gap-2 flex-1 cursor-pointer font-normal"
-                          >
+                          <Label className="flex items-center gap-2 flex-1 cursor-pointer font-normal pointer-events-none">
                             <span className="text-xl">{industry.icon}</span>
                             <span>{industry.label}</span>
                           </Label>

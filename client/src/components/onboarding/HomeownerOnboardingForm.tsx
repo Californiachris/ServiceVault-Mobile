@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,6 +39,7 @@ export function HomeownerOnboardingForm({
 }: HomeownerOnboardingFormProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
@@ -52,6 +53,10 @@ export function HomeownerOnboardingForm({
       notificationPreference: "EMAIL_AND_SMS",
     },
   });
+
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
 
   const onSubmit = async (data: OnboardingData) => {
     setIsSubmitting(true);
@@ -103,7 +108,7 @@ export function HomeownerOnboardingForm({
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="px-6 py-6 overflow-y-auto flex-1">
+          <div ref={scrollContainerRef} className="px-6 py-6 overflow-y-auto flex-1">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
@@ -212,7 +217,7 @@ export function HomeownerOnboardingForm({
                       data-testid="radio-property-single-family"
                     >
                       <RadioGroupItem value="SINGLE_FAMILY" id="property-single-family" />
-                      <Label htmlFor="property-single-family" className="flex-1 cursor-pointer font-normal">
+                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
                         🏠 Single Family Home
                       </Label>
                     </div>
@@ -226,7 +231,7 @@ export function HomeownerOnboardingForm({
                       data-testid="radio-property-condo"
                     >
                       <RadioGroupItem value="CONDO" id="property-condo" />
-                      <Label htmlFor="property-condo" className="flex-1 cursor-pointer font-normal">
+                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
                         🏢 Condo/Townhouse
                       </Label>
                     </div>
@@ -240,7 +245,7 @@ export function HomeownerOnboardingForm({
                       data-testid="radio-property-multi-family"
                     >
                       <RadioGroupItem value="MULTI_FAMILY" id="property-multi-family" />
-                      <Label htmlFor="property-multi-family" className="flex-1 cursor-pointer font-normal">
+                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
                         🏘️ Multi-Family
                       </Label>
                     </div>
@@ -254,7 +259,7 @@ export function HomeownerOnboardingForm({
                       data-testid="radio-property-commercial"
                     >
                       <RadioGroupItem value="COMMERCIAL" id="property-commercial" />
-                      <Label htmlFor="property-commercial" className="flex-1 cursor-pointer font-normal">
+                      <Label className="flex-1 cursor-pointer font-normal pointer-events-none">
                         🏭 Commercial Property
                       </Label>
                     </div>
