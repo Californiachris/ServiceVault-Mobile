@@ -144,11 +144,11 @@ export function FleetOnboardingForm({
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    Full Name
-                  </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Full Name
+                    </Label>
                   <Input
                     id="name"
                     {...form.register("name")}
@@ -220,11 +220,11 @@ export function FleetOnboardingForm({
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    Business Phone
-                  </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      Business Phone
+                    </Label>
                   <Input
                     id="phone"
                     {...form.register("phone")}
@@ -306,9 +306,9 @@ export function FleetOnboardingForm({
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                <div className="space-y-3">
-                  <Label>How would you like to receive maintenance alerts?</Label>
-                  <RadioGroup
+                  <div className="space-y-3">
+                    <Label>How would you like to receive maintenance alerts?</Label>
+                    <RadioGroup
                     value={form.watch("notificationPreference")}
                     onValueChange={(value: any) => form.setValue("notificationPreference", value)}
                     className="space-y-2"
