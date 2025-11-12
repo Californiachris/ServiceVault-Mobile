@@ -2,15 +2,21 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { DocumentUploadWizard } from "@/components/DocumentUploadWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, QrCode, Camera } from "lucide-react";
+import { Upload, FileText, QrCode, Camera, FileCheck, ExternalLink, Download } from "lucide-react";
 
 export default function DocumentsPage() {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   
+  // Fetch all user documents
+  const { data: documents, isLoading: documentsLoading } = useQuery<any[]>({
+    queryKey: ["/api/documents"],
+    enabled: isAuthenticated,
+  });
   
   // QR-scanned warranty data
   const [scannedWarrantyData, setScannedWarrantyData] = useState<{
@@ -157,7 +163,120 @@ export default function DocumentsPage() {
 
         </div>
 
-        {/* Recent Uploads */}
+        {/* Uploaded Documents */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5" />
+              Your Documents
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {documentsLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            )}
+            
+            {!documentsLoading && (!documents || documents.length === 0) && (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-2">No documents uploaded yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload your first warranty, receipt, or manual using the buttons above
+                </p>
+              </div>
+            )}
+            
+            {!documentsLoading && documents && documents.length > 0 && (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {documents.map((doc: any) => {
+                  const isImage = doc.objectPath?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                  const isPDF = doc.objectPath?.match(/\.pdf$/i);
+                  
+                  return (
+                    <div
+                      key={doc.id}
+                      className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-200"
+                      data-testid={`document-card-${doc.id}`}
+                    >
+                      {/* Document Preview */}
+                      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                        {isImage ? (
+                          <img
+                            src={doc.objectPath}
+                            alt={doc.title}
+                            className="w-full h-full object-cover"
+                            data-testid={`document-image-${doc.id}`}
+                          />
+                        ) : isPDF ? (
+                          <div className="w-full h-full flex items-center justify-center bg-red-50 dark:bg-red-950/20">
+                            <FileText className="h-16 w-16 text-red-500" />
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <FileText className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => window.open(doc.objectPath, '_blank')}
+                            data-testid={`button-view-${doc.id}`}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = doc.objectPath;
+                              link.download = doc.title || 'document';
+                              link.click();
+                            }}
+                            data-testid={`button-download-${doc.id}`}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Document Info */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-sm line-clamp-2" data-testid={`document-title-${doc.id}`}>
+                            {doc.title}
+                          </h3>
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full whitespace-nowrap">
+                            {doc.type}
+                          </span>
+                        </div>
+                        
+                        {doc.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                            {doc.description}
+                          </p>
+                        )}
+                        
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Tips */}
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Quick Tips</CardTitle>
