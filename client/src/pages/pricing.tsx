@@ -526,6 +526,28 @@ export default function PricingPage() {
             </a>
           </p>
         </div>
+
+        {/* Footer with Patent Notice */}
+        <div className="mt-20 pt-8 border-t border-border/50">
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <img 
+                src="/logo.png" 
+                alt="FixTrack Logo" 
+                className="h-8 w-8 object-contain"
+              />
+              <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
+                FixTrack Pro
+              </span>
+            </div>
+            <p className="text-xs font-medium text-muted-foreground tracking-wide">
+              PATENT PENDING
+            </p>
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} FixTrack Pro. All rights reserved.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* DEV TESTING MODE: Onboarding Modals */}
