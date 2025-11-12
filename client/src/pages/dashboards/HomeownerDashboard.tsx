@@ -98,12 +98,21 @@ export default function HomeownerDashboard() {
     return <CheckCircle2 className="h-4 w-4" />;
   };
 
+  // Normalize property type - treat missing/unknown as GENERAL
+  const normalizePropertyType = (type: string | null | undefined): string => {
+    if (!type || !PROPERTY_TYPE_LABELS[type]) return "GENERAL";
+    return type;
+  };
+
   // Generate property type tabs based on user's selections
   const propertyTypeTabs = useMemo(() => {
     const userTypes = preferences?.propertyTypes || [];
     const tabs: Array<{ id: string; label: string; icon: any; count?: number }> = [
       { id: "ALL", label: "All Properties", icon: Home }
     ];
+    
+    // Check if there are any properties with missing/unknown types
+    const hasGeneralProperties = properties.some((p: any) => normalizePropertyType(p.propertyType) === "GENERAL");
     
     userTypes.forEach((type: string) => {
       if (PROPERTY_TYPE_LABELS[type]) {
@@ -116,6 +125,16 @@ export default function HomeownerDashboard() {
       }
     });
     
+    // Add GENERAL tab if there are properties with missing types
+    if (hasGeneralProperties) {
+      tabs.push({
+        id: "GENERAL",
+        label: "General",
+        icon: Building,
+        count: properties.filter((p: any) => normalizePropertyType(p.propertyType) === "GENERAL").length,
+      });
+    }
+    
     return tabs;
   }, [preferences?.propertyTypes, properties]);
 
@@ -125,7 +144,12 @@ export default function HomeownerDashboard() {
     
     // Filter by property type tab
     if (activePropertyType !== "ALL") {
-      filtered = filtered.filter((prop: any) => prop.propertyType === activePropertyType);
+      if (activePropertyType === "GENERAL") {
+        // Show properties with missing/unknown types
+        filtered = filtered.filter((prop: any) => normalizePropertyType(prop.propertyType) === "GENERAL");
+      } else {
+        filtered = filtered.filter((prop: any) => prop.propertyType === activePropertyType);
+      }
     }
     
     // Filter by search query
@@ -388,11 +412,9 @@ export default function HomeownerDashboard() {
                                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                {property.propertyType && (
-                                  <Badge className="absolute top-2 left-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-foreground border-0">
-                                    {PROPERTY_TYPE_LABELS[property.propertyType]}
-                                  </Badge>
-                                )}
+                                <Badge className="absolute top-2 left-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-foreground border-0">
+                                  {property.propertyType && PROPERTY_TYPE_LABELS[property.propertyType] || "General Property"}
+                                </Badge>
                               </div>
                             </AspectRatio>
                           </div>

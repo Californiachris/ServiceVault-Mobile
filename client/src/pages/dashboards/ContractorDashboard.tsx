@@ -116,16 +116,72 @@ export default function ContractorDashboard() {
     return 'text-green-500 bg-green-500/10 border-green-500/20';
   };
 
-  // Debounced search filtering (300ms) for jobs and service alerts
+  // Normalize specialty values (lowercase to uppercase, null to GENERAL)
+  const normalizeSpecialty = (specialty: string | null | undefined): string => {
+    if (!specialty) return "GENERAL";
+    return specialty.toUpperCase();
+  };
+
+  // Generate specialty tabs based on contractor's specialties
+  const specialtyTabs = useMemo(() => {
+    const userSpecialties = preferences?.specialties || [];
+    const tabs: Array<{ id: string; label: string; icon: any; count?: number }> = [
+      { id: "ALL", label: "All Jobs", icon: Building2 }
+    ];
+    
+    // Check if there are any jobs with no specialty (GENERAL)
+    const hasGeneralJobs = jobs.recent.some((j: any) => !j.specialty);
+    
+    userSpecialties.forEach((specialty: string) => {
+      const normalizedSpecialty = specialty.toUpperCase();
+      const specialtyLabel = specialty.charAt(0).toUpperCase() + specialty.slice(1);
+      
+      tabs.push({
+        id: normalizedSpecialty,
+        label: specialtyLabel,
+        icon: SPECIALTY_ICONS[normalizedSpecialty] || Wrench,
+        count: jobs.recent.filter((j: any) => normalizeSpecialty(j.specialty) === normalizedSpecialty).length,
+      });
+    });
+    
+    // Add GENERAL tab if there are jobs without specialty
+    if (hasGeneralJobs) {
+      tabs.push({
+        id: "GENERAL",
+        label: "General",
+        icon: Hammer,
+        count: jobs.recent.filter((j: any) => normalizeSpecialty(j.specialty) === "GENERAL").length,
+      });
+    }
+    
+    return tabs;
+  }, [preferences?.specialties, jobs.recent]);
+
+  // Filter jobs by specialty tab and search
   const filteredJobs = useMemo(() => {
-    if (!debouncedSearch) return jobs.recent;
-    const query = debouncedSearch.toLowerCase();
-    return jobs.recent.filter((job: any) => 
-      job.propertyName?.toLowerCase().includes(query) ||
-      job.assetName?.toLowerCase().includes(query) ||
-      job.status?.toLowerCase().includes(query)
-    );
-  }, [jobs.recent, debouncedSearch]);
+    let filtered = jobs.recent;
+    
+    // Filter by specialty tab
+    if (activeSpecialty !== "ALL") {
+      if (activeSpecialty === "GENERAL") {
+        filtered = filtered.filter((job: any) => normalizeSpecialty(job.specialty) === "GENERAL");
+      } else {
+        filtered = filtered.filter((job: any) => normalizeSpecialty(job.specialty) === activeSpecialty);
+      }
+    }
+    
+    // Filter by search query
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      filtered = filtered.filter((job: any) => 
+        job.propertyName?.toLowerCase().includes(query) ||
+        job.assetName?.toLowerCase().includes(query) ||
+        job.status?.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [jobs.recent, activeSpecialty, debouncedSearch]);
 
   const filteredAlerts = useMemo(() => {
     if (!debouncedSearch) return serviceAlerts;
@@ -214,6 +270,17 @@ export default function ContractorDashboard() {
             </Badge>
           )}
         </div>
+
+        {/* Specialty Tabs */}
+        {specialtyTabs.length > 1 && (
+          <div className="mt-6">
+            <DashboardTabs
+              tabs={specialtyTabs}
+              activeValue={activeSpecialty}
+              onChange={setActiveSpecialty}
+            />
+          </div>
+        )}
       </div>
 
       {/* Service Opportunity Alerts */}
