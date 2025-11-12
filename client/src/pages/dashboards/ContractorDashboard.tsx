@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { DashboardTabs } from "@/components/DashboardTabs";
 import {
   Building2,
   QrCode,
@@ -22,7 +23,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Search
+  Search,
+  Wrench,
+  Wind,
+  Hammer,
+  PaintBucket,
+  Leaf
 } from "lucide-react";
 
 interface ContractorDashboardData {
@@ -52,13 +58,37 @@ interface ContractorDashboardData {
   subscription: any;
 }
 
+interface UserPreferences {
+  role: string;
+  propertyTypes: string[];
+  industries: string[];
+  specialties: string[];
+}
+
+const SPECIALTY_ICONS: Record<string, any> = {
+  PLUMBING: Wrench,
+  HVAC: Wind,
+  ELECTRICAL: Zap,
+  ROOFING: Building2,
+  LANDSCAPING: Leaf,
+  PAINTING: PaintBucket,
+  CARPENTRY: Hammer,
+  MASONRY: Hammer,
+};
+
 export default function ContractorDashboard() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeSpecialty, setActiveSpecialty] = useState<string>("ALL");
   const debouncedSearch = useDebounce(searchQuery, 300);
   
   const { data, isLoading} = useQuery<ContractorDashboardData>({
     queryKey: ["/api/dashboard/contractor"],
+    retry: false,
+  });
+
+  const { data: preferences } = useQuery<UserPreferences>({
+    queryKey: ["/api/user/preferences"],
     retry: false,
   });
 

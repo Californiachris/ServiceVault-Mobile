@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { DashboardTabs } from "@/components/DashboardTabs";
+import { getPropertyTypeImage } from "@/lib/propertyImages";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import {
   Home,
   QrCode,
@@ -22,7 +25,10 @@ import {
   Shield,
   Clock,
   Search,
-  ChevronRight
+  ChevronRight,
+  Building,
+  Building2,
+  Warehouse
 } from "lucide-react";
 
 interface HomeownerDashboardData {
@@ -35,13 +41,40 @@ interface HomeownerDashboardData {
   subscription: any;
 }
 
+interface UserPreferences {
+  role: string;
+  propertyTypes: string[];
+  industries: string[];
+  specialties: string[];
+}
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  SINGLE_FAMILY: "Single Family",
+  CONDO: "Condo",
+  MULTI_FAMILY: "Multi-Family",
+  COMMERCIAL: "Commercial",
+};
+
+const PROPERTY_TYPE_ICONS: Record<string, any> = {
+  SINGLE_FAMILY: Home,
+  CONDO: Building,
+  MULTI_FAMILY: Building2,
+  COMMERCIAL: Warehouse,
+};
+
 export default function HomeownerDashboard() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activePropertyType, setActivePropertyType] = useState<string>("ALL");
   const debouncedSearch = useDebounce(searchQuery, 300);
   
   const { data, isLoading } = useQuery<HomeownerDashboardData>({
     queryKey: ["/api/dashboard/homeowner"],
+    retry: false,
+  });
+
+  const { data: preferences } = useQuery<UserPreferences>({
+    queryKey: ["/api/user/preferences"],
     retry: false,
   });
 
@@ -65,16 +98,48 @@ export default function HomeownerDashboard() {
     return <CheckCircle2 className="h-4 w-4" />;
   };
 
-  // Debounced search filtering (300ms) for properties, recent documents, and reminders
+  // Generate property type tabs based on user's selections
+  const propertyTypeTabs = useMemo(() => {
+    const userTypes = preferences?.propertyTypes || [];
+    const tabs: Array<{ id: string; label: string; icon: any; count?: number }> = [
+      { id: "ALL", label: "All Properties", icon: Home }
+    ];
+    
+    userTypes.forEach((type: string) => {
+      if (PROPERTY_TYPE_LABELS[type]) {
+        tabs.push({
+          id: type,
+          label: PROPERTY_TYPE_LABELS[type],
+          icon: PROPERTY_TYPE_ICONS[type],
+          count: properties.filter((p: any) => p.propertyType === type).length,
+        });
+      }
+    });
+    
+    return tabs;
+  }, [preferences?.propertyTypes, properties]);
+
+  // Filter properties by active tab and search
   const filteredProperties = useMemo(() => {
-    if (!debouncedSearch) return properties;
-    const query = debouncedSearch.toLowerCase();
-    return properties.filter((prop: any) => 
-      prop.name?.toLowerCase().includes(query) ||
-      prop.addressLine1?.toLowerCase().includes(query) ||
-      prop.city?.toLowerCase().includes(query)
-    );
-  }, [properties, debouncedSearch]);
+    let filtered = properties;
+    
+    // Filter by property type tab
+    if (activePropertyType !== "ALL") {
+      filtered = filtered.filter((prop: any) => prop.propertyType === activePropertyType);
+    }
+    
+    // Filter by search query
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      filtered = filtered.filter((prop: any) => 
+        prop.name?.toLowerCase().includes(query) ||
+        prop.addressLine1?.toLowerCase().includes(query) ||
+        prop.city?.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [properties, activePropertyType, debouncedSearch]);
 
   const filteredDocuments = useMemo(() => {
     if (!debouncedSearch) return recentDocuments;
@@ -254,6 +319,17 @@ export default function HomeownerDashboard() {
         </div>
       )}
 
+      {/* Property Type Tabs */}
+      {propertyTypeTabs.length > 1 && (
+        <div className="mb-6">
+          <DashboardTabs
+            tabs={propertyTypeTabs}
+            activeValue={activePropertyType}
+            onChange={setActivePropertyType}
+          />
+        </div>
+      )}
+
       {/* Main Grid */}
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
         {/* Properties */}
@@ -294,36 +370,63 @@ export default function HomeownerDashboard() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {filteredProperties.map((property: any) => (
-                    <div
-                      key={property.id}
-                      className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                      data-testid={`property-card-${property.id}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">
-                            {property.name || 'Unnamed Property'}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {property.addressLine1 || 'No address'}
-                            {property.city && `, ${property.city}`}
-                          </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Shield className="h-3 w-3" />
-                              Status: Active
-                            </span>
+                    <Link key={property.id} href={`/property/${property.id}`}>
+                      <div
+                        className="group relative overflow-hidden rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                        data-testid={`property-card-${property.id}`}
+                      >
+                        <div className="flex flex-col sm:flex-row">
+                          {/* Property Image */}
+                          <div className="w-full sm:w-48 flex-shrink-0">
+                            <AspectRatio ratio={16 / 9}>
+                              <div className="relative h-full w-full overflow-hidden">
+                                <img
+                                  src={getPropertyTypeImage(property.propertyType)}
+                                  alt={property.name || 'Property'}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                {property.propertyType && (
+                                  <Badge className="absolute top-2 left-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-foreground border-0">
+                                    {PROPERTY_TYPE_LABELS[property.propertyType]}
+                                  </Badge>
+                                )}
+                              </div>
+                            </AspectRatio>
+                          </div>
+
+                          {/* Property Details */}
+                          <div className="flex-1 p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
+                                  {property.name || 'Unnamed Property'}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  {property.addressLine1 || 'No address'}
+                                  {property.city && `, ${property.city}`}
+                                </p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Shield className="h-3 w-3 text-green-500" />
+                                    <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+                                  </span>
+                                  {property.masterIdentifierId && (
+                                    <span className="flex items-center gap-1">
+                                      <QrCode className="h-3 w-3" />
+                                      QR Code Active
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/property/${property.id}`}>
-                            View
-                          </Link>
-                        </Button>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

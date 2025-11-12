@@ -235,6 +235,7 @@ export const jobs = pgTable("jobs", {
   clientId: varchar("client_id").references(() => users.id),
   title: varchar("title").notNull(),
   description: text("description"),
+  specialty: varchar("specialty"), // PLUMBING, HVAC, ELECTRICAL, ROOFING, etc. Null = GENERAL
   status: varchar("status").default("PENDING"), // PENDING, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
   scheduledAt: timestamp("scheduled_at"),
   completedAt: timestamp("completed_at"),
@@ -247,6 +248,7 @@ export const jobs = pgTable("jobs", {
   statusIdx: index("idx_jobs_status").on(table.status),
   scheduledIdx: index("idx_jobs_scheduled").on(table.scheduledAt),
   contractorStatusIdx: index("idx_jobs_contractor_status").on(table.contractorId, table.status),
+  specialtyIdx: index("idx_jobs_specialty").on(table.specialty),
 }));
 
 // Sticker Orders - Track monthly quota usage
