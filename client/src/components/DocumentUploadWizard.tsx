@@ -85,7 +85,15 @@ export function DocumentUploadWizard({
     }
   }, [showModal, scannedWarrantyData]);
 
-  const handleFileSelect = (selectedFiles: FileList | null) => {
+  // Auto-advance to metadata if file is already uploaded (fixes Back button issue)
+  useEffect(() => {
+    if (currentStep === 'upload' && uploadFile?.status === 'success') {
+      console.log('[DocumentUploadWizard] File already uploaded, auto-advancing to metadata');
+      setCurrentStep('metadata');
+    }
+  }, [currentStep, uploadFile]);
+
+  const handleFileSelect = async (selectedFiles: FileList | null) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
 
     const file = selectedFiles[0];
@@ -100,24 +108,24 @@ export function DocumentUploadWizard({
       return;
     }
 
-    setUploadFile({
-      file,
-      progress: 0,
-      status: 'pending',
-    });
-
     // Auto-populate title from filename
     setTitle(file.name.replace(/\.[^/.]+$/, ""));
-  };
 
-  const handleUpload = async () => {
-    if (!uploadFile) return;
+    console.log('[DocumentUploadWizard] File selected, starting immediate upload:', file.name);
 
+    // Immediately start upload - don't wait for state
     try {
-      // Get upload parameters
-      const { url } = await onGetUploadParameters();
+      // Set initial state
+      setUploadFile({
+        file,
+        progress: 0,
+        status: 'uploading',
+      });
 
-      setUploadFile(prev => prev ? { ...prev, status: 'uploading', uploadURL: url } : null);
+      // Get upload parameters
+      console.log('[DocumentUploadWizard] Getting upload parameters...');
+      const { url } = await onGetUploadParameters();
+      console.log('[DocumentUploadWizard] Got upload URL, uploading file...');
 
       // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
@@ -126,13 +134,15 @@ export function DocumentUploadWizard({
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
             const progress = Math.round((e.loaded / e.total) * 100);
-            setUploadFile(prev => prev ? { ...prev, progress } : null);
+            console.log(`[DocumentUploadWizard] Upload progress: ${progress}%`);
+            setUploadFile(prev => prev ? { ...prev, progress, uploadURL: url } : null);
           }
         });
 
         xhr.addEventListener('load', () => {
+          console.log(`[DocumentUploadWizard] Upload complete, status: ${xhr.status}`);
           if (xhr.status >= 200 && xhr.status < 300) {
-            setUploadFile(prev => prev ? { ...prev, status: 'success', progress: 100 } : null);
+            setUploadFile({ file, progress: 100, status: 'success', uploadURL: url });
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
@@ -140,31 +150,42 @@ export function DocumentUploadWizard({
         });
 
         xhr.addEventListener('error', () => {
-          reject(new Error('Upload failed'));
+          console.error('[DocumentUploadWizard] XHR error during upload');
+          reject(new Error('Network error during upload'));
         });
 
         xhr.open('PUT', url);
-        xhr.setRequestHeader('Content-Type', uploadFile.file.type);
-        xhr.send(uploadFile.file);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
       });
 
       // Move to metadata step
+      console.log('[DocumentUploadWizard] Upload successful, moving to metadata step');
       setCurrentStep('metadata');
 
+      toast({
+        title: "File uploaded",
+        description: "Now add document details below",
+      });
+
     } catch (error) {
-      setUploadFile(prev => prev ? {
-        ...prev,
+      console.error('[DocumentUploadWizard] Upload error:', error);
+      
+      setUploadFile({
+        file,
+        progress: 0,
         status: 'error',
         error: error instanceof Error ? error.message : 'Upload failed'
-      } : null);
+      });
 
       toast({
         title: "Upload failed",
-        description: "File upload failed. Please try again.",
+        description: error instanceof Error ? error.message : "File upload failed. Please try again.",
         variant: "destructive",
       });
     }
   };
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -268,9 +289,9 @@ export function DocumentUploadWizard({
             {/* Step 1: Upload File */}
             {currentStep === 'upload' && (
               <>
-                <Card className="border-2 border-dashed border-border hover:border-primary/50 transition-colors">
+                <Card className="border-2 border-dashed border-border hover:border-primary/50 transition-colors relative">
                   <CardContent className="pt-6">
-                    <div className="text-center">
+                    <div className="text-center relative">
                       <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Choose file to upload</p>
@@ -278,13 +299,15 @@ export function DocumentUploadWizard({
                           Max {Math.round(maxFileSize / 1024 / 1024)}MB
                         </p>
                       </div>
-                      <input
-                        type="file"
-                        accept={acceptedFileTypes.join(',')}
-                        onChange={(e) => handleFileSelect(e.target.files)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        data-testid="input-file-select"
-                      />
+                      {!uploadFile && (
+                        <input
+                          type="file"
+                          accept={acceptedFileTypes.join(',')}
+                          onChange={(e) => handleFileSelect(e.target.files)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          data-testid="input-file-select"
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -315,17 +338,23 @@ export function DocumentUploadWizard({
                   </Card>
                 )}
 
-                <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={resetAndClose}>Cancel</Button>
-                  <Button
-                    onClick={handleUpload}
-                    disabled={!uploadFile || uploadFile.status !== 'pending'}
-                    className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Continue
-                  </Button>
-                </div>
+                {uploadFile && uploadFile.status === 'uploading' && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">Uploading file, please wait...</p>
+                  </div>
+                )}
+                
+                {uploadFile && uploadFile.status === 'error' && (
+                  <div className="flex justify-center pt-4">
+                    <Button variant="outline" onClick={resetAndClose}>Close</Button>
+                  </div>
+                )}
+                
+                {!uploadFile && (
+                  <div className="flex justify-center pt-4">
+                    <Button variant="outline" onClick={resetAndClose}>Cancel</Button>
+                  </div>
+                )}
               </>
             )}
 
@@ -406,7 +435,18 @@ export function DocumentUploadWizard({
                 </div>
 
                 <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={() => setCurrentStep('upload')}>Back</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      // Reset to start fresh upload
+                      setUploadFile(null);
+                      setCurrentStep('upload');
+                      setTitle('');
+                      setDescription('');
+                    }}
+                  >
+                    Choose Different File
+                  </Button>
                   <Button
                     onClick={handleSave}
                     disabled={saveMutation.isPending}
