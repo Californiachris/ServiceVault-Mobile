@@ -74,8 +74,8 @@ export function HomeownerOnboardingForm({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 gap-0 overflow-hidden" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-blue-500 to-cyan-500">
+      <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-blue-500 to-cyan-500 flex-shrink-0">
           <DialogTitle className="text-2xl text-white flex items-center gap-2">
             <Home className="h-6 w-6" />
             Welcome to FixTrack Pro
@@ -84,7 +84,7 @@ export function HomeownerOnboardingForm({
         </DialogHeader>
 
         {/* Progress Indicator */}
-        <div className="px-6 py-4 bg-muted/30">
+        <div className="px-6 py-4 bg-muted/30 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Step {step} of 3</span>
             <span className="text-sm text-muted-foreground">
@@ -101,17 +101,18 @@ export function HomeownerOnboardingForm({
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="px-6 py-6">
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <div className="px-6 py-6 overflow-y-auto flex-1">
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
@@ -148,19 +149,19 @@ export function HomeownerOnboardingForm({
                   {form.formState.errors.phone && (
                     <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
                   )}
-                </div>
-              </motion.div>
-            )}
+                  </div>
+                </motion.div>
+              )}
 
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
                 <div className="space-y-2">
                   <Label htmlFor="propertyAddress" className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -207,19 +208,19 @@ export function HomeownerOnboardingForm({
                     className="h-11"
                     data-testid="input-number-properties"
                   />
-                </div>
-              </motion.div>
-            )}
+                  </div>
+                </motion.div>
+              )}
 
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
                 <div className="space-y-3">
                   <Label>How would you like to receive maintenance reminders?</Label>
                   <RadioGroup
@@ -248,13 +249,14 @@ export function HomeownerOnboardingForm({
                         <div className="text-xs text-muted-foreground">Receive reminders via text message</div>
                       </Label>
                     </div>
-                  </RadioGroup>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    </RadioGroup>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-          <div className="flex gap-3 mt-6 pt-6 border-t">
+          <div className="flex gap-3 px-6 py-4 border-t flex-shrink-0 bg-background">
             {step > 1 && (
               <Button
                 type="button"
