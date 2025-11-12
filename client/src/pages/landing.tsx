@@ -291,8 +291,11 @@ export default function Landing() {
 
       {/* Footer */}
       <div className="border-t py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 FixTrack Pro. All rights reserved.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
+          <p className="text-xs font-medium text-muted-foreground tracking-wide">
+            PATENT PENDING
+          </p>
+          <p className="text-sm text-muted-foreground">&copy; 2025 FixTrack Pro. All rights reserved.</p>
         </div>
       </div>
 
