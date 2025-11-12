@@ -1,39 +1,16 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { ObjectUploader } from "@/components/ObjectUploader";
+import { DocumentUploadWizard } from "@/components/DocumentUploadWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Upload, FileText, Receipt, Shield, BookOpen, Clipboard, DollarSign, AlertCircle, QrCode, Camera } from "lucide-react";
-
-const DOCUMENT_TYPES = [
-  { value: 'RECEIPT', label: 'Receipt', icon: Receipt },
-  { value: 'WARRANTY', label: 'Warranty', icon: Shield },
-  { value: 'MANUAL', label: 'Manual', icon: BookOpen },
-  { value: 'INSPECTION', label: 'Inspection Report', icon: Clipboard },
-  { value: 'QUOTE', label: 'Quote', icon: DollarSign },
-  { value: 'INVOICE', label: 'Invoice', icon: DollarSign },
-  { value: 'OTHER', label: 'Other', icon: FileText },
-];
+import { Upload, FileText, QrCode, Camera } from "lucide-react";
 
 export default function DocumentsPage() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
   
-  const [assetId, setAssetId] = useState('');
-  const [propertyId, setPropertyId] = useState('');
-  const [documentType, setDocumentType] = useState('WARRANTY');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{ uploadURL: string; name: string }>>([]);
   
   // QR-scanned warranty data
   const [scannedWarrantyData, setScannedWarrantyData] = useState<{
@@ -43,7 +20,7 @@ export default function DocumentsPage() {
     qrUrl?: string;
   } | null>(null);
   
-  // Check for scanned warranty data
+  // Check for scanned warranty data from QR scan
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const warrantyScanned = urlParams.get('warranty');
@@ -53,24 +30,12 @@ export default function DocumentsPage() {
       if (warrantyDataStr) {
         try {
           const warrantyData = JSON.parse(warrantyDataStr);
-          
-          // Store the scanned data for backend submission
           setScannedWarrantyData(warrantyData);
-          
-          // Auto-populate title with manufacturer and model
-          const autoTitle = `${warrantyData.manufacturer} ${warrantyData.model} Warranty`.trim();
-          setTitle(autoTitle);
-          
-          // Auto-populate description with scanned details
-          const autoDescription = `Model: ${warrantyData.model}\nSerial: ${warrantyData.serial}\n\nScanned from appliance QR code on ${new Date(warrantyData.scannedAt).toLocaleString()}`;
-          setDescription(autoDescription);
-          
-          // Clear the session storage
           sessionStorage.removeItem('scannedWarrantyData');
           
           toast({
             title: "Warranty Data Loaded",
-            description: `${warrantyData.manufacturer} appliance information populated. Upload warranty document or photo to complete.`,
+            description: `${warrantyData.manufacturer} appliance information populated. Click upload button to continue.`,
           });
         } catch (error) {
           console.error('Error loading warranty data:', error);
@@ -79,63 +44,6 @@ export default function DocumentsPage() {
     }
   }, [toast]);
 
-  const uploadMutation = useMutation({
-    mutationFn: async (objectPath: string) => {
-      const payload: any = {
-        assetId: assetId || undefined,
-        propertyId: propertyId || undefined,
-        type: documentType,
-        title: title || uploadedFiles[0]?.name || 'Document',
-        description: description || undefined,
-        objectPath,
-      };
-      
-      // Include scanned warranty metadata if available
-      if (scannedWarrantyData) {
-        payload.scannedWarrantyMetadata = {
-          manufacturer: scannedWarrantyData.manufacturer,
-          model: scannedWarrantyData.model,
-          serial: scannedWarrantyData.serial,
-          qrUrl: scannedWarrantyData.qrUrl,
-        };
-      }
-      
-      const response = await apiRequest("POST", "/api/documents/upload", payload);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Document Uploaded",
-        description: "Your document has been successfully uploaded and linked",
-      });
-      // Reset form
-      setAssetId('');
-      setPropertyId('');
-      setDocumentType('WARRANTY');
-      setTitle('');
-      setDescription('');
-      setUploadedFiles([]);
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Upload Failed",
-        description: error.message || "Failed to upload document",
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleGetUploadParameters = async () => {
     const response = await apiRequest("POST", "/api/objects/upload");
@@ -146,55 +54,6 @@ export default function DocumentsPage() {
     };
   };
 
-  const handleUploadComplete = (result: { successful: Array<{ uploadURL: string; name: string }> }) => {
-    if (result.successful.length > 0) {
-      const file = result.successful[0];
-      setUploadedFiles([file]);
-      
-      // Auto-set title if not already set
-      if (!title) {
-        setTitle(file.name.replace(/\.[^/.]+$/, "")); // Remove file extension
-      }
-      
-      toast({
-        title: "File Uploaded",
-        description: "File uploaded successfully. Complete the form to save the document.",
-      });
-    }
-  };
-
-  const handleSaveDocument = () => {
-    if (uploadedFiles.length === 0) {
-      toast({
-        title: "No File Selected",
-        description: "Please upload a file first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!title) {
-      toast({
-        title: "Missing Title",
-        description: "Please enter a document title",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!assetId && !propertyId) {
-      toast({
-        title: "Missing Association",
-        description: "Please specify an Asset ID or Property ID to link this document",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    uploadMutation.mutate(uploadedFiles[0].uploadURL);
-  };
-
-  const selectedDocType = DOCUMENT_TYPES.find(type => type.value === documentType);
 
   if (!isAuthenticated) {
     return (
@@ -227,277 +86,75 @@ export default function DocumentsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* QR Scanner - Primary Action */}
-                {documentType === 'WARRANTY' && (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">Fastest Option</Label>
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
-                      onClick={() => {
-                        window.location.href = '/scan?mode=warranty';
-                      }}
-                      data-testid="button-scan-warranty-qr"
-                    >
-                      <QrCode className="mr-3 h-6 w-6" />
-                      Scan Warranty QR Code
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground">
-                      Scan QR code from appliance to auto-extract model, serial, and warranty info
-                    </p>
-                  </div>
-                )}
-
-                {documentType === 'WARRANTY' && (
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or Upload Manually
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* File Upload - Premium Gradient Buttons */}
-                <div className="space-y-4">
-                  {/* Photo Upload Button - Bold Gradient */}
-                  <ObjectUploader
-                    maxNumberOfFiles={1}
-                    maxFileSize={50 * 1024 * 1024}
-                    acceptedFileTypes={['.jpg', '.jpeg', '.png']}
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleUploadComplete}
-                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                <div className="space-y-3">
+                  <p className="text-base font-semibold">Fastest Option</p>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                    onClick={() => {
+                      window.location.href = '/scan?mode=warranty';
+                    }}
+                    data-testid="button-scan-warranty-qr"
                   >
-                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-photo">
-                      <Camera className="h-6 w-6" />
-                      <span>Take Photo of Warranty</span>
-                    </div>
-                  </ObjectUploader>
-
-                  {/* PDF Upload Button - Bold Gradient */}
-                  <ObjectUploader
-                    maxNumberOfFiles={1}
-                    maxFileSize={50 * 1024 * 1024}
-                    acceptedFileTypes={['.pdf', '.doc', '.docx']}
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleUploadComplete}
-                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-pdf">
-                      <FileText className="h-6 w-6" />
-                      <span>Upload PDF Document</span>
-                    </div>
-                  </ObjectUploader>
-                  
-                  {uploadedFiles.length > 0 && (
-                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                      <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        <span className="font-medium">{uploadedFiles[0].name}</span> uploaded successfully
-                      </p>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Max file size: 50MB
-                  </p>
-                </div>
-
-                {/* Document Type */}
-                <div className="space-y-2">
-                  <Label htmlFor="type">Document Type</Label>
-                  <Select value={documentType} onValueChange={setDocumentType}>
-                    <SelectTrigger data-testid="select-document-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DOCUMENT_TYPES.map(type => {
-                        const Icon = type.icon;
-                        return (
-                          <SelectItem key={type.value} value={type.value}>
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              {type.label}
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Title */}
-                <div className="space-y-2">
-                  <Label htmlFor="title">Document Title *</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Water Heater Warranty Certificate"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    data-testid="input-document-title"
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (Optional)</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Additional notes about this document..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    data-testid="textarea-document-description"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Association Section */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Link to Asset or Property</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-blue-400">
-                      <strong>How to find IDs:</strong>
-                      <ul className="mt-1 space-y-1 text-xs">
-                        <li>• Asset ID: Found in the Asset Management tool or scan the asset's QR code</li>
-                        <li>• Property ID: Found in the Properties section or your dashboard</li>
-                        <li>• You only need to fill one of these fields</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="assetId">Asset ID</Label>
-                  <Input
-                    id="assetId"
-                    placeholder="e.g., clm1234567890abcdef"
-                    value={assetId}
-                    onChange={(e) => setAssetId(e.target.value)}
-                    data-testid="input-asset-id"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Link this document to a specific asset (appliance, equipment, etc.)
+                    <QrCode className="mr-3 h-6 w-6" />
+                    Scan Warranty QR Code
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Scan QR code from appliance to auto-extract model, serial, and warranty info
                   </p>
                 </div>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
+                    <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or Upload Manually
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="propertyId">Property ID</Label>
-                  <Input
-                    id="propertyId"
-                    placeholder="e.g., clm0987654321fedcba"
-                    value={propertyId}
-                    onChange={(e) => setPropertyId(e.target.value)}
-                    data-testid="input-property-id"
-                  />
+                {/* File Upload - Premium Gradient Buttons with New Wizard */}
+                <div className="space-y-4">
+                  {/* Photo Upload Button - Bold Gradient */}
+                  <DocumentUploadWizard
+                    maxFileSize={50 * 1024 * 1024}
+                    acceptedFileTypes={['.jpg', '.jpeg', '.png']}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    scannedWarrantyData={scannedWarrantyData}
+                  >
+                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-photo">
+                      <Camera className="h-6 w-6" />
+                      <span>Take Photo of Warranty</span>
+                    </div>
+                  </DocumentUploadWizard>
+
+                  {/* PDF Upload Button - Bold Gradient */}
+                  <DocumentUploadWizard
+                    maxFileSize={50 * 1024 * 1024}
+                    acceptedFileTypes={['.pdf', '.doc', '.docx']}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    buttonClassName="w-full h-16 text-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                    scannedWarrantyData={scannedWarrantyData}
+                  >
+                    <div className="flex items-center justify-center gap-3" data-testid="button-upload-pdf">
+                      <FileText className="h-6 w-6" />
+                      <span>Upload PDF Document</span>
+                    </div>
+                  </DocumentUploadWizard>
+                  
                   <p className="text-xs text-muted-foreground">
-                    Link this document to an entire property (general documents, property-wide warranties)
+                    Max file size: 50MB • New streamlined 2-step upload process
                   </p>
                 </div>
 
-                <Button 
-                  onClick={handleSaveDocument}
-                  disabled={uploadMutation.isPending || uploadedFiles.length === 0}
-                  className="w-full mt-6"
-                  data-testid="button-save-document"
-                >
-                  {uploadMutation.isPending ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
-                      Saving Document...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Save Document
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
-
-            {/* Document Type Info */}
-            {selectedDocType && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <selectedDocType.icon className="h-5 w-5" />
-                    {selectedDocType.label} Guidelines
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {documentType === 'WARRANTY' && (
-                    <div className="space-y-2 text-sm">
-                      <p><strong>Best Practices:</strong></p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Include warranty period and coverage details</li>
-                        <li>• Attach manufacturer contact information</li>
-                        <li>• Note any registration requirements</li>
-                        <li>• Keep original purchase receipt with warranty</li>
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {documentType === 'RECEIPT' && (
-                    <div className="space-y-2 text-sm">
-                      <p><strong>Best Practices:</strong></p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Include purchase date and vendor information</li>
-                        <li>• Note warranty activation requirements</li>
-                        <li>• Keep for tax and insurance purposes</li>
-                        <li>• Useful for warranty claims and resale value</li>
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {documentType === 'MANUAL' && (
-                    <div className="space-y-2 text-sm">
-                      <p><strong>Best Practices:</strong></p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Include installation and operation instructions</li>
-                        <li>• Note maintenance schedules and requirements</li>
-                        <li>• Keep troubleshooting guides accessible</li>
-                        <li>• Essential for service technicians</li>
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {documentType === 'INSPECTION' && (
-                    <div className="space-y-2 text-sm">
-                      <p><strong>Best Practices:</strong></p>
-                      <ul className="space-y-1 text-muted-foreground">
-                        <li>• Include inspector credentials and date</li>
-                        <li>• Note any required follow-up actions</li>
-                        <li>• Important for insurance and compliance</li>
-                        <li>• Keep for property transfer documentation</li>
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </div>
+
         </div>
 
         {/* Recent Uploads */}
@@ -529,7 +186,7 @@ export default function DocumentsPage() {
               
               <div className="text-center">
                 <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Shield className="text-primary h-6 w-6" />
+                  <FileText className="text-primary h-6 w-6" />
                 </div>
                 <h3 className="font-semibold mb-2">Secure Storage</h3>
                 <p className="text-sm text-muted-foreground">

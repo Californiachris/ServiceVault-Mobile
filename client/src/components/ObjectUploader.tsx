@@ -156,9 +156,12 @@ export function ObjectUploader({
       onComplete?.({ successful });
       
       toast({
-        title: "Upload complete",
-        description: `Successfully uploaded ${successful.length} file(s)`,
+        title: "✓ File Uploaded Successfully",
+        description: "Now fill out the form below to save your document.",
       });
+      
+      // Close modal after successful upload
+      resetAndClose();
       
     } catch (error) {
       toast({
@@ -265,7 +268,12 @@ export function ObjectUploader({
                         
                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                           <span>{formatFileSize(uploadFile.file.size)}</span>
-                          <span className="capitalize">{uploadFile.status}</span>
+                          <span className="capitalize font-medium">
+                            {uploadFile.status === 'pending' && '✓ Ready to Upload'}
+                            {uploadFile.status === 'uploading' && 'Uploading...'}
+                            {uploadFile.status === 'success' && '✓ Upload Complete'}
+                            {uploadFile.status === 'error' && '✗ Upload Failed'}
+                          </span>
                         </div>
                         
                         {uploadFile.status === 'uploading' && (
@@ -309,6 +317,7 @@ export function ObjectUploader({
                   onClick={handleUpload}
                   disabled={files.length === 0 || isUploading || files.every(f => f.status !== 'pending')}
                   data-testid="button-start-upload"
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
                 >
                   {isUploading ? (
                     <>
@@ -317,8 +326,8 @@ export function ObjectUploader({
                     </>
                   ) : (
                     <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload {files.filter(f => f.status === 'pending').length} File(s)
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Continue ({files.filter(f => f.status === 'pending').length} file{files.filter(f => f.status === 'pending').length > 1 ? 's' : ''})
                     </>
                   )}
                 </Button>
