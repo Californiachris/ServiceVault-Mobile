@@ -74,9 +74,9 @@ export default function DocumentsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Document Storage</h1>
+          <h1 className="text-3xl font-bold mb-2">Upload / View Warranties & Documents</h1>
           <p className="text-muted-foreground">
-            Upload and organize warranties, receipts, manuals, and inspection reports for easy access.
+            Upload and organize warranties, receipts, manuals, and inspection reports for easy access. View all your documents below.
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export default function DocumentsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
-                  Upload Document
+                  Upload Warranty / Document
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
