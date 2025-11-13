@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import HomeownerDashboard from "@/pages/dashboards/HomeownerDashboard";
 import ContractorDashboard from "@/pages/dashboards/ContractorDashboard";
 import FleetDashboard from "@/pages/dashboards/FleetDashboard";
+import PropertyManagerDashboard from "@/pages/dashboards/PropertyManagerDashboard";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -40,6 +41,8 @@ export default function Dashboard() {
       return <ContractorDashboard />;
     case "FLEET":
       return <FleetDashboard />;
+    case "PROPERTY_MANAGER":
+      return <PropertyManagerDashboard />;
     default: // HOMEOWNER
       return <HomeownerDashboard />;
   }

@@ -759,6 +759,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property Manager dashboard stats
+  app.get('/api/dashboard/property-manager', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Parallel fetch all data
+      const [
+        properties,
+        workers,
+        allTasks,
+        allReports,
+        recentVisits,
+      ] = await Promise.all([
+        // Get all managed properties
+        db.select({
+          id: managedProperties.id,
+          managedPropertyId: managedProperties.id,
+          propertyId: managedProperties.propertyId,
+          managementStatus: managedProperties.managementStatus,
+          masterQrCode: managedProperties.masterQrCode,
+          createdAt: managedProperties.createdAt,
+          property: properties,
+        })
+        .from(managedProperties)
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
+        .where(eq(managedProperties.propertyManagerId, userId))
+        .orderBy(desc(managedProperties.createdAt)),
+        
+        // Get all workers
+        db.select()
+        .from(workers)
+        .where(eq(workers.propertyManagerId, userId))
+        .orderBy(desc(workers.createdAt)),
+        
+        // Get all tasks with property details
+        db.select({
+          task: propertyTasks,
+          property: {
+            id: managedProperties.id,
+            managedPropertyId: managedProperties.id,
+            property: properties,
+          },
+        })
+        .from(propertyTasks)
+        .innerJoin(managedProperties, eq(propertyTasks.managedPropertyId, managedProperties.id))
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
+        .where(eq(managedProperties.propertyManagerId, userId))
+        .orderBy(desc(propertyTasks.createdAt)),
+        
+        // Get all tenant reports with property details
+        db.select({
+          report: tenantReports,
+          property: {
+            id: managedProperties.id,
+            managedPropertyId: managedProperties.id,
+            property: properties,
+          },
+        })
+        .from(tenantReports)
+        .innerJoin(managedProperties, eq(tenantReports.managedPropertyId, managedProperties.id))
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
+        .where(eq(managedProperties.propertyManagerId, userId))
+        .orderBy(desc(tenantReports.reportedAt)),
+        
+        // Get recent visits with property details
+        db.select({
+          visit: propertyVisits,
+          property: {
+            id: managedProperties.id,
+            managedPropertyId: managedProperties.id,
+            property: properties,
+          },
+          worker: workers,
+        })
+        .from(propertyVisits)
+        .innerJoin(managedProperties, eq(propertyVisits.managedPropertyId, managedProperties.id))
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
+        .innerJoin(workers, eq(propertyVisits.workerId, workers.id))
+        .where(eq(managedProperties.propertyManagerId, userId))
+        .orderBy(desc(propertyVisits.checkInAt))
+        .limit(10),
+      ]);
+      
+      // Calculate stats
+      const activeWorkers = workers.filter(w => w.status === 'ACTIVE').length;
+      const pendingTasksCount = allTasks.filter(t => t.task.status === 'PENDING').length;
+      const urgentReportsCount = allReports.filter(r => r.report.priority === 'URGENT' && r.report.status === 'PENDING').length;
+      
+      // Get today's visits
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const visitsToday = recentVisits.filter(v => v.visit.checkInAt && v.visit.checkInAt >= today).length;
+      
+      // Get this week's stats
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const tasksCompletedThisWeek = allTasks.filter(t => 
+        t.task.status === 'COMPLETED' && t.task.completedAt && t.task.completedAt >= weekAgo
+      ).length;
+      const newReportsThisWeek = allReports.filter(r => 
+        r.report.reportedAt >= weekAgo
+      ).length;
+      
+      // Filter and limit task lists
+      const pendingTasks = allTasks
+        .filter(t => t.task.status === 'PENDING')
+        .slice(0, 10);
+      
+      const now = new Date();
+      const overdueTasks = allTasks
+        .filter(t => t.task.status === 'PENDING' && t.task.dueDate && t.task.dueDate < now)
+        .slice(0, 10);
+      
+      // Filter and limit report lists
+      const urgentReports = allReports
+        .filter(r => r.report.priority === 'URGENT' && r.report.status === 'PENDING')
+        .slice(0, 10);
+      
+      const pendingReports = allReports
+        .filter(r => r.report.status === 'PENDING')
+        .slice(0, 10);
+      
+      res.json({
+        stats: {
+          totalProperties: properties.length,
+          activeWorkers,
+          pendingTasksCount,
+          urgentReportsCount,
+          visitsToday,
+          tasksCompletedThisWeek,
+          newReportsThisWeek,
+        },
+        properties,
+        workers,
+        recentVisits,
+        pendingTasks,
+        overdueTasks,
+        urgentReports,
+        pendingReports,
+      });
+    } catch (error) {
+      console.error('Error fetching property manager dashboard:', error);
+      res.status(500).json({ error: 'Failed to fetch dashboard' });
+    }
+  });
+
   // Identifier routes
   app.post('/api/identifiers/batch', isAuthenticated, async (req: any, res) => {
     try {
