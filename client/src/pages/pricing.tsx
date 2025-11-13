@@ -643,7 +643,7 @@ export default function PricingPage() {
                 
                 {[
                   { id: 'addon_verified_checkin', name: 'Verified Check-In', price: '$0.25/check-in or $19.99/mo unlimited' },
-                  { id: 'addon_smartdust', name: 'SmartDust Anti-Theft', price: '$7.99/asset/year' },
+                  { id: 'addon_smartdust', name: 'Asset Tracking Tags (NFC/Bluetooth)', price: '$7.99/asset/year' },
                   { id: 'addon_tenant_portal', name: 'Tenant Portal Premium', price: '$0.99/tenant/mo' },
                   { id: 'addon_annual_report', name: 'Annual Property Report PDF', price: '$24.99/property/year' },
                 ].map((addon) => (
