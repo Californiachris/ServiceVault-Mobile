@@ -212,11 +212,13 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold mb-4 text-center">Fleet Managers</h3>
                 <ul className="space-y-3">
                   {[
-                    "Track unlimited assets",
-                    "Maintenance schedules",
-                    "Role-based dashboards",
-                    "Tamper detection",
-                    "Usage-based pricing",
+                    "Track unlimited fleet assets using durable scannable IDs for each vehicle, machine, and tool",
+                    "AI-powered maintenance forecasting to eliminate breakdowns and prevent costly downtime",
+                    "Fully automatic logging of repairs, inspections, technician notes, and service events",
+                    "Smart dashboards with role-based access for managers, drivers, and mechanics",
+                    "Usage tracking (hours, mileage, runtime, wear cycles) to plan replacements and prevent failures",
+                    "Compliance alerts when service schedules or inspections are missed",
+                    "Cost analytics that show high-expense assets and predict end-of-life cycles",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -224,9 +226,14 @@ export default function Landing() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-6 text-center">
-                  <div className="text-3xl font-bold">$3/asset</div>
-                  <div className="text-sm text-muted-foreground">$2/asset for 1000+</div>
+                <div className="mt-6 text-center space-y-2">
+                  <div className="text-sm text-muted-foreground">Starting at</div>
+                  <div className="text-3xl font-bold">$4.99/asset/mo</div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>Up to 250: $4.99/asset</div>
+                    <div>Up to 1,000: $3.49/asset</div>
+                    <div>1,000+: $1.99–$2.49/asset</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
