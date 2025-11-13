@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,15 +76,15 @@ export default function Settings() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // Initialize contractor state from data
-  useState(() => {
+  // Initialize contractor state from data when contractor data loads
+  useEffect(() => {
     if (contractor?.companyName) {
       setCompanyName(contractor.companyName);
     }
     if (contractor?.logoUrl) {
       setLogoPreview(contractor.logoUrl);
     }
-  });
+  }, [contractor]);
 
   const form = useForm<NotificationSettingsForm>({
     resolver: zodResolver(notificationSettingsSchema),
