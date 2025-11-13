@@ -1,0 +1,74 @@
+PROPERTY MANAGEMENT SUBSCRIPTION (NEW MODULE)
+
+Base Subscription:
+$4.99 per property per month
+
+Includes:
+• Master QR/NFC code for each property (placed in utility room/entry panel)
+• Unlimited workers, roles, and visits
+• Check-in / Check-out logging (timestamped)
+• Access to the property’s full historical maintenance timeline
+• Ability to upload new maintenance events (photos, videos, receipts)
+• AI predictive reminders for HVAC, appliances, plumbing, seasonal maintenance
+• Tenant scan-to-report issues (tenant scans property QR → opens report form)
+• Unlimited tasks per visit (checklists that can be assigned and marked complete)
+• Manager dashboard (view all workers, jobs, timestamps, photos, and completion)
+• Owner dashboard (clean summary view of everything done on property)
+• Automatic monthly & annual reports stored in property timeline
+
+WORKFLOWS TO BUILD:
+1. Worker Check-In:
+   • Worker scans QR/NFC tag at property
+   • System verifies GPS or NFC proximity (within 50–100 ft)
+   • Worker selects their role (maintenance, cleaner, landscaper, inspector, etc.)
+   • Assigned tasks instantly load based on property manager’s list
+
+2. Task Completion Flow:
+   • Worker checks off tasks one by one
+   • Optional photo/video upload per task
+   • Notes field for issues or recommendations
+
+3. Worker Check-Out:
+   • Worker presses “Complete & Scan Out”
+   • QR/NFC verification again + timestamp
+   • Full visit summary logged in property record
+   • Instant notification sent to manager & owner
+
+Add-Ons (Optional upsells):
+1. Verified Check-In (GPS/NFC location enforcement)
+   • $0.25 per check-in OR $19.99/month unlimited
+   • Prevents fake “I was there” claims
+
+2. SmartDust/BLE Anti-Theft Tagging (for AC units, appliances, tools)
+   • $7.99 per asset per year
+   • Adds tamper alerts and location-status logs
+
+3. Tenant Portal Premium
+   • $0.99 per tenant per month
+   • Tenants can submit issues, track progress, receive automated updates
+
+4. Annual Property Report PDF (auto-generated)
+   • $24.99 per year per property
+   • Perfect for audits, owners, and long-term reporting
+
+Bulk Discounts (system must auto-apply):
+• 100+ properties: $3.49 per property per month
+• 500+ properties: $2.49 per property per month
+• 1000+ properties: $1.99 per property per month
+
+Please add “Property Management” as its own subscription tier in the app.
+Build a dedicated dashboard tab showing:
+• All properties
+• Worker activity feed
+• Tasks in progress
+• Overdue maintenance
+• Tenant reports
+• Asset logs
+• Check-in/out verification history
+
+All features must integrate with FixTrack’s existing:
+• AI predictive engine
+• QR/NFC identification
+• Multi-role user access
+• Maintenance log architecture
+• Notifications and reminders
