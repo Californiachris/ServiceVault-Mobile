@@ -136,10 +136,10 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Built for Everyone</h2>
-            <p className="text-xl text-muted-foreground">Homeowners, contractors, and fleet managers all win</p>
+            <p className="text-xl text-muted-foreground">Homeowners, contractors, fleet managers, and property managers</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Homeowners */}
             <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-xl">
               <CardContent className="pt-8">
@@ -233,6 +233,41 @@ export default function Landing() {
                     <div>Up to 250: $4.99/asset</div>
                     <div>Up to 1,000: $3.49/asset</div>
                     <div>1,000+: $1.99–$2.49/asset</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Managers */}
+            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-xl">
+              <CardContent className="pt-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                  <Building2 className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-center">Property Managers</h3>
+                <ul className="space-y-3">
+                  {[
+                    "Manage multiple properties from a single dashboard",
+                    "Worker check-in/out with GPS verification",
+                    "Task assignment with photo/video completion proof",
+                    "Tenant issue reporting via public QR codes",
+                    "Complete activity timeline for all properties",
+                    "Track worker performance and visit history",
+                    "Generate property reports and analytics",
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6 text-center space-y-2">
+                  <div className="text-sm text-muted-foreground">Starting at</div>
+                  <div className="text-3xl font-bold">$4.99/property/mo</div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>100+: $3.49/property</div>
+                    <div>500+: $2.49/property</div>
+                    <div>1,000+: $1.99/property</div>
                   </div>
                 </div>
               </CardContent>
