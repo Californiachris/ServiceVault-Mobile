@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1200, height=630">
+  <title>Generate OG Image</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    #canvas-container {
+      width: 1200px;
+      height: 630px;
+      background: linear-gradient(135deg, #0e7490 0%, #0891b2 50%, #2563eb 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .shield {
+      width: 200px;
+      height: 200px;
+      background: white;
+      clip-path: polygon(50% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%, 0% 0%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .qr-icon {
+      width: 120px;
+      height: 120px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 20px;
+    }
+    .qr-block {
+      background: #0891b2;
+      border-radius: 4px;
+    }
+    .title {
+      font-size: 72px;
+      font-weight: 700;
+      color: white;
+      margin: 0 0 20px 0;
+      text-align: center;
+      letter-spacing: -1px;
+    }
+    .tagline {
+      font-size: 28px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.9);
+      margin: 0 0 15px 0;
+      text-align: center;
+    }
+    .description {
+      font-size: 22px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.8);
+      margin: 0;
+      text-align: center;
+    }
+    #download-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: white;
+      color: #0891b2;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    #download-btn:hover {
+      background: #f0f9ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <button id="download-btn">Download as PNG</button>
+    
+    <div class="shield">
+      <div class="qr-icon">
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+        <div style="opacity: 0"></div>
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+        <div class="qr-block"></div>
+      </div>
+    </div>
+    
+    <h1 class="title">FixTrack Pro</h1>
+    <p class="tagline">Premium Asset Tracking</p>
+    <p class="description">Tamper-resistant tracking with QR codes &amp; AI warranty parsing</p>
+  </div>
+
+  <canvas id="canvas" style="display:none;" width="1200" height="630"></canvas>
+
+  <script>
+    document.getElementById('download-btn').addEventListener('click', function() {
+      const container = document.getElementById('canvas-container');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Hide button before capture
+      this.style.display = 'none';
+      
+      // Use html2canvas if available, otherwise provide instructions
+      if (typeof html2canvas !== 'undefined') {
+        html2canvas(container, {
+          width: 1200,
+          height: 630,
+          scale: 2,
+          backgroundColor: null
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = 'og-image.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          document.getElementById('download-btn').style.display = 'block';
+        });
+      } else {
+        alert('To download:\n1. Right-click on this page\n2. Select "Save as..." or "Print"\n3. Choose "Save as PDF" or screenshot tool\n4. Convert to PNG (1200x630px)\n\nOr use browser DevTools screenshot feature.');
+        this.style.display = 'block';
+      }
+    });
+    
+    // Instructions
+    console.log('To create og-image.png:\n1. Open this page in your browser\n2. Take a screenshot at exactly 1200x630px\n3. Or use browser DevTools: Cmd+Shift+P (Mac) or Ctrl+Shift+P (Windows) > "Capture screenshot"\n4. Save as og-image.png in client/public/');
+  </script>
+</body>
+</html>
