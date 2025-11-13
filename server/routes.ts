@@ -34,7 +34,8 @@ function generateCode(type: 'ASSET' | 'MASTER', length = 8): string {
 }
 
 import { seedFleetData } from "./seedFleetData";
-import { seedDemoData } from "./seedDemoData";
+// Demo data seeding disabled - users create their own data
+// import { seedDemoData } from "./seedDemoData";
 import { parseWarrantyDocument } from "./openaiClient";
 
 export async function registerRoutes(app: Express): Promise<Server> {

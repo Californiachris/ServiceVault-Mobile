@@ -7,7 +7,8 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
-import { seedDemoData } from "./seedDemoData";
+// Demo data seeding disabled
+// import { seedDemoData } from "./seedDemoData";
 
 // Public mode: Skip authentication entirely
 const AUTH_MODE = process.env.AUTH_MODE || 'public';
@@ -89,8 +90,8 @@ async function injectDemoUser(req: any, res: any, next: any) {
         role: 'HOMEOWNER',
       });
       
-      // Seed demo data for this user
-      await seedDemoData(DEMO_USER_ID);
+      // Demo data seeding disabled - users should create their own properties
+      // await seedDemoData(DEMO_USER_ID);
     }
     
     // Inject fake user session
@@ -161,14 +162,14 @@ export async function setupAuth(app: Express) {
     const userId = claims["sub"];
     await upsertUser(claims, role);
     
-    // In demo mode, seed data synchronously
-    if (process.env.NODE_ENV === 'development' && userId) {
-      try {
-        await seedDemoData(userId);
-      } catch (error) {
-        console.error("Error seeding demo data during auth:", error);
-      }
-    }
+    // Demo data seeding disabled - users should create their own properties
+    // if (process.env.NODE_ENV === 'development' && userId) {
+    //   try {
+    //     await seedDemoData(userId);
+    //   } catch (error) {
+    //     console.error("Error seeding demo data during auth:", error);
+    //   }
+    // }
     
     verified(null, user);
   };

@@ -9,8 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { DashboardTabs } from "@/components/DashboardTabs";
-import { getPropertyTypeImage } from "@/lib/propertyImages";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import {
   Home,
   QrCode,
@@ -394,62 +392,62 @@ export default function HomeownerDashboard() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredProperties.map((property: any) => (
-                    <Link key={property.id} href={`/property/${property.id}`}>
-                      <div
-                        className="group relative overflow-hidden rounded-xl border border-border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                        data-testid={`property-card-${property.id}`}
-                      >
-                        <div className="flex flex-col sm:flex-row">
-                          {/* Property Image */}
-                          <div className="w-full sm:w-48 flex-shrink-0">
-                            <AspectRatio ratio={16 / 9}>
-                              <div className="relative h-full w-full overflow-hidden">
-                                <img
-                                  src={getPropertyTypeImage(property.propertyType)}
-                                  alt={property.name || 'Property'}
-                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                <Badge className="absolute top-2 left-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-foreground border-0">
-                                  {property.propertyType && PROPERTY_TYPE_LABELS[property.propertyType] || "General Property"}
-                                </Badge>
+                <div className="space-y-3">
+                  {filteredProperties.map((property: any) => {
+                    const PropertyIcon = property.propertyType ? PROPERTY_TYPE_ICONS[property.propertyType] || Home : Home;
+                    return (
+                      <Link key={property.id} href={`/property/${property.id}`}>
+                        <div
+                          className="group rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 cursor-pointer p-4"
+                          data-testid={`property-card-${property.id}`}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {/* Property Type Icon */}
+                              <div className="flex-shrink-0">
+                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <PropertyIcon className="h-5 w-5 text-primary" />
+                                </div>
                               </div>
-                            </AspectRatio>
-                          </div>
-
-                          {/* Property Details */}
-                          <div className="flex-1 p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                                  {property.name || 'Unnamed Property'}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mb-3">
+                              
+                              {/* Property Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
+                                    {property.name || 'Unnamed Property'}
+                                  </h3>
+                                  {property.propertyType && PROPERTY_TYPE_LABELS[property.propertyType] && (
+                                    <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                      {PROPERTY_TYPE_LABELS[property.propertyType]}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">
                                   {property.addressLine1 || 'No address'}
                                   {property.city && `, ${property.city}`}
                                 </p>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
+                                <div className="flex items-center gap-3 mt-2">
+                                  <span className="flex items-center gap-1 text-xs">
                                     <Shield className="h-3 w-3 text-green-500" />
                                     <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
                                   </span>
                                   {property.masterIdentifierId && (
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <QrCode className="h-3 w-3" />
-                                      QR Code Active
+                                      QR Active
                                     </span>
                                   )}
                                 </div>
                               </div>
-                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                             </div>
+
+                            {/* Arrow */}
+                            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
