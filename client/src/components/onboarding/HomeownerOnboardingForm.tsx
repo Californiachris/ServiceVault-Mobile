@@ -97,10 +97,10 @@ export function HomeownerOnboardingForm({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-screen md:max-h-[90vh] flex flex-col" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-blue-500 to-cyan-500 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-cyan-500 to-yellow-500 flex-shrink-0">
           <DialogTitle className="text-2xl text-white flex items-center gap-2">
             <Home className="h-6 w-6" />
-            Welcome to FixTrack Pro
+            Welcome to ServiceVault
           </DialogTitle>
           <p className="text-white/90 text-sm mt-1">Let's set up your homeowner account</p>
         </DialogHeader>

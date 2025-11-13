@@ -159,10 +159,10 @@ export function PropertyManagerOnboardingForm({
         className="sm:max-w-[700px] p-0 gap-0 max-h-screen md:max-h-[90vh] flex flex-col" 
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-blue-500 to-cyan-500 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-cyan-500 to-yellow-500 flex-shrink-0">
           <DialogTitle className="text-2xl text-white flex items-center gap-2">
             <Building2 className="h-6 w-6" />
-            Welcome to FixTrack Pro
+            Welcome to ServiceVault
           </DialogTitle>
           <div className="mt-3 flex gap-2">
             {[1, 2, 3].map((s) => (

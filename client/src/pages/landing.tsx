@@ -26,14 +26,14 @@ export default function Landing() {
       {/* Header */}
       <div className="border-b bg-background/80 backdrop-blur-lg sticky top-0 z-50 h-16">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          <div className="flex items-center gap-3" data-testid="logo-fixtrack">
+          <div className="flex items-center gap-3" data-testid="logo-servicevault">
             <img 
-              src="/logo.png" 
-              alt="FixTrack Logo" 
+              src="/attached_assets/servicevault-logo.png" 
+              alt="ServiceVault Logo" 
               className="h-14 w-14 object-contain"
             />
-            <span className="text-2xl font-extrabold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-              FixTrack Pro
+            <span className="text-2xl font-extrabold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+              ServiceVault
             </span>
           </div>
           <div>
@@ -84,7 +84,7 @@ export default function Landing() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
           <Button 
             size="lg"
-            className="text-base font-semibold px-8 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            className="text-base font-semibold px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-yellow-500 hover:from-cyan-600 hover:to-yellow-600"
             onClick={() => setLocation("/pricing")}
             data-testid="button-hero-view-pricing"
           >

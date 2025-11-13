@@ -41,7 +41,7 @@ export default function PricingPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Welcome to FixTrack Pro!",
+        title: "Welcome to ServiceVault!",
         description: "Your account has been set up successfully.",
       });
       setLocation("/dashboard");

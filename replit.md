@@ -1,8 +1,8 @@
-# FixTrack Pro
+# ServiceVault
 
 ## Overview
 
-FixTrack Pro is a premium asset tracking platform for contractors, homeowners, and property managers, designed to ensure tamper-resistant asset logging using QR/NFC stickers. It incorporates AI-powered warranty parsing, predictive maintenance reminders, and a hash-chain for immutable event logging. The platform operates on a subscription model with quota enforcement and an admin system for physical sticker fulfillment.
+ServiceVault is a premium asset tracking platform for contractors, homeowners, and property managers, designed to ensure tamper-resistant asset logging using QR/NFC stickers. It incorporates AI-powered warranty parsing, predictive maintenance reminders, and a hash-chain for immutable event logging. The platform operates on a subscription model with quota enforcement and an admin system for physical sticker fulfillment.
 
 **Key Capabilities:**
 - **Tamper-Resistant Logging:** Contractors log installations and services with photos by scanning pre-printed QR/NFC stickers.

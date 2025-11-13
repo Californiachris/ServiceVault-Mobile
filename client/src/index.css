@@ -9,21 +9,23 @@
   --card-foreground: hsl(215 100% 95%);
   --popover: hsl(216 48% 12%);
   --popover-foreground: hsl(215 100% 95%);
-  --primary: hsl(185 92% 71%);
-  --primary-foreground: hsl(185 92% 15%);
+  --primary: hsl(187 100% 50%);
+  --primary-foreground: hsl(216 65% 9%);
   --secondary: hsl(215 27% 18%);
   --secondary-foreground: hsl(215 100% 95%);
   --muted: hsl(215 27% 18%);
   --muted-foreground: hsl(215 20% 75%);
-  --accent: hsl(215 27% 18%);
-  --accent-foreground: hsl(215 100% 95%);
+  --accent: hsl(45 100% 50%);
+  --accent-foreground: hsl(216 65% 9%);
   --destructive: hsl(0 62% 50%);
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(215 27% 18%);
   --input: hsl(215 27% 18%);
-  --ring: hsl(185 92% 71%);
+  --ring: hsl(187 100% 50%);
   --radius: 12px;
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --cyan: hsl(187 100% 50%);
+  --gold: hsl(45 100% 50%);
 }
 
 .dark {
@@ -33,19 +35,21 @@
   --card-foreground: hsl(215 100% 95%);
   --popover: hsl(216 48% 12%);
   --popover-foreground: hsl(215 100% 95%);
-  --primary: hsl(185 92% 71%);
-  --primary-foreground: hsl(185 92% 15%);
+  --primary: hsl(187 100% 50%);
+  --primary-foreground: hsl(216 65% 9%);
   --secondary: hsl(215 27% 18%);
   --secondary-foreground: hsl(215 100% 95%);
   --muted: hsl(215 27% 18%);
   --muted-foreground: hsl(215 20% 75%);
-  --accent: hsl(215 27% 18%);
-  --accent-foreground: hsl(215 100% 95%);
+  --accent: hsl(45 100% 50%);
+  --accent-foreground: hsl(216 65% 9%);
   --destructive: hsl(0 62% 50%);
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(215 27% 18%);
   --input: hsl(215 27% 18%);
-  --ring: hsl(185 92% 71%);
+  --ring: hsl(187 100% 50%);
+  --cyan: hsl(187 100% 50%);
+  --gold: hsl(45 100% 50%);
 }
 
 @layer base {
