@@ -24,11 +24,13 @@ export default function PricingPage() {
     homeowner: [],
     contractor: [],
     fleet: [],
+    propertyManager: [],
   });
   const [fleetAssetCount, setFleetAssetCount] = useState<number>(100);
+  const [propertyCount, setPropertyCount] = useState<number>(50);
   
   // DEV TESTING MODE: Onboarding modal state
-  const [onboardingModal, setOnboardingModal] = useState<{ plan: string; type: 'homeowner' | 'contractor' | 'fleet' } | null>(null);
+  const [onboardingModal, setOnboardingModal] = useState<{ plan: string; type: 'homeowner' | 'contractor' | 'fleet' | 'property_manager' } | null>(null);
 
   // DEV TESTING MODE: Onboarding mutation
   const onboardingMutation = useMutation({

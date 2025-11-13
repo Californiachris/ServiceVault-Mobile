@@ -35,7 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("HOMEOWNER"), // HOMEOWNER, CONTRACTOR, FLEET, INSPECTOR, ADMIN
+  role: varchar("role").default("HOMEOWNER"), // HOMEOWNER, CONTRACTOR, FLEET, INSPECTOR, ADMIN, PROPERTY_MANAGER, WORKER
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   
@@ -397,6 +397,128 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Property Management - Managed Properties
+export const managedProperties = pgTable("managed_properties", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyManagerId: varchar("property_manager_id").notNull().references(() => users.id),
+  propertyId: uuid("property_id").notNull().references(() => properties.id), // Can be reassigned to different managers over time
+  managementStatus: varchar("management_status").default("ACTIVE"), // ACTIVE, INACTIVE
+  masterQrCode: varchar("master_qr_code").notNull().unique(), // Required unique QR for this managed property
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  propertyManagerIdx: index("idx_managed_properties_manager").on(table.propertyManagerId),
+  managerPropertyUnique: uniqueIndex("uq_manager_property").on(table.propertyManagerId, table.propertyId),
+}));
+
+// Property Management - Workers
+export const workers = pgTable("workers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").unique().references(() => users.id), // Optional but unique when set
+  propertyManagerId: varchar("property_manager_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  role: varchar("role").notNull(), // MAINTENANCE, CLEANER, LANDSCAPER, INSPECTOR, HVAC_TECH, PLUMBER, ELECTRICIAN, etc.
+  status: varchar("status").default("ACTIVE"), // ACTIVE, INACTIVE
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  propertyManagerIdx: index("idx_workers_manager").on(table.propertyManagerId),
+  statusIdx: index("idx_workers_status").on(table.status),
+}));
+
+// Property Management - Tasks
+export const propertyTasks = pgTable("property_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  managedPropertyId: uuid("managed_property_id").notNull().references(() => managedProperties.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  taskType: varchar("task_type").default("GENERAL"), // GENERAL, HVAC, PLUMBING, ELECTRICAL, CLEANING, LANDSCAPING, INSPECTION
+  priority: varchar("priority").default("MEDIUM"), // LOW, MEDIUM, HIGH, URGENT
+  status: varchar("status").default("PENDING"), // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  assignedTo: uuid("assigned_to").references(() => workers.id),
+  dueDate: timestamp("due_date"),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringFrequency: varchar("recurring_frequency"), // DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, ANNUALLY
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  propertyIdx: index("idx_tasks_property").on(table.managedPropertyId),
+  assignedToIdx: index("idx_tasks_assigned").on(table.assignedTo),
+  statusIdx: index("idx_tasks_status").on(table.status),
+  dueDateIdx: index("idx_tasks_due_date").on(table.dueDate),
+  propertyStatusIdx: index("idx_tasks_property_status").on(table.managedPropertyId, table.status),
+}));
+
+// Property Management - Task Completions
+export const propertyTaskCompletions = pgTable("property_task_completions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => propertyTasks.id),
+  visitId: uuid("visit_id").references(() => propertyVisits.id),
+  completedBy: uuid("completed_by").notNull().references(() => workers.id),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  videoUrls: jsonb("video_urls").$type<string[]>(),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at").notNull().defaultNow(),
+}, (table) => ({
+  taskIdx: index("idx_task_completions_task").on(table.taskId),
+  visitIdx: index("idx_task_completions_visit").on(table.visitId),
+}));
+
+// Property Management - Tenant Reports
+export const tenantReports = pgTable("tenant_reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  managedPropertyId: uuid("managed_property_id").notNull().references(() => managedProperties.id),
+  reporterName: varchar("reporter_name"),
+  reporterPhone: varchar("reporter_phone"),
+  reporterEmail: varchar("reporter_email"),
+  issueType: varchar("issue_type").notNull(), // MAINTENANCE, HVAC, PLUMBING, ELECTRICAL, APPLIANCE, PEST, SAFETY, OTHER
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  priority: varchar("priority").default("MEDIUM"), // LOW, MEDIUM, HIGH, URGENT
+  status: varchar("status").default("PENDING"), // PENDING, ASSIGNED, IN_PROGRESS, RESOLVED, CLOSED
+  assignedTo: uuid("assigned_to").references(() => workers.id),
+  resolvedBy: uuid("resolved_by").references(() => workers.id),
+  reportedAt: timestamp("reported_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (table) => ({
+  propertyIdx: index("idx_tenant_reports_property").on(table.managedPropertyId),
+  statusIdx: index("idx_tenant_reports_status").on(table.status),
+  reportedAtIdx: index("idx_tenant_reports_time").on(table.reportedAt),
+}));
+
+// Property Management - Visits (Authoritative check-in to check-out records)
+export const propertyVisits = pgTable("property_visits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  managedPropertyId: uuid("managed_property_id").notNull().references(() => managedProperties.id),
+  workerId: uuid("worker_id").notNull().references(() => workers.id),
+  
+  // Check-in
+  checkInAt: timestamp("check_in_at").notNull(),
+  checkInLocation: jsonb("check_in_location").$type<{lat: number, lng: number, address?: string, verified: boolean}>(),
+  checkInMethod: varchar("check_in_method").default("QR"), // QR, NFC, MANUAL
+  
+  // Check-out
+  checkOutAt: timestamp("check_out_at"),
+  checkOutLocation: jsonb("check_out_location").$type<{lat: number, lng: number, address?: string, verified: boolean}>(),
+  checkOutMethod: varchar("check_out_method"), // QR, NFC, MANUAL
+  
+  // Visit summary
+  tasksCompleted: integer("tasks_completed").default(0),
+  visitSummary: text("visit_summary"),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  status: varchar("status").default("IN_PROGRESS"), // IN_PROGRESS, COMPLETED, ABANDONED
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  propertyIdx: index("idx_visits_property").on(table.managedPropertyId),
+  workerIdx: index("idx_visits_worker").on(table.workerId),
+  statusIdx: index("idx_visits_status").on(table.status),
+  propertyStatusIdx: index("idx_visits_property_status").on(table.managedPropertyId, table.status),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   contractor: one(contractors, {
@@ -583,6 +705,36 @@ export const insertNotificationLogSchema = createInsertSchema(notificationLogs).
   createdAt: true,
 });
 
+// Property Management Insert Schemas
+export const insertManagedPropertySchema = createInsertSchema(managedProperties).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkerSchema = createInsertSchema(workers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPropertyTaskSchema = createInsertSchema(propertyTasks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPropertyTaskCompletionSchema = createInsertSchema(propertyTaskCompletions).omit({
+  id: true,
+});
+
+export const insertTenantReportSchema = createInsertSchema(tenantReports).omit({
+  id: true,
+});
+
+export const insertPropertyVisitSchema = createInsertSchema(propertyVisits).omit({
+  id: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -604,6 +756,12 @@ export type FleetAssetCategory = typeof fleetAssetCategories.$inferSelect;
 export type FleetOperator = typeof fleetOperators.$inferSelect;
 export type FleetOperatorAsset = typeof fleetOperatorAssets.$inferSelect;
 export type NotificationLog = typeof notificationLogs.$inferSelect;
+export type ManagedProperty = typeof managedProperties.$inferSelect;
+export type Worker = typeof workers.$inferSelect;
+export type PropertyTask = typeof propertyTasks.$inferSelect;
+export type PropertyTaskCompletion = typeof propertyTaskCompletions.$inferSelect;
+export type TenantReport = typeof tenantReports.$inferSelect;
+export type PropertyVisit = typeof propertyVisits.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -623,3 +781,9 @@ export type InsertFleetAssetCategory = z.infer<typeof insertFleetAssetCategorySc
 export type InsertFleetOperator = z.infer<typeof insertFleetOperatorSchema>;
 export type InsertFleetOperatorAsset = z.infer<typeof insertFleetOperatorAssetSchema>;
 export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;
+export type InsertManagedProperty = z.infer<typeof insertManagedPropertySchema>;
+export type InsertWorker = z.infer<typeof insertWorkerSchema>;
+export type InsertPropertyTask = z.infer<typeof insertPropertyTaskSchema>;
+export type InsertPropertyTaskCompletion = z.infer<typeof insertPropertyTaskCompletionSchema>;
+export type InsertTenantReport = z.infer<typeof insertTenantReportSchema>;
+export type InsertPropertyVisit = z.infer<typeof insertPropertyVisitSchema>;
