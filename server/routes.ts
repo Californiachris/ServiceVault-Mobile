@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
-import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets } from "@shared/schema";
+import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets, managedProperties, workers, propertyTasks, propertyVisits, tenantReports, propertyTaskCompletions } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -2560,6 +2560,7 @@ Instructions:
         'contractor_pro': 'CONTRACTOR',
         'contractor_starter': 'CONTRACTOR',
         'fleet_base': 'FLEET',
+        'property_manager_base': 'PROPERTY_MANAGER',
       };
 
       const role = roleMap[plan];
@@ -2660,6 +2661,94 @@ Instructions:
         // For fleet, industry and categories are stored in onboardingData but not persisted to a specific table
         // This is acceptable for dev testing - they can add equipment through the dashboard
         console.log(`[DEV] Fleet user created with industries: ${industries.join(', ')}, categories: ${onboardingData.assetCategories}`);
+      } else if (role === 'PROPERTY_MANAGER' && onboardingData.planMetadata) {
+        const { propertyCount, propertiesSeed = [], workersSeed = [], selectedAddOns = [] } = onboardingData.planMetadata;
+        
+        console.log(`[DEV] Property Manager onboarding: ${propertyCount} properties, ${propertiesSeed.length} addresses, ${workersSeed.length} workers, ${selectedAddOns.length} add-ons`);
+        
+        // Pre-validate all seeds before starting transaction
+        const validationErrors: string[] = [];
+        
+        // Validate property seeds
+        propertiesSeed.forEach((seed: any, index: number) => {
+          if (!seed.street || !seed.city || !seed.state || !seed.postalCode) {
+            validationErrors.push(`Property #${index + 1}: missing required fields (street, city, state, postalCode)`);
+          }
+        });
+        
+        // Validate worker seeds
+        workersSeed.forEach((seed: any, index: number) => {
+          if (!seed.name || !seed.role || !seed.phone) {
+            validationErrors.push(`Worker #${index + 1}: missing required fields (name, role, phone)`);
+          }
+        });
+        
+        // If any seeds are invalid, fail immediately
+        if (validationErrors.length > 0) {
+          return res.status(400).json({ 
+            error: 'Invalid onboarding data', 
+            validationErrors 
+          });
+        }
+        
+        let propertiesCreated = 0;
+        let workersCreated = 0;
+        
+        try {
+          // Wrap all creation in a transaction for atomicity
+          await db.transaction(async (tx) => {
+            // Create properties from seed data
+            for (const propertySeed of propertiesSeed) {
+              // Create base property and managed property link atomically
+              const [property] = await tx.insert(properties).values({
+                ownerId: userId,
+                name: `${propertySeed.street}, ${propertySeed.city}`,
+                addressLine1: propertySeed.street,
+                city: propertySeed.city,
+                state: propertySeed.state,
+                postalCode: propertySeed.postalCode,
+                propertyType: propertySeed.propertyType || 'RENTAL',
+              }).returning();
+              
+              // Create managed property link with unique master QR
+              const masterQrCode = `PM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              await tx.insert(managedProperties).values({
+                propertyManagerId: userId,
+                propertyId: property.id,
+                managementStatus: 'ACTIVE',
+                masterQrCode,
+              });
+              
+              propertiesCreated++;
+            }
+            
+            // Create workers from seed data
+            for (const workerSeed of workersSeed) {
+              await tx.insert(workers).values({
+                propertyManagerId: userId,
+                name: workerSeed.name,
+                role: workerSeed.role,
+                phone: workerSeed.phone,
+                email: workerSeed.email || null,
+                status: 'ACTIVE',
+              });
+              
+              workersCreated++;
+            }
+          });
+          
+          console.log(`[DEV] Property Manager created: ${propertiesCreated} properties, ${workersCreated} workers`);
+        } catch (error: any) {
+          console.error('[DEV] Property Manager onboarding error:', error);
+          // Return 400 for constraint/validation errors, 500 for unexpected errors
+          if (error.message?.includes('constraint') || error.message?.includes('violates') || error.message?.includes('duplicate')) {
+            return res.status(400).json({ 
+              error: 'Database constraint violation',
+              details: error.message 
+            });
+          }
+          throw error; // Re-throw unexpected errors to be caught by outer try-catch
+        }
       }
 
       res.json({
@@ -2670,6 +2759,597 @@ Instructions:
     } catch (error: any) {
       console.error('Onboarding error:', error);
       res.status(500).json({ error: 'Failed to complete onboarding' });
+    }
+  });
+
+  // ========================================
+  // Property Manager API Routes
+  // ========================================
+
+  // Get all managed properties for current property manager
+  app.get('/api/property-manager/properties', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const managed = await db
+        .select({
+          id: managedProperties.id,
+          managedPropertyId: managedProperties.id,
+          propertyId: managedProperties.propertyId,
+          managementStatus: managedProperties.managementStatus,
+          masterQrCode: managedProperties.masterQrCode,
+          createdAt: managedProperties.createdAt,
+          property: properties,
+        })
+        .from(managedProperties)
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
+        .where(eq(managedProperties.propertyManagerId, userId))
+        .orderBy(desc(managedProperties.createdAt));
+      
+      res.json(managed);
+    } catch (error) {
+      console.error('Error fetching managed properties:', error);
+      res.status(500).json({ error: 'Failed to fetch properties' });
+    }
+  });
+
+  // Add a new managed property
+  app.post('/api/property-manager/properties', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { addressLine1, city, state, postalCode, propertyType, name } = req.body;
+      
+      if (!addressLine1 || !city || !state || !postalCode) {
+        return res.status(400).json({ error: 'Address fields are required' });
+      }
+      
+      await db.transaction(async (tx) => {
+        // Create property
+        const [property] = await tx.insert(properties).values({
+          ownerId: userId,
+          name: name || `${addressLine1}, ${city}`,
+          addressLine1,
+          city,
+          state,
+          postalCode,
+          propertyType: propertyType || 'RENTAL',
+        }).returning();
+        
+        // Create managed property link
+        const masterQrCode = `PM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const [managedProperty] = await tx.insert(managedProperties).values({
+          propertyManagerId: userId,
+          propertyId: property.id,
+          managementStatus: 'ACTIVE',
+          masterQrCode,
+        }).returning();
+        
+        res.json({ property, managedProperty });
+      });
+    } catch (error) {
+      console.error('Error creating managed property:', error);
+      res.status(500).json({ error: 'Failed to create property' });
+    }
+  });
+
+  // Update managed property status
+  app.patch('/api/property-manager/properties/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const { managementStatus } = req.body;
+      
+      // Verify ownership
+      const existing = await db
+        .select()
+        .from(managedProperties)
+        .where(and(eq(managedProperties.id, id), eq(managedProperties.propertyManagerId, userId)))
+        .limit(1);
+      
+      if (existing.length === 0) {
+        return res.status(404).json({ error: 'Managed property not found' });
+      }
+      
+      const [updated] = await db
+        .update(managedProperties)
+        .set({ managementStatus, updatedAt: new Date() })
+        .where(eq(managedProperties.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating managed property:', error);
+      res.status(500).json({ error: 'Failed to update property' });
+    }
+  });
+
+  // Get all workers for current property manager
+  app.get('/api/property-manager/workers', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const workersList = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.propertyManagerId, userId))
+        .orderBy(desc(workers.createdAt));
+      
+      res.json(workersList);
+    } catch (error) {
+      console.error('Error fetching workers:', error);
+      res.status(500).json({ error: 'Failed to fetch workers' });
+    }
+  });
+
+  // Add a new worker
+  app.post('/api/property-manager/workers', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name, role, phone, email } = req.body;
+      
+      if (!name || !role || !phone) {
+        return res.status(400).json({ error: 'Name, role, and phone are required' });
+      }
+      
+      const [worker] = await db.insert(workers).values({
+        propertyManagerId: userId,
+        name,
+        role,
+        phone,
+        email: email || null,
+        status: 'ACTIVE',
+      }).returning();
+      
+      res.json(worker);
+    } catch (error) {
+      console.error('Error creating worker:', error);
+      res.status(500).json({ error: 'Failed to create worker' });
+    }
+  });
+
+  // Update worker status or details
+  app.patch('/api/property-manager/workers/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Verify ownership
+      const existing = await db
+        .select()
+        .from(workers)
+        .where(and(eq(workers.id, id), eq(workers.propertyManagerId, userId)))
+        .limit(1);
+      
+      if (existing.length === 0) {
+        return res.status(404).json({ error: 'Worker not found' });
+      }
+      
+      const [updated] = await db
+        .update(workers)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(workers.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating worker:', error);
+      res.status(500).json({ error: 'Failed to update worker' });
+    }
+  });
+
+  // Get all tasks for property manager
+  app.get('/api/property-manager/tasks', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId, status, workerId } = req.query;
+      
+      let query = db
+        .select({
+          task: propertyTasks,
+          property: managedProperties,
+          worker: workers,
+        })
+        .from(propertyTasks)
+        .innerJoin(managedProperties, eq(propertyTasks.managedPropertyId, managedProperties.id))
+        .leftJoin(workers, eq(propertyTasks.assignedTo, workers.id))
+        .where(eq(managedProperties.propertyManagerId, userId));
+      
+      // Apply filters
+      if (propertyId) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyTasks.managedPropertyId, propertyId as string)
+        ));
+      }
+      if (status) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyTasks.status, status as string)
+        ));
+      }
+      if (workerId) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyTasks.assignedTo, workerId as string)
+        ));
+      }
+      
+      const tasks = await query.orderBy(desc(propertyTasks.createdAt));
+      
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+  });
+
+  // Create a new task
+  app.post('/api/property-manager/tasks', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { managedPropertyId, title, description, taskType, priority, assignedTo, dueDate, isRecurring, recurringFrequency } = req.body;
+      
+      if (!managedPropertyId || !title) {
+        return res.status(400).json({ error: 'Property and title are required' });
+      }
+      
+      // Verify property ownership
+      const property = await db
+        .select()
+        .from(managedProperties)
+        .where(and(
+          eq(managedProperties.id, managedPropertyId),
+          eq(managedProperties.propertyManagerId, userId)
+        ))
+        .limit(1);
+      
+      if (property.length === 0) {
+        return res.status(404).json({ error: 'Managed property not found' });
+      }
+      
+      const [task] = await db.insert(propertyTasks).values({
+        managedPropertyId,
+        title,
+        description,
+        taskType: taskType || 'GENERAL',
+        priority: priority || 'MEDIUM',
+        status: 'PENDING',
+        assignedTo: assignedTo || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        isRecurring: isRecurring || false,
+        recurringFrequency: recurringFrequency || null,
+        createdBy: userId,
+      }).returning();
+      
+      res.json(task);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      res.status(500).json({ error: 'Failed to create task' });
+    }
+  });
+
+  // Update task status or assignment
+  app.patch('/api/property-manager/tasks/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Verify ownership through managed property
+      const task = await db
+        .select({ task: propertyTasks, property: managedProperties })
+        .from(propertyTasks)
+        .innerJoin(managedProperties, eq(propertyTasks.managedPropertyId, managedProperties.id))
+        .where(and(
+          eq(propertyTasks.id, id),
+          eq(managedProperties.propertyManagerId, userId)
+        ))
+        .limit(1);
+      
+      if (task.length === 0) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      
+      // Handle completion timestamp
+      if (updates.status === 'COMPLETED' && !task[0].task.completedAt) {
+        updates.completedAt = new Date();
+      }
+      
+      const [updated] = await db
+        .update(propertyTasks)
+        .set(updates)
+        .where(eq(propertyTasks.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      res.status(500).json({ error: 'Failed to update task' });
+    }
+  });
+
+  // Get visit history
+  app.get('/api/property-manager/visits', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId, workerId, status } = req.query;
+      
+      let query = db
+        .select({
+          visit: propertyVisits,
+          property: managedProperties,
+          worker: workers,
+        })
+        .from(propertyVisits)
+        .innerJoin(managedProperties, eq(propertyVisits.managedPropertyId, managedProperties.id))
+        .innerJoin(workers, eq(propertyVisits.workerId, workers.id))
+        .where(eq(managedProperties.propertyManagerId, userId));
+      
+      if (propertyId) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyVisits.managedPropertyId, propertyId as string)
+        ));
+      }
+      if (workerId) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyVisits.workerId, workerId as string)
+        ));
+      }
+      if (status) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(propertyVisits.status, status as string)
+        ));
+      }
+      
+      const visits = await query.orderBy(desc(propertyVisits.checkInAt));
+      
+      res.json(visits);
+    } catch (error) {
+      console.error('Error fetching visits:', error);
+      res.status(500).json({ error: 'Failed to fetch visits' });
+    }
+  });
+
+  // Get tenant reports
+  app.get('/api/property-manager/tenant-reports', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId, status } = req.query;
+      
+      let query = db
+        .select({
+          report: tenantReports,
+          property: managedProperties,
+          assignedWorker: workers,
+        })
+        .from(tenantReports)
+        .innerJoin(managedProperties, eq(tenantReports.managedPropertyId, managedProperties.id))
+        .leftJoin(workers, eq(tenantReports.assignedTo, workers.id))
+        .where(eq(managedProperties.propertyManagerId, userId));
+      
+      if (propertyId) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(tenantReports.managedPropertyId, propertyId as string)
+        ));
+      }
+      if (status) {
+        query = query.where(and(
+          eq(managedProperties.propertyManagerId, userId),
+          eq(tenantReports.status, status as string)
+        ));
+      }
+      
+      const reports = await query.orderBy(desc(tenantReports.reportedAt));
+      
+      res.json(reports);
+    } catch (error) {
+      console.error('Error fetching tenant reports:', error);
+      res.status(500).json({ error: 'Failed to fetch tenant reports' });
+    }
+  });
+
+  // Update tenant report (assign, resolve, etc.)
+  app.patch('/api/property-manager/tenant-reports/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Verify ownership
+      const report = await db
+        .select({ report: tenantReports, property: managedProperties })
+        .from(tenantReports)
+        .innerJoin(managedProperties, eq(tenantReports.managedPropertyId, managedProperties.id))
+        .where(and(
+          eq(tenantReports.id, id),
+          eq(managedProperties.propertyManagerId, userId)
+        ))
+        .limit(1);
+      
+      if (report.length === 0) {
+        return res.status(404).json({ error: 'Tenant report not found' });
+      }
+      
+      // Handle resolution timestamp
+      if (updates.status === 'RESOLVED' && !report[0].report.resolvedAt) {
+        updates.resolvedAt = new Date();
+        updates.resolvedBy = userId;
+      }
+      
+      const [updated] = await db
+        .update(tenantReports)
+        .set(updates)
+        .where(eq(tenantReports.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating tenant report:', error);
+      res.status(500).json({ error: 'Failed to update tenant report' });
+    }
+  });
+
+  // Public endpoint: Submit tenant report (no auth required)
+  app.post('/api/public/tenant-report/:masterQrCode', async (req, res) => {
+    try {
+      const { masterQrCode } = req.params;
+      const { reporterName, reporterPhone, reporterEmail, issueType, title, description, photoUrls, priority } = req.body;
+      
+      if (!issueType || !title || !description) {
+        return res.status(400).json({ error: 'Issue type, title, and description are required' });
+      }
+      
+      // Find managed property by master QR code
+      const managedProperty = await db
+        .select()
+        .from(managedProperties)
+        .where(eq(managedProperties.masterQrCode, masterQrCode))
+        .limit(1);
+      
+      if (managedProperty.length === 0) {
+        return res.status(404).json({ error: 'Property not found' });
+      }
+      
+      const [report] = await db.insert(tenantReports).values({
+        managedPropertyId: managedProperty[0].id,
+        reporterName,
+        reporterPhone,
+        reporterEmail,
+        issueType,
+        title,
+        description,
+        photoUrls: photoUrls || [],
+        priority: priority || 'MEDIUM',
+        status: 'PENDING',
+      }).returning();
+      
+      res.json(report);
+    } catch (error) {
+      console.error('Error submitting tenant report:', error);
+      res.status(500).json({ error: 'Failed to submit report' });
+    }
+  });
+
+  // Worker check-in endpoint (accessible to workers and property managers)
+  app.post('/api/worker/check-in', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { masterQrCode, location, method } = req.body;
+      
+      if (!masterQrCode) {
+        return res.status(400).json({ error: 'QR code is required' });
+      }
+      
+      // Find managed property by QR code
+      const managedProperty = await db
+        .select()
+        .from(managedProperties)
+        .where(eq(managedProperties.masterQrCode, masterQrCode))
+        .limit(1);
+      
+      if (managedProperty.length === 0) {
+        return res.status(404).json({ error: 'Property not found' });
+      }
+      
+      // Get worker record for authenticated user
+      const worker = await db
+        .select()
+        .from(workers)
+        .where(and(
+          eq(workers.userId, userId),
+          eq(workers.propertyManagerId, managedProperty[0].propertyManagerId)
+        ))
+        .limit(1);
+      
+      if (worker.length === 0) {
+        return res.status(403).json({ error: 'You are not authorized to check in at this property. Contact your property manager.' });
+      }
+      
+      // Create visit record
+      const [visit] = await db.insert(propertyVisits).values({
+        managedPropertyId: managedProperty[0].id,
+        workerId: worker[0].id,
+        checkInAt: new Date(),
+        checkInLocation: location || null,
+        checkInMethod: method || 'QR',
+        status: 'IN_PROGRESS',
+      }).returning();
+      
+      res.json(visit);
+    } catch (error) {
+      console.error('Error checking in:', error);
+      res.status(500).json({ error: 'Failed to check in' });
+    }
+  });
+
+  // Worker check-out endpoint (accessible to workers who own the visit)
+  app.patch('/api/worker/check-out/:visitId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { visitId } = req.params;
+      const { location, method, visitSummary, photoUrls } = req.body;
+      
+      // Get worker record for authenticated user
+      const workerRecord = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (workerRecord.length === 0) {
+        return res.status(403).json({ error: 'Worker account not found' });
+      }
+      
+      // Get visit and verify it belongs to this worker (direct ownership check)
+      const existingVisit = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(
+          eq(propertyVisits.id, visitId),
+          eq(propertyVisits.workerId, workerRecord[0].id)
+        ))
+        .limit(1);
+      
+      if (existingVisit.length === 0) {
+        return res.status(404).json({ error: 'Visit not found or does not belong to you' });
+      }
+      
+      // Count completed tasks for this visit
+      const completedTasks = await db
+        .select({ count: count() })
+        .from(propertyTaskCompletions)
+        .where(eq(propertyTaskCompletions.visitId, visitId));
+      
+      const tasksCompleted = completedTasks[0]?.count || 0;
+      
+      // Update visit record
+      const [updated] = await db
+        .update(propertyVisits)
+        .set({
+          checkOutAt: new Date(),
+          checkOutLocation: location || null,
+          checkOutMethod: method || 'QR',
+          visitSummary,
+          photoUrls: photoUrls || [],
+          tasksCompleted,
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        })
+        .where(and(
+          eq(propertyVisits.id, visitId),
+          eq(propertyVisits.workerId, workerRecord[0].id)
+        ))
+        .returning();
+      
+      res.json(updated);
+    } catch (error) {
+      console.error('Error checking out:', error);
+      res.status(500).json({ error: 'Failed to check out' });
     }
   });
 
