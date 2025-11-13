@@ -83,7 +83,7 @@ async function injectDemoUser(req: any, res: any, next: any) {
     if (!existingUser) {
       await storage.upsertUser({
         id: DEMO_USER_ID,
-        email: 'demo@fix-track.app',
+        email: 'demo@servicevault.app',
         firstName: 'Demo',
         lastName: 'User',
         profileImageUrl: null,
@@ -98,7 +98,7 @@ async function injectDemoUser(req: any, res: any, next: any) {
     req.user = {
       claims: {
         sub: DEMO_USER_ID,
-        email: 'demo@fix-track.app',
+        email: 'demo@servicevault.app',
         first_name: 'Demo',
         last_name: 'User',
       }
