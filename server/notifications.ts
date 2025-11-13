@@ -137,7 +137,7 @@ export class NotificationService {
       }
 
       await this.resend.emails.send({
-        from: 'FixTrack Pro <notifications@fixtrackpro.com>',
+        from: 'ServiceVault <notifications@servicevault.app>',
         to: email,
         subject,
         html: `
@@ -147,7 +147,7 @@ export class NotificationService {
             ${contractorSection}
             <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
             <p style="color: #888; font-size: 12px;">
-              FixTrack Pro - Premium Asset Tracking<br>
+              ServiceVault - Premium Asset Tracking<br>
               To manage your notification preferences, visit your dashboard.
             </p>
           </div>
@@ -188,7 +188,7 @@ export class NotificationService {
         }
       }
       
-      smsBody += '\n\n- FixTrack Pro';
+      smsBody += '\n\n- ServiceVault';
 
       await this.twilioClient.messages.create({
         body: smsBody,

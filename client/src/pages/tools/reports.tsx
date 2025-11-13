@@ -317,7 +317,7 @@ export default function ReportsPage() {
                 <div className="space-y-4">
                   <div className="border border-border rounded-lg p-4 bg-muted/20">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-mono text-lg font-bold">Fix-Track — Home Health Certificate™</h4>
+                      <h4 className="font-mono text-lg font-bold">ServiceVault — Home Health Certificate™</h4>
                       <Badge variant="outline">PDF</Badge>
                     </div>
                     <div className="space-y-2 text-sm text-muted-foreground">

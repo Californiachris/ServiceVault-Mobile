@@ -925,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code,
           kind: type || 'ASSET',
           contractorId: contractor?.id,
-          brandLabel: brandLabel || contractor?.companyName || "Fix-Track",
+          brandLabel: brandLabel || contractor?.companyName || "ServiceVault",
         });
       }
 
@@ -2018,7 +2018,7 @@ Instructions:
         doc.moveDown();
       }
       
-      doc.fontSize(18).text('Fix-Track — Home Health Certificate™', { align: 'center' });
+      doc.fontSize(18).text('ServiceVault — Home Health Certificate™', { align: 'center' });
       doc.moveDown();
       
       doc.fontSize(12)
@@ -2662,7 +2662,7 @@ Instructions:
     // Task 9: Graceful API fallbacks when Stripe is not configured
     app.post('/api/stripe/create-checkout-session', isAuthenticated, (req, res) => {
       res.status(503).json({ 
-        error: "Payment processing is currently being configured. Please contact support@fixtrackpro.com to subscribe.",
+        error: "Payment processing is currently being configured. Please contact support@servicevault.app to subscribe.",
         service: "stripe",
         configured: false
       });
@@ -2670,7 +2670,7 @@ Instructions:
 
     app.post('/api/stripe/customer-portal', isAuthenticated, (req, res) => {
       res.status(503).json({ 
-        error: "Billing portal is currently being configured. Please contact support@fixtrackpro.com for assistance.",
+        error: "Billing portal is currently being configured. Please contact support@servicevault.app for assistance.",
         service: "stripe",
         configured: false
       });

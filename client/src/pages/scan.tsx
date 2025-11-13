@@ -639,7 +639,7 @@ export default function Scan() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Brand:</span>
-                            <span>{scanResult.brandLabel || 'Fix-Track'}</span>
+                            <span>{scanResult.brandLabel || 'ServiceVault'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Status:</span>
