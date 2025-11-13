@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Check, Sparkles, Zap, Shield, TrendingUp, Users, Building2, Truck, Phone } from "lucide-react";
+import { Check, Sparkles, Zap, Shield, TrendingUp, Users, Building2, Truck, Phone, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { HomeownerOnboardingForm } from "@/components/onboarding/HomeownerOnboardingForm";
@@ -519,20 +520,66 @@ export default function PricingPage() {
         {/* Trust Signals */}
         <div className="mt-16 text-center">
           <p className="text-sm text-muted-foreground mb-6">Trusted by thousands of professionals</p>
-          <div className="flex flex-wrap justify-center gap-8 items-center opacity-50">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <span className="text-sm font-medium">Bank-Level Security</span>
+          <TooltipProvider>
+            <div className="flex flex-wrap justify-center gap-8 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="flex items-center gap-2 hover:opacity-100 opacity-70 transition-all hover:scale-105 cursor-pointer"
+                    data-testid="trust-badge-security"
+                  >
+                    <Shield className="h-5 w-5 text-green-500" />
+                    <span className="text-sm font-medium">Bank-Level Security</span>
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Your data is encrypted with industry-standard SSL/TLS protocols. 
+                    We use PostgreSQL with secure authentication and never store sensitive information in plain text.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="flex items-center gap-2 hover:opacity-100 opacity-70 transition-all hover:scale-105 cursor-pointer"
+                    data-testid="trust-badge-support"
+                  >
+                    <Phone className="h-5 w-5 text-blue-500" />
+                    <span className="text-sm font-medium">24/7 Support</span>
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Email us anytime at <span className="font-semibold">trackfixes@gmail.com</span>. 
+                    We respond to all inquiries within 24 hours, usually much faster. Premium support available for Fleet plans.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="flex items-center gap-2 hover:opacity-100 opacity-70 transition-all hover:scale-105 cursor-pointer"
+                    data-testid="trust-badge-setup"
+                  >
+                    <Zap className="h-5 w-5 text-orange-500" />
+                    <span className="text-sm font-medium">Instant Setup</span>
+                    <Info className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm">
+                    Get started in under 5 minutes. No complicated installation or training required. 
+                    Your physical stickers ship within 48 hours, and you can start using the app immediately.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              <span className="text-sm font-medium">24/7 Support</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              <span className="text-sm font-medium">Instant Setup</span>
-            </div>
-          </div>
+          </TooltipProvider>
         </div>
 
         {/* FAQ/Support */}
