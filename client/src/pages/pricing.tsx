@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { HomeownerOnboardingForm } from "@/components/onboarding/HomeownerOnboardingForm";
 import { ContractorOnboardingForm } from "@/components/onboarding/ContractorOnboardingForm";
 import { FleetOnboardingForm } from "@/components/onboarding/FleetOnboardingForm";
+import { PropertyManagerOnboardingForm } from "@/components/onboarding/PropertyManagerOnboardingForm";
 
 export default function PricingPage() {
   const [, setLocation] = useLocation();
@@ -74,7 +75,16 @@ export default function PricingPage() {
     }
 
     // DEV TESTING MODE: Show onboarding form instead of Stripe checkout
-    const modalType = tier === 'homeowner' ? 'homeowner' : tier === 'contractor' ? 'contractor' : 'fleet';
+    const modalType = tier === 'homeowner' ? 'homeowner' : 
+                      tier === 'contractor' ? 'contractor' : 
+                      tier === 'property_manager' ? 'property_manager' : 'fleet';
+    
+    // Store metadata for property manager tier
+    if (tier === 'property_manager') {
+      sessionStorage.setItem('pm_property_count', propertyCount.toString());
+      sessionStorage.setItem('pm_selected_addons', JSON.stringify(selectedAddOns.propertyManager));
+    }
+    
     setOnboardingModal({ plan, type: modalType });
   };
 
@@ -116,6 +126,55 @@ export default function PricingPage() {
         <div className="text-2xl font-bold">
           ${total.toLocaleString()}/mo total
         </div>
+      </div>
+    );
+  };
+
+  const calculatePropertyPrice = () => {
+    let pricePerProperty: number;
+    if (propertyCount < 100) {
+      pricePerProperty = 4.99;
+    } else if (propertyCount < 500) {
+      pricePerProperty = 3.49;
+    } else if (propertyCount < 1000) {
+      pricePerProperty = 2.49;
+    } else {
+      pricePerProperty = 1.99;
+    }
+    const baseTotal = propertyCount * pricePerProperty;
+    
+    // Calculate add-on costs
+    let addOnTotal = 0;
+    if (selectedAddOns.propertyManager.includes('addon_verified_checkin')) {
+      addOnTotal += 19.99; // Monthly unlimited plan
+    }
+    if (selectedAddOns.propertyManager.includes('addon_smartdust')) {
+      // This is per asset per year, estimate 10 assets per property
+      addOnTotal += (propertyCount * 10 * 7.99) / 12; // Convert annual to monthly
+    }
+    if (selectedAddOns.propertyManager.includes('addon_tenant_portal')) {
+      // Estimate 2 tenants per property average
+      addOnTotal += propertyCount * 2 * 0.99;
+    }
+    if (selectedAddOns.propertyManager.includes('addon_annual_report')) {
+      addOnTotal += (propertyCount * 24.99) / 12; // Convert annual to monthly
+    }
+    
+    const total = baseTotal + addOnTotal;
+    
+    return (
+      <div>
+        <div className="text-lg font-semibold text-muted-foreground">
+          ${pricePerProperty}/property/mo
+        </div>
+        <div className="text-2xl font-bold">
+          ${total.toLocaleString()}/mo total
+        </div>
+        {selectedAddOns.propertyManager.length > 0 && (
+          <div className="text-xs text-muted-foreground mt-1">
+            Base: ${baseTotal.toLocaleString()}/mo + Add-ons: ${addOnTotal.toFixed(2)}/mo
+          </div>
+        )}
       </div>
     );
   };
@@ -517,6 +576,105 @@ export default function PricingPage() {
               </Button>
             </CardFooter>
           </Card>
+
+          {/* Property Management Plan */}
+          <Card className="relative border-2 hover:border-primary/50 transition-all hover:shadow-2xl" data-testid="card-plan-property">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+              <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-1">
+                <Building2 className="h-3 w-3 mr-1" />
+                Multi-Property
+              </Badge>
+            </div>
+            
+            <CardHeader className="pt-8">
+              <CardTitle className="text-2xl flex items-center gap-2" data-testid="title-plan-property">
+                <Users className="h-6 w-6 text-blue-500" />
+                Property Management
+              </CardTitle>
+              <CardDescription data-testid="description-plan-property">
+                Scale with bulk property discounts
+              </CardDescription>
+              <div className="mt-4">
+                <Input
+                  type="number"
+                  value={propertyCount}
+                  onChange={(e) => setPropertyCount(parseInt(e.target.value) || 0)}
+                  min="1"
+                  placeholder="Number of properties"
+                  className="mb-2"
+                  data-testid="input-property-count"
+                />
+                <div data-testid="price-property-calculated">
+                  {calculatePropertyPrice()}
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  {propertyCount < 100 && `$4.99/property/month`}
+                  {propertyCount >= 100 && propertyCount < 500 && `$3.49/property/month for 100-499 properties`}
+                  {propertyCount >= 500 && propertyCount < 1000 && `$2.49/property/month for 500-999 properties`}
+                  {propertyCount >= 1000 && `$1.99/property/month for 1,000+ properties`}
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-muted-foreground">INCLUDED:</h4>
+                <ul className="space-y-2">
+                  {[
+                    "Worker Check-In/Out Tracking",
+                    "GPS Location Verification",
+                    "Task Assignment & Management",
+                    "Photo/Video Task Completion",
+                    "Tenant Issue Reporting Portal",
+                    "Multi-Property Dashboard",
+                    "Worker Activity Timeline",
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2" data-testid={`feature-property-${i}`}>
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Add-ons */}
+              <div className="pt-4 border-t space-y-3">
+                <h4 className="font-semibold text-sm">ADD-ONS:</h4>
+                
+                {[
+                  { id: 'addon_verified_checkin', name: 'Verified Check-In', price: '$0.25/check-in or $19.99/mo unlimited' },
+                  { id: 'addon_smartdust', name: 'SmartDust Anti-Theft', price: '$7.99/asset/year' },
+                  { id: 'addon_tenant_portal', name: 'Tenant Portal Premium', price: '$0.99/tenant/mo' },
+                  { id: 'addon_annual_report', name: 'Annual Property Report PDF', price: '$24.99/property/year' },
+                ].map((addon) => (
+                  <div key={addon.id} className="flex items-start gap-2">
+                    <Checkbox
+                      id={`property-${addon.id}`}
+                      checked={selectedAddOns.propertyManager.includes(addon.id)}
+                      onCheckedChange={() => toggleAddOn('propertyManager', addon.id)}
+                      data-testid={`checkbox-addon-property-${addon.id}`}
+                    />
+                    <Label htmlFor={`property-${addon.id}`} className="text-sm cursor-pointer">
+                      <div className="font-medium">{addon.name}</div>
+                      <div className="text-xs text-muted-foreground">{addon.price}</div>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+
+            <CardFooter>
+              <Button
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                size="lg"
+                onClick={() => handleSubscribe('property_manager_base', 'property_manager')}
+                disabled={onboardingMutation.isPending}
+                data-testid="button-subscribe-property"
+              >
+                {onboardingMutation.isPending ? "Processing..." : "Subscribe"}
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
 
         {/* Trust Signals */}
@@ -639,6 +797,15 @@ export default function PricingPage() {
         onComplete={handleOnboardingComplete}
         userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
         userEmail={user?.email || undefined}
+      />
+      <PropertyManagerOnboardingForm
+        open={onboardingModal?.type === 'property_manager'}
+        onClose={() => setOnboardingModal(null)}
+        onComplete={handleOnboardingComplete}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
+        userEmail={user?.email || undefined}
+        initialPropertyCount={propertyCount}
+        selectedAddOns={selectedAddOns.propertyManager}
       />
     </div>
   );
