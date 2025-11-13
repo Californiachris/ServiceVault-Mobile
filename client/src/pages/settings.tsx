@@ -21,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bell, Mail, Smartphone, BellOff, Trash2 } from "lucide-react";
+import { Loader2, Bell, Mail, Smartphone, BellOff, Trash2, Building2, Upload, Image as ImageIcon } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const notificationSettingsSchema = z.object({
@@ -53,11 +53,37 @@ interface User {
   notificationPreference?: string | null;
 }
 
+interface Contractor {
+  id: string;
+  companyName: string | null;
+  logoUrl: string | null;
+}
+
 export default function Settings() {
   const { toast } = useToast();
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ['/api/auth/user'],
+  });
+
+  const { data: contractor } = useQuery<Contractor>({
+    queryKey: ['/api/dashboard/contractor'],
+    enabled: user?.role === 'CONTRACTOR',
+    select: (data: any) => data?.contractor,
+  });
+
+  const [companyName, setCompanyName] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  // Initialize contractor state from data
+  useState(() => {
+    if (contractor?.companyName) {
+      setCompanyName(contractor.companyName);
+    }
+    if (contractor?.logoUrl) {
+      setLogoPreview(contractor.logoUrl);
+    }
   });
 
   const form = useForm<NotificationSettingsForm>({
@@ -94,6 +120,80 @@ export default function Settings() {
         variant: "destructive",
         title: "Update failed",
         description: error.message,
+      });
+    },
+  });
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Logo must be under 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveContractorBrandingMutation = useMutation({
+    mutationFn: async () => {
+      let logoUrl = contractor?.logoUrl || null;
+
+      // Upload logo if changed
+      if (logoFile) {
+        const uploadRes = await apiRequest('POST', '/api/upload/branding');
+        const uploadParams = await uploadRes.json();
+
+        const uploadResponse = await fetch(uploadParams.uploadURL, {
+          method: 'PUT',
+          headers: { 'Content-Type': logoFile.type },
+          body: logoFile,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload logo to storage');
+        }
+
+        logoUrl = uploadParams.objectPath;
+      }
+
+      return apiRequest('PATCH', '/api/contractors/me', {
+        companyName: companyName.trim(),
+        logoUrl,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/contractor'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      toast({
+        title: "Success",
+        description: "Company branding updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update company branding",
+        variant: "destructive",
       });
     },
   });
@@ -277,6 +377,90 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Contractor Branding - Only shown for contractors */}
+          {user?.role === 'CONTRACTOR' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Company Branding
+                </CardTitle>
+                <CardDescription>
+                  Customize your company logo for QR stickers and customer notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Company Name</Label>
+                  <Input
+                    id="companyName"
+                    placeholder="Your Company LLC"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    data-testid="input-company-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Company Logo</Label>
+                  <div className="flex items-start gap-4">
+                    {logoPreview && (
+                      <div className="flex-shrink-0">
+                        <div className="w-24 h-24 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="w-full h-full object-contain"
+                            data-testid="img-logo-preview"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('logo-upload')?.click()}
+                          className="w-full"
+                          data-testid="button-upload-logo"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          {logoPreview ? 'Change Logo' : 'Upload Logo'}
+                        </Button>
+                      </div>
+                      <input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        className="hidden"
+                        data-testid="input-logo-file"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        PNG, JPG up to 5MB. Will appear on QR stickers and customer emails.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => saveContractorBrandingMutation.mutate()}
+                    disabled={saveContractorBrandingMutation.isPending || !companyName.trim()}
+                    data-testid="button-save-branding"
+                  >
+                    {saveContractorBrandingMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Save Company Branding
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end gap-3">
             <Button

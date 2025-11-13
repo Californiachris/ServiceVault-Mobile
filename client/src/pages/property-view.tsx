@@ -135,6 +135,15 @@ export default function PropertyViewPage() {
                 </div>
               )}
             </div>
+            
+            {property.isOwner && (
+              <Button asChild size="lg" data-testid="button-upload-documents">
+                <a href="/tools/documents">
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload Documents
+                </a>
+              </Button>
+            )}
           </div>
 
           {/* Info Banner */}
@@ -256,14 +265,15 @@ export default function PropertyViewPage() {
           </div>
         ) : (
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Infrastructure Assets</h3>
-                <p className="text-muted-foreground">
-                  No infrastructure installations have been logged for this property yet.
-                </p>
-              </div>
+            <CardContent className="pt-12 pb-12 text-center">
+              <Wrench className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No Assets Yet</h3>
+              <p className="text-muted-foreground">
+                {property.isOwner 
+                  ? "Assets will appear here once they are registered to this property."
+                  : "This property doesn't have any registered infrastructure assets yet."
+                }
+              </p>
             </CardContent>
           </Card>
         )}

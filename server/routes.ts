@@ -214,6 +214,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update contractor branding
+  app.patch('/api/contractors/me', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get contractor profile
+      const contractor = await storage.getContractor(userId);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+
+      const { companyName, logoUrl } = req.body;
+      const updates: any = {};
+
+      if (companyName) {
+        updates.companyName = companyName.trim();
+      }
+      
+      if (logoUrl) {
+        updates.logoUrl = logoUrl;
+        
+        // Set ACL to make logo publicly readable
+        try {
+          await objectStorageService.trySetObjectEntityAclPolicy(logoUrl, {
+            owner: userId,
+            visibility: "public",
+          });
+        } catch (error) {
+          console.error("Error setting ACL for contractor logo:", error);
+          // Continue anyway - logo might still work
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await storage.updateContractor(contractor.id, updates);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating contractor branding:", error);
+      res.status(500).json({ error: "Failed to update contractor branding" });
+    }
+  });
+
   // Update user notification settings
   app.patch('/api/user/notification-settings', isAuthenticated, async (req: any, res) => {
     try {
