@@ -205,43 +205,94 @@ export default function FleetDashboard() {
         </div>
       </div>
 
-      {/* Overdue Maintenance Alert */}
-      {filteredOverdue.length > 0 && (
-        <div className="mb-6">
-          <Card className="border-l-4 border-l-red-500 bg-red-500/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-500">
-                <AlertTriangle className="h-5 w-5" />
-                <span>URGENT: Overdue Maintenance</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">
-                Critical maintenance past due — immediate attention required
-              </p>
-              <div className="space-y-2">
-                {filteredOverdue.slice(0, 3).map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border-l-2 border-l-red-500" data-testid={`overdue-maintenance-${idx}`}>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
-                      <p className="text-xs text-red-500 font-medium mt-1">
-                        {item.daysLate} {item.daysLate === 1 ? 'day' : 'days'} overdue
-                      </p>
-                    </div>
-                    <Badge className="bg-red-500 text-white">
-                      OVERDUE
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-              {filteredOverdue.length > 3 && (
-                <p className="text-xs text-red-500 mt-3 text-center font-medium">
-                  +{filteredOverdue.length - 3} more overdue items
+      {/* Compliance Alerts */}
+      {(filteredOverdue.length > 0 || filteredUpcoming.length > 0) && (
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Overdue Maintenance Alert */}
+          {filteredOverdue.length > 0 && (
+            <Card className="border-l-4 border-l-red-500 bg-red-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-500">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span>URGENT: Overdue Maintenance</span>
+                  <Badge className="ml-auto bg-red-500 text-white" data-testid="badge-overdue-count">
+                    {filteredOverdue.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Critical maintenance past due — immediate attention required
                 </p>
-              )}
-            </CardContent>
-          </Card>
+                <div className="space-y-2">
+                  {filteredOverdue.slice(0, 3).map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border-l-2 border-l-red-500" data-testid={`overdue-maintenance-${idx}`}>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
+                        <p className="text-xs text-red-500 font-medium mt-1">
+                          {item.daysLate} {item.daysLate === 1 ? 'day' : 'days'} overdue
+                        </p>
+                      </div>
+                      <Badge className="bg-red-500 text-white">
+                        OVERDUE
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                {filteredOverdue.length > 3 && (
+                  <Button variant="ghost" size="sm" className="w-full mt-3 text-red-500 hover:text-red-600" asChild>
+                    <Link href="/tools/reminders">
+                      View all {filteredOverdue.length} overdue items →
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Upcoming Compliance Deadlines */}
+          {filteredUpcoming.length > 0 && (
+            <Card className="border-l-4 border-l-yellow-500 bg-yellow-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
+                  <Clock className="h-5 w-5" />
+                  <span>Upcoming Compliance Deadlines</span>
+                  <Badge className="ml-auto bg-yellow-500 text-white" data-testid="badge-upcoming-count">
+                    {filteredUpcoming.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Schedule these maintenance items soon to stay compliant
+                </p>
+                <div className="space-y-2">
+                  {filteredUpcoming.slice(0, 3).map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border-l-2 border-l-yellow-500" data-testid={`upcoming-maintenance-${idx}`}>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-500 font-medium mt-1">
+                          Due {new Date(item.dueAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="border-yellow-500 text-yellow-600 dark:text-yellow-500">
+                        UPCOMING
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                {filteredUpcoming.length > 3 && (
+                  <Button variant="ghost" size="sm" className="w-full mt-3 text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400" asChild>
+                    <Link href="/tools/reminders">
+                      View all {filteredUpcoming.length} upcoming items →
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -416,30 +467,96 @@ export default function FleetDashboard() {
                         </div>
                       ) : (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {filteredAssets.map((asset: any) => (
-                            <div
-                              key={asset.id}
-                              className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                              data-testid={`asset-card-${asset.id}`}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-semibold">{asset.name || 'Unnamed Asset'}</h4>
-                                <Badge
-                                  variant={asset.status === 'ACTIVE' ? 'default' : 'secondary'}
-                                  className="text-xs"
-                                >
-                                  {asset.status}
-                                </Badge>
+                          {filteredAssets.map((asset: any) => {
+                            // Calculate days since last service
+                            const daysSinceService = asset.lastServicedAt 
+                              ? Math.floor((Date.now() - new Date(asset.lastServicedAt).getTime()) / (1000 * 60 * 60 * 24))
+                              : null;
+                            
+                            // Determine health status based on days since service
+                            const getHealthStatus = () => {
+                              if (!daysSinceService) return { label: 'Unknown', color: 'bg-gray-500' };
+                              if (daysSinceService <= 30) return { label: 'Excellent', color: 'bg-green-500' };
+                              if (daysSinceService <= 90) return { label: 'Good', color: 'bg-blue-500' };
+                              if (daysSinceService <= 180) return { label: 'Fair', color: 'bg-yellow-500' };
+                              return { label: 'Overdue', color: 'bg-red-500' };
+                            };
+                            
+                            const healthStatus = getHealthStatus();
+                            
+                            return (
+                              <div
+                                key={asset.id}
+                                className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors relative"
+                                data-testid={`asset-card-${asset.id}`}
+                              >
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="font-semibold">{asset.name || 'Unnamed Asset'}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className={`w-2 h-2 rounded-full ${healthStatus.color}`}
+                                      title={`Health: ${healthStatus.label}`}
+                                      data-testid={`health-indicator-${asset.id}`}
+                                    />
+                                    <Badge
+                                      variant={asset.status === 'ACTIVE' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {asset.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  {asset.manufacturer || 'Unknown make'} • {asset.model || 'Unknown model'}
+                                </p>
+                                
+                                {/* Usage Tracking Metrics */}
+                                {(asset.operatingHours || asset.mileage || asset.runtime) && (
+                                  <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-muted/30 rounded-md">
+                                    {asset.operatingHours && (
+                                      <div className="text-xs" data-testid={`operating-hours-${asset.id}`}>
+                                        <span className="text-muted-foreground">Hours:</span>
+                                        <span className="ml-1 font-medium">{asset.operatingHours}</span>
+                                      </div>
+                                    )}
+                                    {asset.mileage && (
+                                      <div className="text-xs" data-testid={`mileage-${asset.id}`}>
+                                        <span className="text-muted-foreground">Miles:</span>
+                                        <span className="ml-1 font-medium">{asset.mileage}</span>
+                                      </div>
+                                    )}
+                                    {asset.runtime && (
+                                      <div className="text-xs" data-testid={`runtime-${asset.id}`}>
+                                        <span className="text-muted-foreground">Runtime:</span>
+                                        <span className="ml-1 font-medium">{asset.runtime}h</span>
+                                      </div>
+                                    )}
+                                    {asset.wearCycles && (
+                                      <div className="text-xs" data-testid={`wear-cycles-${asset.id}`}>
+                                        <span className="text-muted-foreground">Cycles:</span>
+                                        <span className="ml-1 font-medium">{asset.wearCycles}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                <div className="space-y-1">
+                                  {daysSinceService !== null && (
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <Wrench className="h-3 w-3 text-muted-foreground" />
+                                      <span className={daysSinceService > 180 ? 'text-red-500 font-medium' : 'text-muted-foreground'} data-testid={`days-since-service-${asset.id}`}>
+                                        Last service: {daysSinceService} days ago
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Added {new Date(asset.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3">
-                                {asset.manufacturer || 'Unknown make'} • {asset.model || 'Unknown model'}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                <span>Added {new Date(asset.createdAt).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>

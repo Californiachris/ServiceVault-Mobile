@@ -95,8 +95,26 @@ export default function PricingPage() {
 
   const calculateFleetPrice = () => {
     if (fleetAssetCount >= 10000) return "Contact Sales";
-    const pricePerAsset = fleetAssetCount >= 1000 ? 2 : 3;
-    return `$${(fleetAssetCount * pricePerAsset).toLocaleString()}/year`;
+    let pricePerAsset: number;
+    if (fleetAssetCount <= 250) {
+      pricePerAsset = 4.99;
+    } else if (fleetAssetCount <= 1000) {
+      pricePerAsset = 3.49;
+    } else {
+      // For 1000+, use midpoint of $1.99-$2.49 range
+      pricePerAsset = 2.24;
+    }
+    const total = fleetAssetCount * pricePerAsset;
+    return (
+      <div>
+        <div className="text-lg font-semibold text-muted-foreground">
+          ${pricePerAsset}/asset/mo
+        </div>
+        <div className="text-2xl font-bold">
+          ${total.toLocaleString()}/mo total
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -425,12 +443,13 @@ export default function PricingPage() {
                   className="mb-2"
                   data-testid="input-fleet-asset-count"
                 />
-                <div className="text-3xl font-bold" data-testid="price-fleet-calculated">
+                <div data-testid="price-fleet-calculated">
                   {calculateFleetPrice()}
                 </div>
                 <div className="text-sm text-muted-foreground mt-2">
-                  {fleetAssetCount < 1000 && `$3/asset for 1-999 assets`}
-                  {fleetAssetCount >= 1000 && fleetAssetCount < 10000 && `$2/asset for 1,000+ assets`}
+                  {fleetAssetCount <= 250 && `$4.99/asset/month for up to 250 assets`}
+                  {fleetAssetCount > 250 && fleetAssetCount <= 1000 && `$3.49/asset/month for 251-1,000 assets`}
+                  {fleetAssetCount > 1000 && fleetAssetCount < 10000 && `$1.99-$2.49/asset/month for 1,000+ assets`}
                   {fleetAssetCount >= 10000 && `Custom pricing for enterprise`}
                 </div>
               </div>

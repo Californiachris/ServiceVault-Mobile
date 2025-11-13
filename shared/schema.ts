@@ -133,6 +133,13 @@ export const assets = pgTable("assets", {
   fleetCategoryId: uuid("fleet_category_id").references(() => fleetAssetCategories.id),
   location: varchar("location"), // For fleet: warehouse, site, etc.
   
+  // Fleet usage tracking fields
+  operatingHours: decimal("operating_hours"), // Total operating hours
+  mileage: decimal("mileage"), // Total mileage/kilometers
+  runtime: decimal("runtime"), // Runtime hours for equipment
+  wearCycles: integer("wear_cycles"), // Number of wear cycles (e.g., door openings, engine starts)
+  lastServicedAt: timestamp("last_serviced_at"), // Date of last service for health calculations
+  
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
