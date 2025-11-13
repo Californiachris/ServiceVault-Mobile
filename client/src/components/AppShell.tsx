@@ -18,6 +18,7 @@ import {
   LogOut,
   User
 } from "lucide-react";
+import serviceVaultLogo from "@assets/servicevault-logo.png";
 
 interface AppShellProps {
   children: ReactNode;
@@ -82,7 +83,7 @@ export default function AppShell({ children }: AppShellProps) {
           {/* Logo */}
           <div className="flex items-center gap-2 h-16 px-6 border-b border-border">
             <img 
-              src="/attached_assets/servicevault-logo.png" 
+              src={serviceVaultLogo} 
               alt="ServiceVault Logo" 
               className="h-10 w-10 object-contain"
             />

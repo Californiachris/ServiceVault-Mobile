@@ -14,6 +14,7 @@ import {
   Sparkles, Shield, Users, Building2, Zap, Check, QrCode, 
   Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2
 } from "lucide-react";
+import serviceVaultLogo from "@assets/servicevault-logo.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -28,7 +29,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-3" data-testid="logo-servicevault">
             <img 
-              src="/attached_assets/servicevault-logo.png" 
+              src={serviceVaultLogo} 
               alt="ServiceVault Logo" 
               className="h-14 w-14 object-contain"
             />
