@@ -283,7 +283,7 @@ export default function HomeownerDashboard() {
               {totalAssets}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Protected by FixTrack
+              Protected by ServiceVault
             </p>
           </CardContent>
         </Card>

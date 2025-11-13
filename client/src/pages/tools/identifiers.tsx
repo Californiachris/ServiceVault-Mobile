@@ -32,7 +32,7 @@ export default function IdentifiersPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Sticker Management</h1>
           <p className="text-muted-foreground">
-            View your claimed FixTrack Pro stickers and subscription quota. Stickers are shipped with your subscription plan.
+            View your claimed ServiceVault stickers and subscription quota. Stickers are shipped with your subscription plan.
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export default function IdentifiersPage() {
                 <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Stickers Claimed</h3>
                 <p className="text-muted-foreground mb-4">
-                  Scan FixTrack Pro stickers to claim them and start tracking assets.
+                  Scan ServiceVault stickers to claim them and start tracking assets.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Pre-printed stickers are shipped with your subscription. Check your order confirmation email for details.
@@ -130,7 +130,7 @@ export default function IdentifiersPage() {
         {/* Usage Instructions */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>How FixTrack Pro Stickers Work</CardTitle>
+            <CardTitle>How ServiceVault Stickers Work</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">

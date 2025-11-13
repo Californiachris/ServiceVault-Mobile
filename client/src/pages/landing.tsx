@@ -291,7 +291,7 @@ export default function Landing() {
                 1
               </div>
               <h3 className="text-xl font-bold mb-3">Subscribe & Receive</h3>
-              <p className="text-muted-foreground">Choose your plan. We ship pre-printed FixTrack stickers to you.</p>
+              <p className="text-muted-foreground">Choose your plan. We ship pre-printed ServiceVault stickers to you.</p>
             </div>
 
             <div className="text-center">
@@ -318,11 +318,11 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-4xl font-bold mb-6">Ready to Start Tracking?</h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of homeowners, contractors, and fleet managers using FixTrack Pro
+            Join thousands of homeowners, contractors, and fleet managers using ServiceVault
           </p>
           <Button 
             size="lg"
-            className="text-lg px-12 py-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            className="text-lg px-12 py-6 bg-gradient-to-r from-cyan-500 to-yellow-500 hover:from-cyan-600 hover:to-yellow-600"
             onClick={() => setLocation("/pricing")}
             data-testid="button-cta-view-pricing"
           >
@@ -340,7 +340,7 @@ export default function Landing() {
           <p className="text-xs font-medium text-muted-foreground tracking-wide">
             PATENT PENDING
           </p>
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} FixTrack Pro. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} ServiceVault. All rights reserved.</p>
         </div>
       </div>
 
@@ -483,7 +483,7 @@ export default function Landing() {
               <div>
                 <h4 className="font-semibold mb-1">Receive & Start Scanning</h4>
                 <p className="text-sm text-muted-foreground">
-                  We ship pre-printed FixTrack stickers to you (no printing required). 
+                  We ship pre-printed ServiceVault stickers to you (no printing required). 
                   Apply them to your assets and scan with your phone to start tracking instantly.
                 </p>
               </div>
@@ -521,7 +521,7 @@ export default function Landing() {
               <div>
                 <h4 className="font-semibold mb-1">Call Us Anytime</h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Speak with a real person who understands FixTrack Pro
+                  Speak with a real person who understands ServiceVault
                 </p>
                 <a 
                   href="tel:+17602695750" 

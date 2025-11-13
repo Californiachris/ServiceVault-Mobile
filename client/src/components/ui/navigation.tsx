@@ -81,12 +81,12 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" data-testid="link-home">
             <img 
-              src="/logo.png" 
-              alt="FixTrack Logo" 
+              src="/attached_assets/servicevault-logo.png" 
+              alt="ServiceVault Logo" 
               className="h-10 w-10 object-contain hover:opacity-90 transition-opacity"
             />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-              FixTrack Pro
+            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+              ServiceVault
             </span>
           </Link>
           
