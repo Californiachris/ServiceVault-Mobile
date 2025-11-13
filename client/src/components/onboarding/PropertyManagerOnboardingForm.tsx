@@ -278,13 +278,11 @@ export function PropertyManagerOnboardingForm({
                       id="propertyCount"
                       type="number"
                       min="1"
-                      readOnly
                       {...form.register("propertyCount", { valueAsNumber: true })}
-                      className="bg-muted cursor-not-allowed"
                       data-testid="input-pm-property-count"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Set on pricing page - return there to adjust
+                      Enter the total number of properties you manage
                     </p>
                     {form.formState.errors.propertyCount && (
                       <p className="text-sm text-destructive mt-1">{form.formState.errors.propertyCount.message}</p>
