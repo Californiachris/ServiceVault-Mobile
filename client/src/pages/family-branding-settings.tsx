@@ -234,7 +234,7 @@ export default function FamilyBrandingSettingsPage() {
                       <div>
                         <div className="text-2xl font-bold">{familyName}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          FixTrack Protected
+                          ServiceVault Protected
                         </div>
                       </div>
                     )}

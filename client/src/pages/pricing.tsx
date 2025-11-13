@@ -16,6 +16,7 @@ import { HomeownerOnboardingForm } from "@/components/onboarding/HomeownerOnboar
 import { ContractorOnboardingForm } from "@/components/onboarding/ContractorOnboardingForm";
 import { FleetOnboardingForm } from "@/components/onboarding/FleetOnboardingForm";
 import { PropertyManagerOnboardingForm } from "@/components/onboarding/PropertyManagerOnboardingForm";
+import serviceVaultLogo from "@assets/servicevault-logo.png";
 
 export default function PricingPage() {
   const [, setLocation] = useLocation();
@@ -186,12 +187,12 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
-              src="/logo.png" 
-              alt="FixTrack Logo" 
+              src={serviceVaultLogo} 
+              alt="ServiceVault Logo" 
               className="h-10 w-10 object-contain"
             />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-              FixTrack Pro
+            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+              ServiceVault
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -758,19 +759,19 @@ export default function PricingPage() {
           <div className="text-center space-y-3">
             <div className="flex items-center justify-center gap-2">
               <img 
-                src="/logo.png" 
-                alt="FixTrack Logo" 
+                src={serviceVaultLogo} 
+                alt="ServiceVault Logo" 
                 className="h-8 w-8 object-contain"
               />
-              <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-                FixTrack Pro
+              <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+                ServiceVault
               </span>
             </div>
             <p className="text-xs font-medium text-muted-foreground tracking-wide">
               PATENT PENDING
             </p>
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} FixTrack Pro. All rights reserved.
+              © {new Date().getFullYear()} ServiceVault. All rights reserved.
             </p>
           </div>
         </div>

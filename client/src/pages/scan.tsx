@@ -377,7 +377,7 @@ export default function Scan() {
       }
     }
     
-    // Normal FixTrack asset code handling
+    // Normal ServiceVault asset code handling
     setScannedCode(code);
     setIsScanning(false);
     setShowInstallForm(false);

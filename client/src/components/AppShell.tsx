@@ -154,7 +154,7 @@ export default function AppShell({ children }: AppShellProps) {
                 Patent Pending
               </p>
               <p className="text-[9px] text-muted-foreground/40 text-center px-2 mt-1">
-                © {new Date().getFullYear()} FixTrack Pro
+                © {new Date().getFullYear()} ServiceVault
               </p>
             </div>
           </div>
@@ -165,12 +165,12 @@ export default function AppShell({ children }: AppShellProps) {
       <div className="lg:hidden sticky top-0 z-[100] flex items-center justify-between h-16 px-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">
           <img 
-            src="/logo.png" 
-            alt="FixTrack Logo" 
+            src={serviceVaultLogo} 
+            alt="ServiceVault Logo" 
             className="h-8 w-8 object-contain"
           />
-          <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-            FixTrack Pro
+          <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+            ServiceVault
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -198,12 +198,12 @@ export default function AppShell({ children }: AppShellProps) {
               {/* Mobile Logo */}
               <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0">
                 <img 
-                  src="/logo.png" 
-                  alt="FixTrack Logo" 
+                  src={serviceVaultLogo} 
+                  alt="ServiceVault Logo" 
                   className="h-10 w-10 object-contain"
                 />
-                <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-orange-400 to-orange-500 bg-clip-text text-transparent">
-                  FixTrack Pro
+                <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+                  ServiceVault
                 </span>
               </div>
 
@@ -271,7 +271,7 @@ export default function AppShell({ children }: AppShellProps) {
                     Patent Pending
                   </p>
                   <p className="text-[9px] text-muted-foreground/40 text-center px-2 mt-1">
-                    © {new Date().getFullYear()} FixTrack Pro
+                    © {new Date().getFullYear()} ServiceVault
                   </p>
                 </div>
               </div>

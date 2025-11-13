@@ -111,7 +111,7 @@ export default function PropertyViewPage() {
                     </h1>
                     <Badge variant="secondary" className="mt-1">
                       <Shield className="mr-1 h-3 w-3" />
-                      FixTrack Protected
+                      ServiceVault Protected
                     </Badge>
                   </div>
                 </div>

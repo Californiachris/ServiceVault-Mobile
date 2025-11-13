@@ -81,7 +81,7 @@ export default function AssetView() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="h-6 w-6 text-cyan-400" />
-            <span className="text-sm font-medium text-cyan-400">FixTrack Verified Asset</span>
+            <span className="text-sm font-medium text-cyan-400">ServiceVault Verified Asset</span>
           </div>
           <h1 className="text-4xl font-bold text-white mb-2" data-testid="text-asset-name">
             {asset.name}
