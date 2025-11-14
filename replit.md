@@ -2,18 +2,7 @@
 
 ## Overview
 
-ServiceVault is a premium asset tracking platform for contractors, homeowners, and property managers, designed to ensure tamper-resistant asset logging using QR/NFC stickers. It incorporates AI-powered warranty parsing, predictive maintenance reminders, and a hash-chain for immutable event logging. The platform operates on a subscription model with quota enforcement and an admin system for physical sticker fulfillment.
-
-**Key Capabilities:**
-- **Tamper-Resistant Logging:** Contractors log installations and services with photos by scanning pre-printed QR/NFC stickers.
-- **Comprehensive Property History:** Homeowners access a complete property history, upload warranties, and receipts via a master QR.
-- **Property Management:** Property managers oversee multiple properties, assign tasks to workers, track check-ins/outs with GPS verification, and receive tenant issue reports via public QR codes.
-- **Worker Check-In/Out:** Workers scan QR codes to check in/out of properties, complete assigned tasks with photos/videos, and generate visit summaries.
-- **AI-Powered Automation:** AI extracts warranty dates, generates predictive maintenance reminders for all stakeholders.
-- **Immutable Records:** A blockchain-inspired hash chain ensures the integrity and tamper-proof nature of asset history.
-- **Subscription-Based Model:** Quota-enforced subscription plans managed through an admin fulfillment system for physical sticker orders, including bulk discounts for property managers (100+, 500+, 1000+ properties).
-
-The application adheres to enterprise SaaS standards, featuring a React frontend, an Express backend, PostgreSQL with Drizzle ORM, Stripe for payments, Google Cloud Storage, Replit Auth, and OpenAI Vision API for document parsing.
+ServiceVault is a premium asset tracking platform for contractors, homeowners, and property managers, focusing on tamper-resistant logging via QR/NFC stickers. It provides AI-powered warranty parsing, predictive maintenance reminders, and an immutable hash-chain for event logging. The platform operates on a subscription model with quota enforcement and an admin system for physical sticker fulfillment. It supports comprehensive property history, property management features like task assignment and GPS-verified check-ins, and AI-driven automation for all stakeholders. The application adheres to enterprise SaaS standards, utilizing a React frontend, Express backend, PostgreSQL with Drizzle ORM, Stripe for payments, Google Cloud Storage, Replit Auth, and OpenAI Vision API.
 
 ## User Preferences
 
@@ -23,173 +12,26 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 ## System Architecture
 
 ### Frontend Architecture
-- **Technology Stack:** React 18, TypeScript, Vite, Wouter for routing, TanStack Query, Shadcn UI (Radix UI primitives), Tailwind CSS.
+- **Technology Stack:** React 18, TypeScript, Vite, Wouter, TanStack Query, Shadcn UI (Radix UI primitives), Tailwind CSS.
 - **Design Patterns:** Component-based, custom hooks, query-based data fetching, path aliases.
-- **Key Features:** Dark mode, responsive design, QR code scanning, file upload with progress, real-time form validation.
-- **Core Workflows:** Contractor install form, public asset view with timeline, service event logging.
-- **UI/UX Decisions:** Premium branding, role-based dashboards and navigation, interactive trust badges, automatic scroll-to-top, mobile-first design, sophisticated camera permission system.
+- **UI/UX Decisions:** Dark mode, responsive design, premium branding, role-based dashboards, interactive trust badges, mobile-first design, sophisticated camera permission system.
+- **Core Workflows:** Contractor install form, public asset view with timeline, service event logging, worker check-in/out, tenant reporting, and subscription management.
 
 ### Backend Architecture
 - **Technology Stack:** Node.js, Express, TypeScript, Drizzle ORM with Neon PostgreSQL, WebSockets.
 - **Design Patterns:** RESTful API, middleware, Replit OIDC authentication, session management, storage abstraction.
-- **Core Modules:** Organized modules for routes, storage, database, authentication, object storage/ACL, hash chain, OpenAI client, and rate limiting.
-- **API Structure:** Authentication, scanning, dashboard stats, payments, and specific endpoints for assets, documents, inspections, reminders.
-- **Property Manager API Routes:**
-  - Manager CRUD: properties, workers, tasks (with filters), visits history, tenant reports
-  - Worker Routes: authenticated check-in/out using worker identity verification
-  - Public Routes: tenant report submission via master QR code
+- **Core Modules:** Routes, storage, database, authentication, object storage/ACL, hash chain, OpenAI client, and rate limiting.
+- **API Structure:** Comprehensive endpoints for assets, documents, inspections, reminders, payments, and specific modules for property management (properties, workers, tasks, visits, tenant reports).
 
 ### Data Storage
 - **Database:** PostgreSQL (Neon serverless) with Drizzle ORM.
-- **Core Tables:** `users`, `sessions`, `contractors`, `properties`, `identifiers`, `assets`, `events`, `documents`, `reminders`, `inspections`, `transfers`, `subscriptions`, along with tables for contractor jobs, fleet management, notifications, and property management.
-- **Property Management Tables:** `managedProperties` (with unique master QR codes), `workers`, `propertyTasks`, `propertyTaskCompletions`, `propertyVisits` (authoritative for check-in/out timestamps and GPS data), `tenantReports`.
-- **Relationships:** Many-to-one and one-to-many relationships defined between core entities to support complex data structures. Property Management uses composite unique constraint (property_manager_id, property_id) to allow property reassignment over time.
+- **Core Tables:** `users`, `sessions`, `contractors`, `properties`, `identifiers`, `assets`, `events`, `documents`, `reminders`, `inspections`, `transfers`, `subscriptions`. Dedicated tables for `managedProperties`, `workers`, `propertyTasks`, `propertyVisits`, and `tenantReports` support property management functionality.
 
 ### Authentication & Authorization
 - **Replit Authentication:** OIDC integration, session-based authentication with PostgreSQL store, Passport.js, JWT.
-- **Access Control:** Role-based access (HOMEOWNER, CONTRACTOR, INSPECTOR, ADMIN, FLEET, PROPERTY_MANAGER, WORKER), object-level ACL for Google Cloud Storage, protected routes with middleware.
-- **Entitlement System:** Feature-based access control using getUserEntitlements service, requireEntitlement middleware, and useEntitlements hook. All premium features protected at both frontend and backend layers.
-- **Worker Identity Verification:** Worker check-in/out uses authenticated user identity (req.user.claims.sub → workers.userId) to prevent privilege escalation.
-- **Security Features:** Rate limiting on AI parsing, input validation, hash chain integrity, admin role enforcement, worker authorization checks, entitlement enforcement.
-
-## Recent Implementations (November 2025)
-
-**Public Marketing Pages & Auth Redirect Flow (COMPLETED - November 14, 2025)**
-- Created 4 premium welcome pages at `/solutions/*` namespace:
-  - `/solutions/contractors` → ContractorWelcome
-  - `/solutions/homeowners` → HomeownerWelcome
-  - `/solutions/fleet` → FleetWelcome
-  - `/solutions/property-managers` → PropertyManagerWelcome
-- All pages feature complete SEO (title, meta descriptions, OG tags, Twitter cards)
-- Landing page role cards route to corresponding `/solutions/*` pages
-- Implemented auth redirect flow with return path preservation:
-  - Backend: `/api/login` accepts `?redirect=` parameter and stores in session
-  - Backend: `/api/callback` custom handler uses stored redirect path
-  - Frontend: Passes current location when redirecting to login
-  - Session type extended to support `redirectAfterLogin` property
-- Routing architecture: Public marketing (`/solutions/*`) cleanly separated from authenticated dashboards (`/property-manager`, `/dashboard`, etc.)
-- Protected route logic: Specific dashboard routes require authentication, preserves intended destination post-login
-- Marketing funnel flow: Landing card → Welcome page → Get Started/Pricing → Login → Dashboard
-
-**Contractor Experience Redesign (COMPLETED - November 14, 2025)**
-- New 3-tier pricing structure: Starter ($49.99/mo, 50 stickers), Pro ($69.99/mo, 100 stickers), Elite ($120/mo, 250 stickers)
-- Value-first onboarding flow: Welcome page → Plan Selection → Payment → Dashboard
-- ContractorWelcome page with hero section, benefit bullets, "How It Works" section
-- ContractorPlanSelection page with 3 professional plan cards and "Most Popular" badge on Pro tier
-- Updated pricing.tsx contractor section with new 3-tier structure
-- Flow logic: contractors without subscriptions automatically redirect to welcome page
-- Backend fully integrated: server/routes.ts handles all 3 tiers with correct quota calculations (50/100/250)
-- All backend mappings updated: priceIds, roleMap, monthlyQuota, quotaTotal calculations
-- SEO meta descriptions updated to reflect new contractor pricing
-- Architect review: PASSED - meets enterprise SaaS standards
-
-**Role-Specific Pricing Pages & Isolated Conversion Funnels (COMPLETED - November 14, 2025)**
-- Created 4 isolated pricing pages at `/solutions/:role/pricing` namespace:
-  - `/solutions/contractors/pricing` → ContractorPricing (3 tiers: $49.99/$69.99/$120)
-  - `/solutions/homeowners/pricing` → HomeownerPricing ($99 setup + $10/year)
-  - `/solutions/fleet/pricing` → FleetPricing ($4.99/asset/mo)
-  - `/solutions/property-managers/pricing` → PropertyManagerPricing ($4.99/property/mo with bulk discounts)
-- Conversion funnel isolation: Each role sees ONLY their specific pricing (no cross-contamination)
-- Updated all welcome page CTAs to route to role-specific pricing pages
-- Complete SEO implementation: unique titles, meta descriptions, OG tags, Twitter cards for each page
-- Premium card-based design with consistent spacing, typography, gradients
-- All CTAs route to `/pricing?plan=:tier` for Stripe checkout integration
-- Trust signals and back navigation on all pricing pages
-- Router updated: 4 new public routes added to App.tsx
-- Architect review: PASSED - enterprise SaaS quality, optimal conversion funnel flow
-- Marketing funnel now: Landing card → Welcome (`/solutions/:role`) → Role-Specific Pricing (`/solutions/:role/pricing`) → Stripe checkout
-
-**Welcome Pages Benefits Enhancement & UX Optimization (COMPLETED - November 14, 2025)**
-- Removed redundant "Built for Everyone" section from landing page (cleaner, more focused)
-- Created reusable BenefitsSection component (`client/src/components/marketing/BenefitsSection.tsx`)
-- Added compelling benefit bullets to all 4 welcome pages positioned BEFORE primary CTA:
-  - **ContractorWelcome**: 6 benefits (branded stickers, AI reminders with YOUR branding, repeat business)
-  - **HomeownerWelcome**: 6 benefits (Master QR, AI warranty parsing, lifetime reminders, home history for buyers)
-  - **FleetWelcome**: 7 benefits (AI forecasting, compliance alerts, cost analytics, usage tracking)
-  - **PropertyManagerWelcome**: 7 benefits (GPS check-in, task assignments, tenant reporting, analytics)
-- Premium design: Role-specific gradient headings, green checkmark bullets, proper spacing
-- Optimal conversion flow: Hero → Icon Cards → **Detailed Benefits** → **CTA** → How It Works
-- User-identified UX fix: Moved benefits BEFORE CTA to follow proper psychological conversion principles
-- All pages maintain $10 billion quality standards throughout
-
-**Task 1: Subscription Entitlement Service (COMPLETED)**
-- Created shared/planFeatures.ts with feature definitions for all 4 subscription tiers
-- Implemented server/entitlements/service.ts (getUserEntitlements)
-- Created server/entitlements/middleware.ts (attachEntitlements, requireEntitlement)
-- Added /api/entitlements endpoint for frontend access
-- Created useEntitlements React Query hook
-- Built FeatureGate component for conditional UI rendering
-- All premium features now protected with double-layer security (frontend + backend)
-
-**Task 2: Homeowner Master QR System (COMPLETED)**
-- Added publicVisibility JSONB column to properties schema
-- Created Master QR backend endpoints:
-  - POST /api/properties/:id/master-identifier (generate/regenerate with entitlement check)
-  - POST /api/properties/:id/master-identifier/revoke (deactivate QR)
-  - GET /api/properties/:id/master-identifier (fetch status)
-  - GET /api/properties/public/history/:masterQR (public timeline with privacy filtering)
-  - GET /api/properties/:id/history (authenticated owner timeline)
-- Built MasterQRDialog component with three states (first-run, active, revoked)
-- Created PropertyHistory public page (/property/public/:masterQR)
-- Integrated Master QR management into HomeownerDashboard
-- Implemented privacy controls (showFullAddress, showContractors, showDocuments, showCosts)
-- Added proper entitlement checks, loading states, and regeneration logic
-- Security: Revoked QRs cannot be updated, only regenerated; all endpoints protected
-
-**Task 3: Worker GPS Check-In/Out System (COMPLETED)**
-- Added geofence configuration to managedProperties schema:
-  - geofenceCenter (JSONB with lat/lng)
-  - geofenceRadiusMeters (default 100m)
-  - geofenceManualOverrideAllowed (default true)
-- Created server/geofence.ts service:
-  - Haversine distance calculation
-  - evaluateGeofenceStatus with three states (ok, soft_warning, hard_block)
-- Backend API routes:
-  - GET /api/worker/visits/active (polling active visits)
-  - GET /api/worker/visits/:visitId (get specific visit)
-  - Enhanced POST /api/worker/check-in with GPS requirement, geofence validation, override handling
-  - Existing PATCH /api/worker/check-out/:visitId (updates with location, photos, summary)
-- Worker Portal frontend:
-  - WorkerAppShell layout with active visit indicator
-  - CheckInLanding page (manual QR code entry)
-  - CheckInByCode page (geolocation capture, geofence validation UI)
-  - ActiveVisit page (live timer, task checklist, notes, check-out)
-- Security: GPS location required, geofence properly enforced, manual override with reason logging
-- Mobile-first responsive design with proper error handling
-
-**Task 4: Tenant Report System (COMPLETED)**
-- Enhanced rate limiting in server/rateLimiter.ts:
-  - TENANT_REPORT: 5 reports per hour per IP per property
-  - TENANT_REPORT_DAILY: 20 reports per day per IP per property
-- Public tenant report submission endpoint:
-  - POST /api/public/tenant-report/:masterQrCode (no auth required)
-  - Entitlement check: validates property manager has tenantReports feature
-  - Rate limiting: hourly (5) and daily (20) limits per IP/property
-  - Returns 403 with upgrade message if subscription lapsed
-  - Returns 429 with retryAfter if rate limit exceeded
-- Public TenantReportForm page:
-  - Accessible at /property/report/:masterQR
-  - React Hook Form with Zod validation
-  - Optional contact info (name, phone, email)
-  - Issue type selection (8 categories)
-  - Priority selection
-  - Success confirmation page
-- Security: IP-based rate limiting, entitlement enforcement, abuse logging
-- Manager dashboard: Uses existing /property-manager/reports page with filtering
-
-**Task 5: AI Warranty Parsing (COMPLETED)**
-- Added warrantySummaries table to schema with parsedData JSONB, dates, confidence
-- Backend API endpoints:
-  - POST /api/warranties/parse (AI parsing with rate limiting: 20/hour per user)
-  - GET /api/warranties/property/:propertyId, GET /api/warranties/asset/:assetId
-- Auto-creates maintenance reminders from parsed maintenance schedule
-- Rate limiting via RATE_LIMITS.WARRANTY_PARSE  
-- Frontend integration in Homeowner Dashboard:
-  - React Query hook fetching warranty summaries for all properties
-  - Warranty Summaries card with AI confidence scores, parsed dates, maintenance reminders
-  - Loading skeletons, empty states, proper data-testid attributes
-  - Displays brand, model, warranty end date, auto-generated reminders count
-- Integration tested: Workflow running cleanly with no errors
+- **Access Control:** Role-based access (HOMEOWNER, CONTRACTOR, INSPECTOR, ADMIN, FLEET, PROPERTY_MANAGER, WORKER) with object-level ACL for Google Cloud Storage and protected routes.
+- **Entitlement System:** Feature-based access control using `getUserEntitlements` service and `requireEntitlement` middleware, ensuring premium features are protected at both frontend and backend layers.
+- **Security Features:** Rate limiting, input validation, hash chain integrity, and authorization checks.
 
 ## External Dependencies
 
@@ -197,6 +39,6 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 -   **Google Cloud Storage:** File and document storage, custom ACL, signed URLs.
 -   **Neon PostgreSQL:** Serverless PostgreSQL database.
 -   **Replit Auth:** Primary authentication provider (OIDC).
--   **OpenAI:** Vision API for AI-powered warranty document parsing (gpt-5 model), integrated via Replit AI Integrations.
+-   **OpenAI:** Vision API for AI-powered warranty document parsing (gpt-5 model).
 -   **Twilio:** SMS notifications for maintenance reminders.
 -   **Resend:** Transactional email notifications.
