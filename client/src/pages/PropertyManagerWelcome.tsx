@@ -203,7 +203,7 @@ export default function PropertyManagerWelcome() {
           <div className="text-center">
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-lg px-10 py-6 shadow-xl"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-lg px-10 py-6 shadow-xl"
               onClick={() => setLocation("/solutions/property-managers/pricing")}
               data-testid="button-choose-plan"
             >

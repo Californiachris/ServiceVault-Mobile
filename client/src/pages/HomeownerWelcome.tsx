@@ -199,7 +199,7 @@ export default function HomeownerWelcome() {
           <div className="text-center">
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-lg px-10 py-6 shadow-xl"
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-lg px-10 py-6 shadow-xl"
               onClick={() => setLocation("/solutions/homeowners/pricing")}
               data-testid="button-choose-plan"
             >
