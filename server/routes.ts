@@ -37,6 +37,7 @@ import { seedFleetData } from "./seedFleetData";
 // Demo data seeding disabled - users create their own data
 // import { seedDemoData } from "./seedDemoData";
 import { parseWarrantyDocument } from "./openaiClient";
+import { NotificationService } from "./notifications";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -58,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize object storage service
   const objectStorageService = new ObjectStorageService();
+  
+  // Initialize notification service
+  const notificationService = new NotificationService(storage);
 
   // Auth tier selection endpoint (stores tier in session before login redirect)
   app.post('/api/auth/selection', (req: any, res) => {
@@ -2606,6 +2610,21 @@ Instructions:
               // Update user role
               await storage.updateUser(userId, { role: userRole });
 
+              // Send admin notification for order fulfillment
+              const user = await storage.getUser(userId);
+              if (user) {
+                const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Customer';
+                await notificationService.sendAdminOrderNotification({
+                  userId,
+                  userEmail: user.email || '',
+                  userName,
+                  plan,
+                  addOns: addOnsList,
+                  stripeCustomerId: session.customer as string,
+                  subscriptionId: session.subscription as string,
+                }).catch(err => console.error('Failed to send admin notification:', err));
+              }
+
               // For homeowners: create property and master identifier
               if (plan === 'homeowner_base') {
                 const user = await storage.getUser(userId);
@@ -3684,17 +3703,69 @@ Instructions:
         return res.status(404).json({ error: "Asset not found" });
       }
 
-      // Get public event history (redacted)
-      const events = await storage.getAssetEvents(assetId);
-      const publicEvents = events.map(event => ({
-        id: event.id,
-        type: event.type,
-        data: event.data,
-        createdAt: event.createdAt,
-        // No createdBy to avoid exposing user IDs
-      }));
+      // SECURITY: Only show INFRASTRUCTURE assets publicly (not PERSONAL assets like jewelry)
+      if (asset.assetType !== 'INFRASTRUCTURE') {
+        return res.status(403).json({ error: "This asset is private and not publicly accessible" });
+      }
 
-      // Return public asset info without PII
+      // SECURITY: Only show assets installed by contractors (has installer branding)
+      if (!asset.installerId) {
+        return res.status(403).json({ error: "This asset is not publicly accessible" });
+      }
+
+      // ANALYTICS: Track QR scan event for contractor
+      try {
+        await storage.createEvent({
+          assetId,
+          type: 'QR_SCANNED',
+          data: {
+            source: 'public_view',
+            timestamp: new Date().toISOString(),
+            // userAgent redacted for privacy
+          },
+          createdBy: 'public-anonymous', // Safe identifier for analytics
+        });
+      } catch (error) {
+        // Don't fail the request if analytics fails
+        console.error('Failed to track QR scan:', error);
+      }
+
+      // Get public event history (filter out private/sensitive events)
+      const events = await storage.getAssetEvents(assetId);
+      const publicEventTypes = ['INSTALLED', 'SERVICED', 'INSPECTION_PASSED', 'WARRANTY_RENEWED', 'MAINTENANCE_COMPLETED'];
+      const publicEvents = events
+        .filter(event => publicEventTypes.includes(event.type))
+        .map(event => ({
+          id: event.id,
+          type: event.type,
+          data: event.data,
+          createdAt: event.createdAt,
+          // No createdBy to avoid exposing user IDs
+        }));
+
+      // Get contractor branding for permanent marketing
+      let contractorBranding = null;
+      if (asset.installerId) {
+        const contractor = await storage.getContractor(asset.installerId);
+        if (contractor) {
+          const contractorUser = await storage.getUser(contractor.userId);
+          if (contractorUser) {
+            contractorBranding = {
+              companyName: contractor.companyName || 'Contractor',
+              logoUrl: contractor.logoUrl,
+              phone: contractorUser.phone,
+              email: contractorUser.email,
+              website: contractor.website,
+            };
+          }
+        }
+      }
+
+      // Get documents and reminders
+      const documents = await storage.getAssetDocuments(assetId);
+      const reminders = await storage.getAssetReminders(assetId);
+
+      // Return public asset info with contractor branding for permanent marketing
       res.json({
         id: asset.id,
         name: asset.name,
@@ -3704,8 +3775,21 @@ Instructions:
         serial: asset.serial,
         installedAt: asset.installedAt,
         status: asset.status,
+        warrantyUntil: asset.warrantyUntil,
+        nextMaintenance: asset.nextMaintenance,
         events: publicEvents,
-        // No property owner info, no installer info
+        contractorBranding, // Show contractor info for "permanent marketing" value prop
+        documents: documents.map(doc => ({
+          id: doc.id,
+          title: doc.title,
+          type: doc.type,
+          uploadedAt: doc.uploadedAt,
+        })),
+        reminders: reminders.map(r => ({
+          title: r.title,
+          dueAt: r.dueAt,
+          status: r.status,
+        })),
       });
     } catch (error) {
       console.error("Error fetching public asset:", error);

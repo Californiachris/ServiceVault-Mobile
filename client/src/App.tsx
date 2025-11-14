@@ -11,7 +11,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Scan from "@/pages/scan";
-import AssetView from "@/pages/asset-view";
+import PublicAsset from "@/pages/public-asset";
 import PropertyView from "@/pages/property-view";
 import Pricing from "@/pages/pricing";
 import Settings from "@/pages/settings";
@@ -59,7 +59,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
-        <Route path="/asset/:id" component={AssetView} />
+        <Route path="/asset/:assetId" component={PublicAsset} />
         <Route path="/property/:id" component={PropertyView} />
       </Switch>
     );
@@ -99,7 +99,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/scan" component={Scan} />
-      <Route path="/asset/:id" component={AssetView} />
+      <Route path="/asset/:assetId" component={PublicAsset} />
       <Route path="/property/:id" component={PropertyView} />
       <Route component={NotFound} />
     </Switch>

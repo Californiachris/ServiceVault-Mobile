@@ -314,6 +314,158 @@ Your customer needs this service scheduled. Contact them to book the job!
     }
   }
 
+  async sendAdminOrderNotification(orderDetails: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+    plan: string;
+    addOns: string[];
+    shippingAddress?: {
+      street: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+    };
+    stripeCustomerId?: string;
+    subscriptionId?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    
+    if (!adminEmail) {
+      console.warn('ADMIN_EMAIL not configured - skipping admin notification');
+      return { success: false, error: 'Admin email not configured' };
+    }
+
+    if (!this.resend) {
+      console.warn('Resend not configured - skipping admin notification');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    const { userId, userEmail, userName, plan, addOns, shippingAddress, stripeCustomerId, subscriptionId } = orderDetails;
+    
+    // Determine if physical items need to be shipped
+    const physicalItems = addOns.filter(addon => 
+      addon.includes('nanotag') || 
+      addon.includes('sticker') || 
+      plan.includes('contractor') ||
+      plan.includes('homeowner')
+    );
+
+    const requiresShipping = physicalItems.length > 0 || plan.includes('contractor') || plan.includes('homeowner');
+
+    let addOnsHTML = '';
+    if (addOns.length > 0) {
+      addOnsHTML = `
+        <h3 style="color: #1a1a1a; margin-top: 20px;">Selected Add-Ons:</h3>
+        <ul style="color: #4a4a4a;">
+          ${addOns.map(addon => `<li><strong>${addon}</strong></li>`).join('')}
+        </ul>
+      `;
+    }
+
+    let shippingHTML = '';
+    if (requiresShipping) {
+      shippingHTML = `
+        <div style="background: #fff3cd; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <h3 style="color: #856404; margin: 0 0 12px 0;">⚠️ PHYSICAL FULFILLMENT REQUIRED</h3>
+          ${shippingAddress ? `
+            <p style="margin: 8px 0; color: #856404;"><strong>Ship to:</strong></p>
+            <div style="color: #856404; line-height: 1.6;">
+              ${userName}<br>
+              ${shippingAddress.street}<br>
+              ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}<br>
+              ${shippingAddress.country}
+            </div>
+          ` : `
+            <p style="color: #856404;"><strong>No shipping address provided</strong> - Contact customer for delivery address</p>
+          `}
+        </div>
+      `;
+    }
+
+    try {
+      await this.resend.emails.send({
+        from: 'ServiceVault Orders <orders@servicevault.app>',
+        to: adminEmail,
+        subject: `🎉 New Subscription Order: ${plan} - ${requiresShipping ? 'FULFILLMENT REQUIRED' : 'Digital Only'}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #00D9FF 0%, #FFB800 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">New Subscription Order!</h1>
+            </div>
+            
+            <div style="background: white; padding: 24px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+              <h2 style="color: #1a1a1a; margin-top: 0;">Customer Information</h2>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 8px 0; color: #888; width: 150px;"><strong>Name:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${userName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Email:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${userEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>User ID:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a; font-family: monospace; font-size: 12px;">${userId}</td>
+                </tr>
+                ${stripeCustomerId ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Stripe Customer:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a; font-family: monospace; font-size: 12px;">${stripeCustomerId}</td>
+                </tr>
+                ` : ''}
+                ${subscriptionId ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Subscription ID:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a; font-family: monospace; font-size: 12px;">${subscriptionId}</td>
+                </tr>
+                ` : ''}
+              </table>
+
+              <h3 style="color: #1a1a1a;">Plan Details</h3>
+              <div style="background: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+                <strong style="color: #1a1a1a; font-size: 16px;">${plan.replace(/_/g, ' ').toUpperCase()}</strong>
+              </div>
+
+              ${addOnsHTML}
+              ${shippingHTML}
+
+              ${requiresShipping ? `
+                <div style="background: #d4edda; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                  <h3 style="color: #155724; margin: 0 0 8px 0;">✅ Next Steps:</h3>
+                  <ol style="color: #155724; margin: 8px 0; padding-left: 20px;">
+                    <li>Prepare QR stickers for ${plan.replace(/_/g, ' ')}</li>
+                    ${addOns.includes('addon_nanotag_setup') || addOns.includes('addon_nanotag_monthly') ? '<li>Include NanoTag stickers in shipment</li>' : ''}
+                    <li>Ship to address above</li>
+                    <li>Mark subscription as fulfilled in admin panel</li>
+                  </ol>
+                </div>
+              ` : `
+                <div style="background: #e7f3ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                  <p style="color: #004085; margin: 0;"><strong>ℹ️ Digital-only subscription</strong> - No physical fulfillment required</p>
+                </div>
+              `}
+
+              <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
+              <p style="color: #888; font-size: 12px; margin: 0;">
+                ServiceVault Admin Notification<br>
+                This email was sent automatically when a customer subscribed.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      console.log(`Admin notification sent to ${adminEmail} for order ${subscriptionId || userId}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Admin notification send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   isConfigured(): { email: boolean; sms: boolean } {
     return {
       email: !!this.resend,
