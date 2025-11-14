@@ -201,9 +201,9 @@ export default function HomeownerWelcome() {
               size="lg"
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-lg px-10 py-6 shadow-xl"
               onClick={() => setLocation("/solutions/homeowners/pricing")}
-              data-testid="button-view-plans"
+              data-testid="button-choose-plan"
             >
-              View Plans
+              Choose Plan and Get Started
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
