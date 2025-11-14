@@ -150,7 +150,18 @@ export default function ContractorWelcome() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Contractors Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="contractor"
+          benefits={contractorBenefits}
+          testIdPrefix="contractor"
+        />
+
+        <div className="text-center">
           {/* Primary CTA */}
           <Button 
             size="lg"
@@ -175,15 +186,6 @@ export default function ContractorWelcome() {
             </button>
           </p>
         </div>
-
-        {/* Key Benefits */}
-        <BenefitsSection
-          heading="Why Contractors Love ServiceVault"
-          eyebrow="Key Benefits"
-          accentVariant="contractor"
-          benefits={contractorBenefits}
-          testIdPrefix="contractor"
-        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

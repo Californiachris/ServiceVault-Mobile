@@ -155,7 +155,18 @@ export default function PropertyManagerWelcome() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Property Managers Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="property-manager"
+          benefits={propertyManagerBenefits}
+          testIdPrefix="property-manager"
+        />
+
+        <div className="text-center">
           {/* Primary CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -192,15 +203,6 @@ export default function PropertyManagerWelcome() {
             </button>
           </p>
         </div>
-
-        {/* Key Benefits */}
-        <BenefitsSection
-          heading="Why Property Managers Love ServiceVault"
-          eyebrow="Key Benefits"
-          accentVariant="property-manager"
-          benefits={propertyManagerBenefits}
-          testIdPrefix="property-manager"
-        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

@@ -155,7 +155,18 @@ export default function FleetWelcome() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Fleet Managers Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="fleet"
+          benefits={fleetBenefits}
+          testIdPrefix="fleet"
+        />
+
+        <div className="text-center">
           {/* Primary CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -192,15 +203,6 @@ export default function FleetWelcome() {
             </button>
           </p>
         </div>
-
-        {/* Key Benefits */}
-        <BenefitsSection
-          heading="Why Fleet Managers Love ServiceVault"
-          eyebrow="Key Benefits"
-          accentVariant="fleet"
-          benefits={fleetBenefits}
-          testIdPrefix="fleet"
-        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

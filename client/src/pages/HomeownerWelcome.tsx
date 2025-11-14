@@ -151,7 +151,18 @@ export default function HomeownerWelcome() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Homeowners Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="homeowner"
+          benefits={homeownerBenefits}
+          testIdPrefix="homeowner"
+        />
+
+        <div className="text-center">
           {/* Primary CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -188,15 +199,6 @@ export default function HomeownerWelcome() {
             </button>
           </p>
         </div>
-
-        {/* Key Benefits */}
-        <BenefitsSection
-          heading="Why Homeowners Love ServiceVault"
-          eyebrow="Key Benefits"
-          accentVariant="homeowner"
-          benefits={homeownerBenefits}
-          testIdPrefix="homeowner"
-        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">
