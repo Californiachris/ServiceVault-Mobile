@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,48 @@ export default function Landing() {
   const [securityDialogOpen, setSecurityDialogOpen] = useState(false);
   const [setupDialogOpen, setSetupDialogOpen] = useState(false);
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+
+  useEffect(() => {
+    document.title = "ServiceVault - Premium Asset Tracking & Maintenance Platform";
+    
+    const updateMetaTags = () => {
+      const description = "Track every install, service, and asset with QR codes. AI-powered warranty parsing and maintenance reminders. Trusted by contractors, fleet managers, and property managers.";
+      const url = window.location.origin;
+      
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute('content', description);
+      
+      const ogTags = [
+        { property: 'og:title', content: 'ServiceVault - Premium Asset Tracking Platform' },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: url },
+        { property: 'og:site_name', content: 'ServiceVault' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'ServiceVault - Premium Asset Tracking Platform' },
+        { name: 'twitter:description', content: description },
+      ];
+      
+      ogTags.forEach(tag => {
+        const attr = tag.property ? 'property' : 'name';
+        const attrValue = tag.property || tag.name;
+        let metaTag = document.querySelector(`meta[${attr}="${attrValue}"]`);
+        if (!metaTag) {
+          metaTag = document.createElement('meta');
+          metaTag.setAttribute(attr, attrValue);
+          document.head.appendChild(metaTag);
+        }
+        metaTag.setAttribute('content', tag.content);
+      });
+    };
+    
+    updateMetaTags();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">

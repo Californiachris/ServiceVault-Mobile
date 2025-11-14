@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
@@ -22,6 +22,35 @@ export default function PricingPage() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    document.title = "Pricing Plans - ServiceVault Asset Tracking Platform";
+    
+    const description = "Choose your ServiceVault plan: Homeowner ($99), Contractor ($19.99/mo), Fleet ($4.99/asset), or Property Manager ($4.99/property). Premium asset tracking with AI-powered maintenance reminders.";
+    
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute('content', description);
+    
+    const ogTags = [
+      { property: 'og:title', content: 'Pricing Plans - ServiceVault' },
+      { property: 'og:description', content: description },
+    ];
+    
+    ogTags.forEach(tag => {
+      let metaTag = document.querySelector(`meta[property="${tag.property}"]`);
+      if (!metaTag) {
+        metaTag = document.createElement('meta');
+        metaTag.setAttribute('property', tag.property);
+        document.head.appendChild(metaTag);
+      }
+      metaTag.setAttribute('content', tag.content);
+    });
+  }, []);
   const [selectedAddOns, setSelectedAddOns] = useState<Record<string, string[]>>({
     homeowner: [],
     contractor: [],
