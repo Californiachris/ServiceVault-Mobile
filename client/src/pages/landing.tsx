@@ -336,63 +336,6 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* How It Works */}
-      <div className="py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Simple as 1-2-3</h2>
-            <p className="text-xl text-muted-foreground">Get started in minutes</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/50 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
-                1
-              </div>
-              <h3 className="text-xl font-bold mb-3">Subscribe & Receive</h3>
-              <p className="text-muted-foreground">Choose your plan. We ship pre-printed ServiceVault stickers to you.</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/50 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
-                2
-              </div>
-              <h3 className="text-xl font-bold mb-3">Scan & Upload</h3>
-              <p className="text-muted-foreground">Scan the code, log installation details, upload warranty photos.</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/50 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
-                3
-              </div>
-              <h3 className="text-xl font-bold mb-3">Access Forever</h3>
-              <p className="text-muted-foreground">Open the app anytime. See all your assets, warranties, and reminders instantly.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 py-24">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-4xl font-bold mb-6">Ready to Start Tracking?</h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of homeowners, contractors, and fleet managers using ServiceVault
-          </p>
-          <Button 
-            size="lg"
-            className="text-lg px-12 py-6 bg-gradient-to-r from-cyan-500 to-yellow-500 hover:from-cyan-600 hover:to-yellow-600"
-            onClick={() => setLocation("/pricing")}
-            data-testid="button-cta-view-pricing"
-          >
-            View Pricing
-          </Button>
-          <p className="text-sm text-muted-foreground mt-4">
-            Questions? Email trackfixes@gmail.com
-          </p>
-        </div>
-      </div>
-
       {/* Footer */}
       <div className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2">
