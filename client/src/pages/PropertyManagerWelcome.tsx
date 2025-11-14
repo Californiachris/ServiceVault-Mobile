@@ -76,7 +76,7 @@ export default function PropertyManagerWelcome() {
     
     ogTags.forEach(tag => {
       const attr = tag.property ? 'property' : 'name';
-      const attrValue = tag.property || tag.name;
+      const attrValue = (tag.property || tag.name)!;
       let metaTag = document.querySelector(`meta[${attr}="${attrValue}"]`);
       if (!metaTag) {
         metaTag = document.createElement('meta');
