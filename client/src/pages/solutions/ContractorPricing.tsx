@@ -5,9 +5,11 @@ import { useLocation } from "wouter";
 import { Check, ArrowLeft, Sparkles } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ContractorPricing() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     document.title = "Contractor Pricing - ServiceVault";
@@ -57,7 +59,21 @@ export default function ContractorPricing() {
     });
   }, []);
 
-  const handleSelectPlan = (plan: string) => {
+  const handleSelectPlan = async (plan: string) => {
+    if (!isAuthenticated) {
+      try {
+        await fetch('/api/auth/selection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ tier: plan }),
+        });
+      } catch (error) {
+        console.error("Error storing tier selection:", error);
+      }
+      window.location.href = '/api/login';
+      return;
+    }
     setLocation(`/pricing?plan=${plan}`);
   };
 

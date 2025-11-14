@@ -4,9 +4,11 @@ import { useLocation } from "wouter";
 import { Check, ArrowLeft, Home, Shield, Sparkles } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function HomeownerPricing() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     document.title = "Homeowner Pricing - ServiceVault";
@@ -56,7 +58,21 @@ export default function HomeownerPricing() {
     });
   }, []);
 
-  const handleSelectPlan = () => {
+  const handleSelectPlan = async () => {
+    if (!isAuthenticated) {
+      try {
+        await fetch('/api/auth/selection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ tier: 'homeowner' }),
+        });
+      } catch (error) {
+        console.error("Error storing tier selection:", error);
+      }
+      window.location.href = '/api/login';
+      return;
+    }
     setLocation("/pricing?plan=homeowner");
   };
 
