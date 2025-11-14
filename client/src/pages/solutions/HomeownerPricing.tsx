@@ -3,12 +3,18 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useLocation } from "wouter";
 import { Check, ArrowLeft, Home, Shield, Sparkles } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { HomeownerOnboardingForm } from "@/components/onboarding/HomeownerOnboardingForm";
 
 export default function HomeownerPricing() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
+  const [onboardingModal, setOnboardingModal] = useState<{ plan: string } | null>(null);
 
   useEffect(() => {
     document.title = "Homeowner Pricing - ServiceVault";
@@ -58,6 +64,27 @@ export default function HomeownerPricing() {
     });
   }, []);
 
+  const onboardingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/onboarding/complete", data);
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Welcome to ServiceVault!",
+        description: "Your account has been set up successfully.",
+      });
+      setLocation("/dashboard");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to complete sign-up",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSelectPlan = async () => {
     if (!isAuthenticated) {
       try {
@@ -73,7 +100,20 @@ export default function HomeownerPricing() {
       window.location.href = '/api/login';
       return;
     }
-    setLocation("/pricing?plan=homeowner");
+    setOnboardingModal({ plan: 'homeowner' });
+  };
+
+  const handleOnboardingComplete = async (data: any) => {
+    if (!onboardingModal) return;
+    try {
+      await onboardingMutation.mutateAsync({
+        plan: onboardingModal.plan,
+        ...data,
+      });
+      setOnboardingModal(null);
+    } catch (error) {
+      // Keep modal open on error so user can fix and retry
+    }
   };
 
   return (
@@ -196,6 +236,14 @@ export default function HomeownerPricing() {
           </p>
         </div>
       </div>
+
+      <HomeownerOnboardingForm
+        open={!!onboardingModal}
+        onClose={() => setOnboardingModal(null)}
+        onComplete={handleOnboardingComplete}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || undefined}
+        userEmail={user?.email || undefined}
+      />
     </div>
   );
 }
