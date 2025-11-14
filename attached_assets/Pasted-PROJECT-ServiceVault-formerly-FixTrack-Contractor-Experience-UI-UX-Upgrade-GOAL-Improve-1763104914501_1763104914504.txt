@@ -1,0 +1,239 @@
+PROJECT: ServiceVault (formerly FixTrack) – Contractor Experience & UI/UX Upgrade
+
+GOAL
+----
+Improve the contractor-facing experience so it looks and feels like a premium SaaS product
+and increases subscription conversion – WITHOUT changing the core backend logic, DB schema,
+or existing flows more than necessary.
+
+Keep all existing routes & API logic in place. This is a FRONTEND + FLOW REWORK, not a rebuild.
+
+KEY OBJECTIVE
+-------------
+Contractors must see CLEAR VALUE before they see PRICE.
+
+We want:
+- Higher trust on first login
+- Cleaner, more "pro" visual design
+- A simple, obvious flow: "See benefits → pick plan → generate sticker pack"
+
+TECH ASSUMPTION
+---------------
+Keep the existing stack (React / Vue / plain HTML/CSS – whatever is already used).
+Just modify components, styling, and copy in that stack.
+
+-------------------------------------
+1. FIRST LOGIN / CONTRACTOR DASHBOARD
+-------------------------------------
+
+CURRENT PROBLEM (from video):
+- First screens feel plain and "MVP"
+- Not enough explanation of what the app does BEFORE subscription
+- Too much empty white and generic labels
+
+DESIRED BEHAVIOR:
+When a contractor logs in and has 0 active packs / no subscription, show a
+"Welcome / Overview" dashboard instead of a bare dashboard.
+
+LAYOUT (mobile-first, responsive):
+
+[ Top Bar ]
+- Left: ServiceVault logo (or text logo for now)
+- Right: Contractor name or "Account" icon
+
+[ Hero Section ]
+- Big headline:
+  "Turn every install into a lifetime customer."
+
+- Subheadline (2 lines max):
+  "Place a ServiceVault QR on each job. One scan shows the customer AND you the full asset history and routes them back to your company."
+
+- 3 bullet benefits with icons:
+  - "Your logo + contact on every installed asset"
+  - "Automatic warranty & service reminders"
+  - "Proof of work and asset history in one scan"
+
+[ Primary CTA ]
+- Big button (full width on mobile):
+  "Generate Your Sticker Pack"
+
+- Secondary text link:
+  "See how it works (30-second overview)" → For now this can just scroll down to an "How It Works" section.
+
+[ How It Works – 3 Steps ]
+Visually show 3 numbered steps (icons or simple illustrations):
+
+1) "We ship you contractor-branded QR stickers"
+2) "You stick one on each installed asset"
+3) "Customers scan → see details → call you directly"
+
+Below that, small CTA:
+  Button: "Choose Your Plan & Get Stickers"
+
+-------------------------------
+2. PLAN SELECTION / PRICING UI
+-------------------------------
+
+CURRENT PROBLEM (from video):
+- Pricing appears in a very plain format
+- No strong value framing around each tier
+- Looks like a generic app billing page, not a high-value trade tool
+
+DESIRED PRICING (current business decision):
+- $49.99/mo – 50 branded stickers
+- $69.99/mo – 100 branded stickers
+- $120/mo – 250 branded stickers
+
+DESIRED PLAN LAYOUT:
+Three responsive "plan cards" side by side (stacked on mobile):
+
+Plan Card Layout (for each):
+
+- Plan name (top):
+  e.g. "Starter", "Pro", "Elite"
+
+- Price (big text):
+  e.g. "$49.99 / month"
+
+- Subtext:
+  e.g. "50 contractor-branded stickers / month"
+
+- Divider
+
+- Bullet list (3–5 bullets):
+
+  Starter (50)
+  - "50 QR stickers with your logo each month"
+  - "Each sticker links to a full asset record"
+  - "Customers scan and call your company directly"
+  - "Basic service reminders & asset history"
+
+  Pro (100) [mark this as "Most Popular"]
+  - "100 QR stickers with your logo each month"
+  - "Perfect for growing service businesses"
+  - "Advanced reminders and asset tracking"
+  - "Best balance of volume and price"
+
+  Elite (250)
+  - "250 QR stickers with your logo each month"
+  - "For busy teams and multi-tech companies"
+  - "Maximize your repeat customers"
+  - "Best value per sticker"
+
+- CTA Button at bottom of each card:
+  - "Choose Starter"
+  - "Choose Pro"
+  - "Choose Elite"
+
+VISUAL NOTE:
+- Highlight Pro plan with:
+  - Slightly bigger card
+  - "Most Popular" tag at the top
+- Use cards with shadows & rounded corners so it feels like modern SaaS
+- Avoid plain unstyled lists or tables
+
+------------------------------------
+3. FLOW: VALUE BEFORE PAYMENT
+------------------------------------
+
+REQUIRED FLOW (IMPORTANT):
+
+1) Contractor logs in →
+2) Sees the "Welcome / Overview" dashboard (hero + benefits + "Generate Pack")
+3) Clicks "Generate Your Sticker Pack" OR "Choose Plan & Get Stickers" →
+4) Goes to PRICING page (plan cards described above) →
+5) Selects a plan (Starter / Pro / Elite) →
+6) THEN go to the payment/subscription step (Stripe, etc.)
+
+Right now, the app should NOT show a payment wall as the first meaningful experience.
+It must show benefits and purpose first.
+
+Make sure:
+- If contractor has no active plan:
+  - They are ALWAYS funneled through:
+    Overview → Plan selection → Payment → Confirmation → "Your first pack is ready."
+- If contractor DOES have an active plan:
+  - Take them directly to their real dashboard (assets, packs, stats).
+
+-----------------------------
+4. CONTRACTOR DASHBOARD UI
+-----------------------------
+
+ONCE A CONTRACTOR HAS A PLAN:
+The default dashboard should show:
+
+[ Section 1 – Quick Stats ]
+- "# of active QR stickers issued"
+- "# of assets claimed"
+- "# of scans this month" (if trackable)
+- Next renewal date
+
+[ Section 2 – Sticker Packs ]
+- List of packs with:
+  - Pack name (e.g. "November 2025 – 100 pack")
+  - Created date
+  - "Used: 37 / 100" indicator
+  - Button: "View codes / export CSV"
+
+[ Section 3 – Assets ]
+- Table/list with:
+  - Asset name
+  - Type (water heater, AC, etc.)
+  - Location (short)
+  - Last service date
+  - View button
+
+The main CTA on this dashboard should ALWAYS be:
+  "Generate New Sticker Pack" (if allowed by plan) or
+  "View Your QR Codes"
+
+--------------------------------
+5. VISUAL & UX POLISH GUIDELINES
+--------------------------------
+
+These changes are PURELY visual and layout – do NOT change business logic:
+
+- Use card-based layout (cards with shadow and border radius) instead of flat text sections.
+- Reduce plain white full-screen backgrounds. Introduce:
+  - Very light grey background for app body
+  - White cards on top for content
+- Use consistent font sizing for headings:
+  - Page title: 22–26px
+  - Section titles: 18–20px, bold
+  - Body text: 14–16px
+- Buttons:
+  - Use one primary color for CTAs (e.g. blue or green that matches branding)
+  - Full-width on mobile
+  - Clear wording: "Generate Sticker Pack", "Choose Pro Plan", etc. (no vague "Submit" or "Next")
+
+- Spacing:
+  - Ensure consistent padding around sections (at least 16–24px)
+  - Avoid cramming everything into one screen; use breathing room
+
+- Feedback / errors:
+  - On any blocking step (plan selection, payment), show clear error messages with simple language:
+    e.g., "Payment failed. Please check your card details or try again."
+
+--------------------------------
+6. DO NOTS
+--------------------------------
+
+- Do NOT change backend IDs, DB table names, or route shapes unless absolutely necessary.
+- Do NOT rename core entities ("contractors", "assets", "packs") without alignment.
+- Do NOT add new required form fields that could slow down onboarding.
+- Do NOT move pricing BEFORE benefit explanation again.
+
+--------------------------------
+7. DELIVERABLES
+--------------------------------
+
+- Updated frontend screens for:
+  - First-login overview / welcome dashboard (no packs yet)
+  - Pricing / plan selection page with 3 cards and clear CTAs
+  - Post-subscription contractor dashboard (with packs + assets sections)
+
+- Ensure:
+  - Mobile responsive
+  - Clean, professional look
+  - Clear value messaging for contractors
+  - Frontend integrated with existing backend logic (no flow breaks)

@@ -2845,6 +2845,7 @@ Instructions:
           'homeowner_maint': process.env.STRIPE_PRICE_HOMEOWNER_MAINT || '',
           'contractor_starter': process.env.STRIPE_PRICE_CONTRACTOR_STARTER || '',
           'contractor_pro': process.env.STRIPE_PRICE_CONTRACTOR_PRO || '',
+          'contractor_elite': process.env.STRIPE_PRICE_CONTRACTOR_ELITE || '',
           'fleet_base': process.env.STRIPE_PRICE_FLEET_BASE || '',
           // Add-ons
           'addon_family_branding': process.env.STRIPE_PRICE_ADDON_FAMILY_BRANDING || '',
@@ -2995,6 +2996,9 @@ Instructions:
                 userRole = 'CONTRACTOR';
               } else if (plan === 'contractor_pro') {
                 quotaTotal = 100;
+                userRole = 'CONTRACTOR';
+              } else if (plan === 'contractor_elite') {
+                quotaTotal = 250;
                 userRole = 'CONTRACTOR';
               } else if (plan === 'fleet_base') {
                 quotaTotal = 0; // Fleet doesn't use sticker quota
@@ -3151,8 +3155,9 @@ Instructions:
       // Map plan to role
       const roleMap: Record<string, string> = {
         'homeowner_base': 'HOMEOWNER',
-        'contractor_pro': 'CONTRACTOR',
         'contractor_starter': 'CONTRACTOR',
+        'contractor_pro': 'CONTRACTOR',
+        'contractor_elite': 'CONTRACTOR',
         'fleet_base': 'FLEET',
         'property_manager_base': 'PROPERTY_MANAGER',
       };
@@ -3203,7 +3208,7 @@ Instructions:
             licenseNumber: onboardingData.licenseNumber || null,
             serviceAreas,
             specialties,
-            monthlyQuota: plan === 'contractor_pro' ? 100 : 50, // Pro gets 100, Starter gets 50
+            monthlyQuota: plan === 'contractor_elite' ? 250 : (plan === 'contractor_pro' ? 100 : 50), // Elite gets 250, Pro gets 100, Starter gets 50
             quotaUsed: 0,
           })
           .onConflictDoUpdate({

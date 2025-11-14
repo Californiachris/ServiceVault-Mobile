@@ -26,7 +26,7 @@ export default function PricingPage() {
   useEffect(() => {
     document.title = "Pricing Plans - ServiceVault Asset Tracking Platform";
     
-    const description = "Choose your ServiceVault plan: Homeowner ($99), Contractor ($19.99/mo), Fleet ($4.99/asset), or Property Manager ($4.99/property). Premium asset tracking with AI-powered maintenance reminders.";
+    const description = "Choose your ServiceVault plan: Homeowner ($99), Contractor Starter ($49.99/mo - 50 stickers), Pro ($69.99/mo - 100 stickers), Elite ($120/mo - 250 stickers), Fleet ($4.99/asset), or Property Manager ($4.99/property). Premium asset tracking with AI-powered maintenance reminders.";
     
     let metaDescription = document.querySelector('meta[name="description"]');
     if (!metaDescription) {
@@ -390,8 +390,8 @@ export default function PricingPage() {
             </CardFooter>
           </Card>
 
-          {/* Contractor Plan */}
-          <Card className="relative border-2 border-primary hover:border-primary transition-all shadow-2xl scale-105" data-testid="card-plan-contractor">
+          {/* Contractor Plan - 3 Tiers */}
+          <Card className="relative border-2 border-primary hover:border-primary transition-all shadow-2xl" data-testid="card-plan-contractor">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
               <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1 animate-pulse">
                 <TrendingUp className="h-3 w-3 mr-1" />
@@ -402,23 +402,30 @@ export default function PricingPage() {
             <CardHeader className="pt-8 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardTitle className="text-2xl flex items-center gap-2" data-testid="title-plan-contractor">
                 <Users className="h-6 w-6 text-orange-500" />
-                Contractor Pro
+                Contractor Plans
               </CardTitle>
               <CardDescription data-testid="description-plan-contractor">
-                Turn every install into guaranteed future work
+                Turn every install into a lifetime customer
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 pt-6">
-              {/* Starter vs Pro Toggle */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
-                <div className="text-center p-3 rounded bg-background shadow-sm border">
-                  <div className="text-sm font-semibold" data-testid="price-contractor-starter">$19.99/mo</div>
-                  <div className="text-xs text-muted-foreground">50 Stickers</div>
+              {/* 3-Tier Pricing Display */}
+              <div className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg">
+                <div className="text-center p-2 rounded bg-background shadow-sm border">
+                  <div className="text-sm font-semibold" data-testid="price-contractor-starter">$49.99/mo</div>
+                  <div className="text-xs text-muted-foreground">Starter</div>
+                  <div className="text-xs text-muted-foreground">50 stickers</div>
                 </div>
-                <div className="text-center p-3 rounded bg-primary text-primary-foreground">
-                  <div className="text-sm font-semibold" data-testid="price-contractor-pro">$29.99/mo</div>
-                  <div className="text-xs">100 Stickers</div>
+                <div className="text-center p-2 rounded bg-primary text-primary-foreground">
+                  <div className="text-sm font-semibold" data-testid="price-contractor-pro">$69.99/mo</div>
+                  <div className="text-xs">Pro</div>
+                  <div className="text-xs">100 stickers</div>
+                </div>
+                <div className="text-center p-2 rounded bg-background shadow-sm border">
+                  <div className="text-sm font-semibold" data-testid="price-contractor-elite">$120/mo</div>
+                  <div className="text-xs text-muted-foreground">Elite</div>
+                  <div className="text-xs text-muted-foreground">250 stickers</div>
                 </div>
               </div>
 
@@ -434,13 +441,6 @@ export default function PricingPage() {
                       Anyone scanning your stickers sees install date, installer info, warranty details, and your contact—
                       building trust & making you the first call for future service.
                     </p>
-                    <p className="font-semibold text-orange-600 dark:text-orange-400 mt-2">
-                      AI Automatically Creates Future Work
-                    </p>
-                    <p className="text-muted-foreground">
-                      When warranties are uploaded, AI extracts dates, researches the asset, and sends predictive maintenance 
-                      reminders to both you and the homeowner—turning every install into recurring revenue.
-                    </p>
                   </div>
                 </div>
               </div>
@@ -452,12 +452,10 @@ export default function PricingPage() {
                     "Your Logo on Every Sticker",
                     "Permanent Contact Info Display",
                     "License Verification Badge",
-                    "Permanent Install History (Date, Installer, Warranty)",
-                    "AI Warranty Parsing & Maintenance Predictions",
-                    "Automatic Reminders for Future Service",
-                    "Client & Contractor Notifications",
-                    "Referral System for Upsells",
-                    "Public QR Access - Anyone Can Scan for Installation Info",
+                    "Permanent Install History",
+                    "AI Warranty Parsing",
+                    "Automatic Service Reminders",
+                    "Public QR Access",
                   ].map((feature, i) => (
                     <li key={i} className="flex items-start gap-2" data-testid={`feature-contractor-${i}`}>
                       <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -465,24 +463,6 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              {/* Add-ons */}
-              <div className="pt-4 border-t space-y-3">
-                <h4 className="font-semibold text-sm">ADD-ONS:</h4>
-                
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    id="contractor-crew"
-                    checked={selectedAddOns.contractor.includes('addon_crew_clockin')}
-                    onCheckedChange={() => toggleAddOn('contractor', 'addon_crew_clockin')}
-                    data-testid="checkbox-addon-contractor-crew"
-                  />
-                  <Label htmlFor="contractor-crew" className="text-sm cursor-pointer">
-                    <div className="font-medium">Verified Crew Clock-In</div>
-                    <div className="text-xs text-muted-foreground">Track crew presence • $4.99/mo per crew</div>
-                  </Label>
-                </div>
               </div>
             </CardContent>
 
@@ -494,17 +474,26 @@ export default function PricingPage() {
                 disabled={onboardingMutation.isPending}
                 data-testid="button-subscribe-contractor-pro"
               >
-                {onboardingMutation.isPending ? "Processing..." : "Subscribe - Pro"}
+                {onboardingMutation.isPending ? "Processing..." : "Subscribe - Pro ($69.99/mo)"}
               </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSubscribe('contractor_starter', 'contractor')}
-                disabled={onboardingMutation.isPending}
-                data-testid="button-subscribe-contractor-starter"
-              >
-                {onboardingMutation.isPending ? "Processing..." : "Subscribe - Starter"}
-              </Button>
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => handleSubscribe('contractor_starter', 'contractor')}
+                  disabled={onboardingMutation.isPending}
+                  data-testid="button-subscribe-contractor-starter"
+                >
+                  {onboardingMutation.isPending ? "..." : "Starter"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleSubscribe('contractor_elite', 'contractor')}
+                  disabled={onboardingMutation.isPending}
+                  data-testid="button-subscribe-contractor-elite"
+                >
+                  {onboardingMutation.isPending ? "..." : "Elite"}
+                </Button>
+              </div>
             </CardFooter>
           </Card>
 

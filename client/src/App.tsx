@@ -35,6 +35,8 @@ import CheckInLanding from "@/pages/worker/CheckInLanding";
 import CheckInByCode from "@/pages/worker/CheckInByCode";
 import ActiveVisit from "@/pages/worker/ActiveVisit";
 import TenantReportForm from "@/pages/TenantReportForm";
+import ContractorWelcome from "@/pages/contractor/ContractorWelcome";
+import ContractorPlanSelection from "@/pages/contractor/ContractorPlanSelection";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,13 +60,16 @@ function Router() {
   const publicRoutes = ["/", "/pricing"];
   const isPublicRoute = publicRoutes.includes(location) || 
                         location.startsWith("/asset/") || 
-                        location.startsWith("/property/");
+                        location.startsWith("/property/") ||
+                        location.startsWith("/contractor/");
 
   if (isPublicRoute) {
     return (
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/contractor/welcome" component={ContractorWelcome} />
+        <Route path="/contractor/plans" component={ContractorPlanSelection} />
         <Route path="/asset/:assetId" component={PublicAsset} />
         <Route path="/property/public/:masterQR" component={PropertyHistory} />
         <Route path="/property/report/:masterQR" component={TenantReportForm} />
