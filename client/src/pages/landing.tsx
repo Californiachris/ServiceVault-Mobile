@@ -96,11 +96,6 @@ export default function Landing() {
 
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 text-lg px-4 py-2" data-testid="badge-hero">
-          <Sparkles className="h-4 w-4 mr-2" />
-          The Future of Asset Tracking
-        </Badge>
-        
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent" data-testid="heading-hero">
           Know everything about every asset — and stay ahead of every service need.
         </h1>
@@ -109,78 +104,9 @@ export default function Landing() {
           ServiceVault keeps a permanent, sharable history for anything you own or manage — and uses AI to predict maintenance, warranties, and service reminders before problems happen.
         </p>
         
-        <p className="text-sm font-bold tracking-wide text-primary/80 mb-8" data-testid="text-hero-tagline">
+        <p className="text-sm font-bold tracking-wide text-primary/80" data-testid="text-hero-tagline">
           Every install. Every service. Every asset.
         </p>
-
-        {/* Stats Bar */}
-        <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm" data-testid="stats-bar">
-          <div className="flex items-center gap-2" data-testid="stat-assets">
-            <span className="font-semibold">10K+ Assets Tracked</span>
-          </div>
-          <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="flex items-center gap-2" data-testid="stat-companies">
-            <span className="font-semibold">500+ Companies</span>
-          </div>
-          <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="flex items-center gap-2" data-testid="stat-uptime">
-            <span className="font-semibold">99.9% Uptime</span>
-          </div>
-        </div>
-
-        {/* Trust Signals - Now Clickable with Orange Styling */}
-        <div className="flex flex-wrap justify-center gap-8 items-center text-sm mb-12">
-          <button 
-            onClick={() => setSecurityDialogOpen(true)}
-            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
-            data-testid="button-info-security"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="font-medium">Bank-Level Security</span>
-          </button>
-          <button 
-            onClick={() => setSetupDialogOpen(true)}
-            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
-            data-testid="button-info-setup"
-          >
-            <Zap className="h-4 w-4" />
-            <span className="font-medium">Instant Setup</span>
-          </button>
-          <button 
-            onClick={() => setSupportDialogOpen(true)}
-            className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
-            data-testid="button-info-support"
-          >
-            <Phone className="h-4 w-4" />
-            <span className="font-medium">24/7 Support</span>
-          </button>
-        </div>
-
-        {/* Split Logo Design - Vault Icon (Top) */}
-        <div className="flex justify-center mb-10">
-          <img 
-            src={vaultIcon} 
-            alt="ServiceVault Vault Icon" 
-            className="h-40 w-auto object-contain drop-shadow-2xl"
-            data-testid="logo-vault-icon"
-          />
-        </div>
-
-        {/* Split Logo Design - ServiceVault Text + Tagline (Bottom, Stretched) */}
-        <div className="flex flex-col items-center mb-16">
-          <h1 
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-center mb-2 bg-gradient-to-r from-cyan-400 to-yellow-400 bg-clip-text text-transparent"
-            data-testid="brand-name"
-          >
-            ServiceVault™
-          </h1>
-          <p 
-            className="text-lg md:text-2xl lg:text-3xl font-semibold text-center tracking-widest uppercase text-muted-foreground"
-            data-testid="brand-tagline"
-          >
-            SCAN • VERIFY • PROTECT
-          </p>
-        </div>
       </div>
 
       {/* Premium Role Cards - Choose Your Path */}
