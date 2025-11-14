@@ -104,7 +104,7 @@ export default function Landing() {
         </div>
 
         {/* Trust Signals - Now Clickable with Orange Styling */}
-        <div className="flex flex-wrap justify-center gap-8 items-center text-sm mb-16 md:mb-24">
+        <div className="flex flex-wrap justify-center gap-8 items-center text-sm mb-12">
           <button 
             onClick={() => setSecurityDialogOpen(true)}
             className="flex items-center gap-2 text-orange-500 hover:text-orange-600 transition-all cursor-pointer hover:scale-105 underline decoration-orange-500 hover:decoration-orange-600"
@@ -131,14 +131,30 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Prominent Tagline Banner */}
-        <div className="w-full py-12 md:py-16 mb-16 md:mb-24 bg-gradient-to-r from-cyan-500/10 via-yellow-500/10 to-cyan-500/10 rounded-2xl border-2 border-cyan-500/20">
-          <h2 
-            className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-center uppercase tracking-wide leading-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent drop-shadow-lg"
-            data-testid="tagline-banner"
+        {/* Split Logo Design - Vault Icon (Top) */}
+        <div className="flex justify-center mb-8">
+          <img 
+            src={serviceVaultLogo} 
+            alt="ServiceVault Vault Icon" 
+            className="h-24 w-auto object-contain"
+            data-testid="logo-vault-icon"
+          />
+        </div>
+
+        {/* Split Logo Design - ServiceVault Text + Tagline (Bottom, Stretched) */}
+        <div className="flex flex-col items-center mb-16">
+          <h1 
+            className="text-5xl md:text-7xl lg:text-8xl font-black text-center mb-2 bg-gradient-to-r from-cyan-400 to-yellow-400 bg-clip-text text-transparent"
+            data-testid="brand-name"
+          >
+            ServiceVault™
+          </h1>
+          <p 
+            className="text-lg md:text-2xl lg:text-3xl font-semibold text-center tracking-widest uppercase text-muted-foreground"
+            data-testid="brand-tagline"
           >
             SCAN • VERIFY • PROTECT
-          </h2>
+          </p>
         </div>
       </div>
 
