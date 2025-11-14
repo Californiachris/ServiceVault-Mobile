@@ -87,6 +87,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+  
+  // Entitlements endpoint - returns user's subscription features and limits
+  app.get('/api/entitlements', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { getUserEntitlements } = await import('./entitlements/service');
+      const entitlements = await getUserEntitlements(userId);
+      res.json(entitlements);
+    } catch (error) {
+      console.error("Error fetching entitlements:", error);
+      res.status(500).json({ message: "Failed to fetch entitlements" });
+    }
+  });
 
   // Subscription status endpoint
   app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
@@ -1125,6 +1138,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate new Master QR for property
+  app.post('/api/properties/:id/master-identifier', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id: propertyId } = req.params;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Generate unique code for master QR
+      const code = `HOME-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create master identifier
+      const [identifier] = await db.insert(identifiers).values({
+        code,
+        kind: 'HOUSE',
+        qrPath: `/qr/master/${code}.png`, // QR image will be generated on-demand
+      }).returning();
+
+      // Update property with new master identifier
+      await storage.updateProperty(propertyId, { masterIdentifierId: identifier.id });
+
+      res.json({ identifier, qrCode: code });
+    } catch (error) {
+      console.error("Error generating master identifier:", error);
+      res.status(500).json({ error: "Failed to generate master identifier" });
+    }
+  });
+
+  // Revoke existing Master QR
+  app.post('/api/properties/:id/master-identifier/revoke', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id: propertyId } = req.params;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      if (!property.masterIdentifierId) {
+        return res.status(400).json({ error: "No master identifier to revoke" });
+      }
+
+      // Mark old identifier as deactivated
+      await db.update(identifiers)
+        .set({ deactivatedAt: new Date() })
+        .where(eq(identifiers.id, property.masterIdentifierId));
+
+      // Clear master identifier from property
+      await storage.updateProperty(propertyId, { masterIdentifierId: null });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error revoking master identifier:", error);
+      res.status(500).json({ error: "Failed to revoke master identifier" });
+    }
+  });
+
+  // Public property history via master QR (unauthenticated, privacy-filtered)
+  app.get('/api/properties/public/history/:masterQR', async (req: any, res) => {
+    try {
+      const { masterQR } = req.params;
+
+      // Validate master QR code
+      const [identifier] = await db
+        .select()
+        .from(identifiers)
+        .where(and(eq(identifiers.code, masterQR), eq(identifiers.kind, 'HOUSE')))
+        .limit(1);
+
+      if (!identifier || identifier.deactivatedAt) {
+        return res.status(404).json({ error: "Invalid or deactivated master QR code" });
+      }
+
+      const [property] = await db
+        .select()
+        .from(properties)
+        .where(eq(properties.masterIdentifierId, identifier.id))
+        .limit(1);
+
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const propertyId = property.id;
+      
+      // Apply privacy filtering for public view
+      const publicVisibility = property.publicVisibility as any || {
+        showFullAddress: false,
+        showContractors: true,
+        showDocuments: false,
+        showCosts: false,
+      };
+
+      // Fetch all property data
+      const propertyAssets = await storage.getAssets(propertyId);
+      const propertyDocs = await storage.getPropertyDocuments(propertyId);
+      const propertyReminders = await db
+        .select()
+        .from(reminders)
+        .where(eq(reminders.propertyId, propertyId))
+        .orderBy(asc(reminders.dueAt));
+
+      // Fetch events for all assets
+      let allEvents: any[] = [];
+      for (const asset of propertyAssets) {
+        const assetEvents = await db
+          .select()
+          .from(events)
+          .where(eq(events.assetId, asset.id))
+          .orderBy(desc(events.createdAt));
+        allEvents = allEvents.concat(assetEvents.map(e => ({ ...e, assetName: asset.name })));
+      }
+
+      // Build response with privacy filtering (this is always public view)
+      let responseData: any = {
+        property: {
+          id: property.id,
+          name: property.name,
+          type: property.propertyType,
+        },
+        assets: propertyAssets,
+        events: allEvents,
+        documents: propertyDocs,
+      };
+
+      // Apply privacy filtering for public view
+      if (!publicVisibility.showFullAddress) {
+        responseData.property.address = `${property.city}, ${property.state}`;
+      } else {
+        responseData.property.address = `${property.addressLine1}, ${property.city}, ${property.state}`;
+      }
+
+      if (!publicVisibility.showContractors) {
+        responseData.assets = responseData.assets.map((a: any) => ({ ...a, installerId: null }));
+        responseData.events = responseData.events.map((e: any) => ({ ...e, createdBy: null }));
+      }
+
+      if (!publicVisibility.showDocuments) {
+        responseData.documents = [];
+      }
+
+      if (!publicVisibility.showCosts) {
+        responseData.assets = responseData.assets.map((a: any) => ({ ...a, purchasePrice: null }));
+      }
+
+      // Create sorted timeline
+      const timeline = [
+        ...allEvents.map((e: any) => ({ type: 'event', date: e.createdAt, data: e })),
+        ...propertyDocs.map((d: any) => ({ type: 'document', date: d.uploadedAt, data: d })),
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      responseData.timeline = timeline;
+
+      res.json(responseData);
+    } catch (error) {
+      console.error("Error fetching property history:", error);
+      res.status(500).json({ error: "Failed to fetch property history" });
+    }
+  });
+
+  // Authenticated property history for owners (full timeline, no filtering)
+  app.get('/api/properties/:id/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id: propertyId } = req.params;
+      const userId = req.user.claims.sub;
+
+      // Verify ownership
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Fetch all property data (no filtering for owners)
+      const propertyAssets = await storage.getAssets(propertyId);
+      const propertyDocs = await storage.getPropertyDocuments(propertyId);
+      const propertyReminders = await db
+        .select()
+        .from(reminders)
+        .where(eq(reminders.propertyId, propertyId))
+        .orderBy(asc(reminders.dueAt));
+
+      // Fetch events for all assets
+      let allEvents: any[] = [];
+      for (const asset of propertyAssets) {
+        const assetEvents = await db
+          .select()
+          .from(events)
+          .where(eq(events.assetId, asset.id))
+          .orderBy(desc(events.createdAt));
+        allEvents = allEvents.concat(assetEvents.map(e => ({ ...e, assetName: asset.name })));
+      }
+
+      // Create sorted timeline
+      const timeline = [
+        ...allEvents.map((e: any) => ({ type: 'event', date: e.createdAt, data: e })),
+        ...propertyDocs.map((d: any) => ({ type: 'document', date: d.uploadedAt, data: d })),
+        ...propertyReminders.map((r: any) => ({ type: 'reminder', date: r.dueAt, data: r })),
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      res.json({
+        property: {
+          id: property.id,
+          name: property.name,
+          type: property.propertyType,
+          address: `${property.addressLine1}, ${property.city}, ${property.state}`,
+        },
+        assets: propertyAssets,
+        events: allEvents,
+        documents: propertyDocs,
+        reminders: propertyReminders,
+        timeline,
+      });
+    } catch (error) {
+      console.error("Error fetching property history:", error);
+      res.status(500).json({ error: "Failed to fetch property history" });
+    }
+  });
+
+  // Set master identifier (existing route for claiming purchased QR)
   app.post('/api/properties/master', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

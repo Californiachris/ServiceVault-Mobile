@@ -29,6 +29,7 @@ import PropertyManagerWorkers from "@/pages/property-manager/workers";
 import PropertyManagerTasks from "@/pages/property-manager/tasks";
 import PropertyManagerVisits from "@/pages/property-manager/visits";
 import PropertyManagerTenantReports from "@/pages/property-manager/tenant-reports";
+import PropertyHistory from "@/pages/property-history";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -60,6 +61,7 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/asset/:assetId" component={PublicAsset} />
+        <Route path="/property/public/:masterQR" component={PropertyHistory} />
         <Route path="/property/:id" component={PropertyView} />
       </Switch>
     );

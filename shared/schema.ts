@@ -91,6 +91,7 @@ export const properties = pgTable("properties", {
   masterIdentifierId: uuid("master_identifier_id").references(() => identifiers.id),
   homePlan: varchar("home_plan"), // home_lifetime, home_annual
   homeStatus: varchar("home_status").default("ACTIVE"),
+  publicVisibility: jsonb("public_visibility"), // Privacy settings for public property view
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
