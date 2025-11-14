@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building2, Plus, QrCode, MapPin, Search, Edit, X, CheckCircle2 } from "lucide-react";
+import { Building2, Plus, QrCode, MapPin, Search, Edit, X, CheckCircle2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Property {
@@ -48,8 +48,10 @@ export default function Properties() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: properties, isLoading } = useQuery<Property[]>({
     queryKey: ["/api/property-manager/properties"],
@@ -90,6 +92,52 @@ export default function Properties() {
     },
   });
 
+  const editPropertyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest(`/api/property-manager/properties/${id}`, "PATCH", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/property-manager"] });
+      toast({
+        title: "Success",
+        description: "Property updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedProperty(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update property",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deletePropertyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/property-manager/properties/${id}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/property-manager"] });
+      toast({
+        title: "Success",
+        description: "Property removed from management",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedProperty(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete property",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddProperty = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -102,6 +150,27 @@ export default function Properties() {
       propertyType: formData.get("propertyType") || "RENTAL",
     };
     addPropertyMutation.mutate(data);
+  };
+
+  const handleEditProperty = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedProperty) return;
+    
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name"),
+      addressLine1: formData.get("addressLine1"),
+      city: formData.get("city"),
+      state: formData.get("state"),
+      postalCode: formData.get("postalCode"),
+      propertyType: formData.get("propertyType"),
+    };
+    editPropertyMutation.mutate({ id: selectedProperty.id, data });
+  };
+
+  const handleDeleteProperty = () => {
+    if (!selectedProperty) return;
+    deletePropertyMutation.mutate(selectedProperty.id);
   };
 
   const filteredProperties = properties?.filter((p) => {
@@ -222,41 +291,73 @@ export default function Properties() {
                     <span className="text-muted-foreground">Added:</span>
                     <span>{format(new Date(property.createdAt), "MMM d, yyyy")}</span>
                   </div>
-                  <div className="pt-3 border-t flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setSelectedProperty(property);
-                        setIsQrDialogOpen(true);
-                      }}
-                      data-testid={`button-view-qr-${property.id}`}
-                    >
-                      <QrCode className="mr-2 h-4 w-4" />
-                      QR Code
-                    </Button>
-                    {property.managementStatus === "ACTIVE" ? (
+                  <div className="pt-3 border-t space-y-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => updatePropertyMutation.mutate({ id: property.id, managementStatus: "INACTIVE" })}
-                        data-testid={`button-deactivate-${property.id}`}
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setIsQrDialogOpen(true);
+                        }}
+                        data-testid={`button-view-qr-${property.id}`}
                       >
-                        <X className="mr-2 h-4 w-4" />
-                        Deactivate
+                        <QrCode className="mr-2 h-4 w-4" />
+                        QR Code
                       </Button>
-                    ) : (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => updatePropertyMutation.mutate({ id: property.id, managementStatus: "ACTIVE" })}
-                        data-testid={`button-activate-${property.id}`}
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setIsEditDialogOpen(true);
+                        }}
+                        data-testid={`button-edit-${property.id}`}
                       >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Activate
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
                       </Button>
-                    )}
+                    </div>
+                    <div className="flex gap-2">
+                      {property.managementStatus === "ACTIVE" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updatePropertyMutation.mutate({ id: property.id, managementStatus: "INACTIVE" })}
+                          data-testid={`button-deactivate-${property.id}`}
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Deactivate
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updatePropertyMutation.mutate({ id: property.id, managementStatus: "ACTIVE" })}
+                          data-testid={`button-activate-${property.id}`}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Activate
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        data-testid={`button-delete-${property.id}`}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -376,6 +477,159 @@ export default function Properties() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsQrDialogOpen(false)} data-testid="button-close-qr">
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Property Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent data-testid="dialog-edit-property">
+          <DialogHeader>
+            <DialogTitle>Edit Property</DialogTitle>
+            <DialogDescription>
+              Update property details
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProperty && (
+            <form onSubmit={handleEditProperty}>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="edit-name">Property Name</Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    defaultValue={selectedProperty.property.name}
+                    placeholder="123 Main St Apartment"
+                    required
+                    data-testid="input-edit-property-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-addressLine1">Address</Label>
+                  <Input
+                    id="edit-addressLine1"
+                    name="addressLine1"
+                    defaultValue={selectedProperty.property.addressLine1}
+                    placeholder="123 Main St"
+                    required
+                    data-testid="input-edit-address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-city">City</Label>
+                    <Input
+                      id="edit-city"
+                      name="city"
+                      defaultValue={selectedProperty.property.city}
+                      placeholder="San Francisco"
+                      required
+                      data-testid="input-edit-city"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-state">State</Label>
+                    <Input
+                      id="edit-state"
+                      name="state"
+                      defaultValue={selectedProperty.property.state}
+                      placeholder="CA"
+                      required
+                      data-testid="input-edit-state"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-postalCode">Postal Code</Label>
+                  <Input
+                    id="edit-postalCode"
+                    name="postalCode"
+                    defaultValue={selectedProperty.property.postalCode}
+                    placeholder="94102"
+                    required
+                    data-testid="input-edit-postal-code"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-propertyType">Property Type</Label>
+                  <Select name="propertyType" defaultValue={selectedProperty.property.propertyType}>
+                    <SelectTrigger data-testid="select-edit-property-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="RENTAL">Rental</SelectItem>
+                      <SelectItem value="CONDO">Condo</SelectItem>
+                      <SelectItem value="COMMERCIAL">Commercial</SelectItem>
+                      <SelectItem value="SINGLE_FAMILY">Single Family</SelectItem>
+                      <SelectItem value="MULTI_FAMILY">Multi Family</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setSelectedProperty(null);
+                  }}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editPropertyMutation.isPending} data-testid="button-submit-edit">
+                  {editPropertyMutation.isPending ? "Updating..." : "Update Property"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent data-testid="dialog-delete-property">
+          <DialogHeader>
+            <DialogTitle>Delete Property</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this property from management?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProperty && (
+            <div className="py-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">{selectedProperty.property.name}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {selectedProperty.property.addressLine1}<br />
+                  {selectedProperty.property.city}, {selectedProperty.property.state} {selectedProperty.property.postalCode}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                This will remove the property from your management portfolio. The property data will be preserved but no longer linked to your account.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedProperty(null);
+              }}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteProperty}
+              disabled={deletePropertyMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deletePropertyMutation.isPending ? "Deleting..." : "Delete Property"}
             </Button>
           </DialogFooter>
         </DialogContent>
