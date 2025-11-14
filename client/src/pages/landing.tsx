@@ -84,10 +84,11 @@ export default function Landing() {
           <div>
             <Button 
               size="lg"
-              onClick={() => setLocation("/pricing")}
-              data-testid="button-nav-get-started"
+              variant="outline"
+              onClick={() => setLocation("/login")}
+              data-testid="button-nav-login"
             >
-              Get Started
+              Login
             </Button>
           </div>
         </div>
@@ -101,14 +102,15 @@ export default function Landing() {
         </Badge>
         
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent" data-testid="heading-hero">
-          Every Install.<br />Every Service.<br />Every Asset.
+          Know everything about every asset — and stay ahead of every service need.
         </h1>
         
         <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-8 max-w-3xl mx-auto" data-testid="text-hero-subtitle">
-          Scan a QR code. See the installer, installation date, warranty info, and complete history.
-          <span className="block mt-4 text-primary font-semibold" data-testid="text-ai-reminder-badge">
-            AI Predictive Maintenance Reminders — Free Forever
-          </span>
+          ServiceVault keeps a permanent, sharable history for anything you own or manage — and uses AI to predict maintenance, warranties, and service reminders before problems happen.
+        </p>
+        
+        <p className="text-sm font-bold tracking-wide text-primary/80 mb-8" data-testid="text-hero-tagline">
+          Every install. Every service. Every asset.
         </p>
 
         {/* Stats Bar */}
@@ -124,27 +126,6 @@ export default function Landing() {
           <div className="flex items-center gap-2" data-testid="stat-uptime">
             <span className="font-semibold">99.9% Uptime</span>
           </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <Button 
-            size="lg"
-            className="text-base font-semibold px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-yellow-500 hover:from-cyan-600 hover:to-yellow-600"
-            onClick={() => setLocation("/pricing")}
-            data-testid="button-hero-view-pricing"
-          >
-            <Sparkles className="mr-2 h-5 w-5" />
-            View Pricing
-          </Button>
-          <Button 
-            size="lg"
-            variant="outline"
-            className="text-base font-semibold px-8 py-3 rounded-lg"
-            onClick={() => setLocation("/pricing")}
-            data-testid="button-hero-try-free"
-          >
-            Try It Free
-          </Button>
         </div>
 
         {/* Trust Signals - Now Clickable with Orange Styling */}
