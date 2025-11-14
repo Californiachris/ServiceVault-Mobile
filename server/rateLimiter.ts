@@ -62,7 +62,15 @@ export function checkRateLimit(
 // Predefined rate limits for different endpoints
 export const RATE_LIMITS = {
   WARRANTY_PARSE: {
-    maxRequests: 10, // 10 requests per hour per user
+    maxRequests: 20, // 20 warranty parsing requests per hour per user
     windowMs: 60 * 60 * 1000, // 1 hour
+  },
+  TENANT_REPORT: {
+    maxRequests: 5, // 5 reports per hour per IP per property
+    windowMs: 60 * 60 * 1000, // 1 hour
+  },
+  TENANT_REPORT_DAILY: {
+    maxRequests: 20, // 20 reports per day per IP per property
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
   },
 };

@@ -34,6 +34,7 @@ import WorkerAppShell from "@/layouts/WorkerAppShell";
 import CheckInLanding from "@/pages/worker/CheckInLanding";
 import CheckInByCode from "@/pages/worker/CheckInByCode";
 import ActiveVisit from "@/pages/worker/ActiveVisit";
+import TenantReportForm from "@/pages/TenantReportForm";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -53,7 +54,7 @@ function Router() {
     );
   }
 
-  // Public routes without AppShell (landing, pricing, asset/property views)
+  // Public routes without AppShell (landing, pricing, asset/property views, tenant reports)
   const publicRoutes = ["/", "/pricing"];
   const isPublicRoute = publicRoutes.includes(location) || 
                         location.startsWith("/asset/") || 
@@ -66,6 +67,7 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/asset/:assetId" component={PublicAsset} />
         <Route path="/property/public/:masterQR" component={PropertyHistory} />
+        <Route path="/property/report/:masterQR" component={TenantReportForm} />
         <Route path="/property/:id" component={PropertyView} />
       </Switch>
     );

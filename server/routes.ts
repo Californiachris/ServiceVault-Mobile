@@ -3769,6 +3769,45 @@ Instructions:
         return res.status(404).json({ error: 'Property not found' });
       }
       
+      // Check property manager's entitlements
+      const { getUserEntitlements } = await import('./entitlements/service');
+      const entitlements = await getUserEntitlements(managedProperty[0].propertyManagerId);
+      
+      if (!entitlements.tenantReports) {
+        return res.status(403).json({ 
+          error: 'Tenant reporting is not enabled for this property. Property manager needs to upgrade their subscription.',
+          upgradeRequired: true
+        });
+      }
+      
+      // Rate limiting: Check hourly and daily limits per IP per property
+      const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+      const ipPropertyKey = `${clientIp}:${managedProperty[0].id}`;
+      
+      const { checkRateLimit, RATE_LIMITS } = await import('./rateLimiter');
+      
+      // Check hourly limit
+      const hourlyLimit = checkRateLimit(ipPropertyKey, 'tenant-report-hourly', RATE_LIMITS.TENANT_REPORT);
+      if (!hourlyLimit.allowed) {
+        const retryAfter = Math.ceil((hourlyLimit.resetAt - Date.now()) / 1000);
+        return res.status(429).json({ 
+          error: 'Too many reports submitted. Please try again later.',
+          retryAfter,
+          contactSupport: 'If you need immediate assistance, please contact property management directly.'
+        });
+      }
+      
+      // Check daily limit
+      const dailyLimit = checkRateLimit(ipPropertyKey, 'tenant-report-daily', RATE_LIMITS.TENANT_REPORT_DAILY);
+      if (!dailyLimit.allowed) {
+        const retryAfter = Math.ceil((dailyLimit.resetAt - Date.now()) / 1000);
+        return res.status(429).json({ 
+          error: 'Daily report limit exceeded (20 reports per day).',
+          retryAfter,
+          contactSupport: 'For urgent issues, please contact property management directly.'
+        });
+      }
+      
       const [report] = await db.insert(tenantReports).values({
         managedPropertyId: managedProperty[0].id,
         reporterName,

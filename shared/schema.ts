@@ -181,6 +181,41 @@ export const documents = pgTable("documents", {
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
+// Warranty Summaries (AI-parsed warranty data)
+export const warrantySummaries = pgTable("warranty_summaries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  documentId: uuid("document_id").references(() => documents.id),
+  propertyId: uuid("property_id").references(() => properties.id),
+  assetId: uuid("asset_id").references(() => assets.id),
+  
+  // Parsed warranty data
+  parsedData: jsonb("parsed_data").$type<{
+    warrantyStartDate?: string;
+    warrantyEndDate?: string;
+    warrantyDurationMonths?: number;
+    brand?: string;
+    model?: string;
+    productName?: string;
+    notes?: string;
+    maintenanceSchedule?: Array<{
+      description: string;
+      intervalMonths: number;
+      firstDueDate?: string;
+    }>;
+  }>(),
+  
+  // Key extracted dates for easy querying
+  warrantyStartDate: timestamp("warranty_start_date"),
+  warrantyEndDate: timestamp("warranty_end_date"),
+  
+  // AI parsing metadata
+  confidence: decimal("confidence", { precision: 3, scale: 2 }), // 0.00 to 1.00
+  modelUsed: varchar("model_used").default("gpt-4o"),
+  
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Reminders
 export const reminders = pgTable("reminders", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -655,6 +690,11 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   uploadedAt: true,
 });
 
+export const insertWarrantySummarySchema = createInsertSchema(warrantySummaries).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertReminderSchema = createInsertSchema(reminders).omit({
   id: true,
   createdAt: true,
@@ -751,6 +791,7 @@ export type Identifier = typeof identifiers.$inferSelect;
 export type Asset = typeof assets.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type Document = typeof documents.$inferSelect;
+export type WarrantySummary = typeof warrantySummaries.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
 export type Transfer = typeof transfers.$inferSelect;
 export type Inspection = typeof inspections.$inferSelect;
@@ -777,6 +818,7 @@ export type InsertIdentifier = z.infer<typeof insertIdentifierSchema>;
 export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type InsertWarrantySummary = z.infer<typeof insertWarrantySummarySchema>;
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type InsertInspection = z.infer<typeof insertInspectionSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;

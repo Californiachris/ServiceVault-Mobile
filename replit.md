@@ -99,6 +99,26 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - Security: GPS location required, geofence properly enforced, manual override with reason logging
 - Mobile-first responsive design with proper error handling
 
+**Task 4: Tenant Report System (COMPLETED)**
+- Enhanced rate limiting in server/rateLimiter.ts:
+  - TENANT_REPORT: 5 reports per hour per IP per property
+  - TENANT_REPORT_DAILY: 20 reports per day per IP per property
+- Public tenant report submission endpoint:
+  - POST /api/public/tenant-report/:masterQrCode (no auth required)
+  - Entitlement check: validates property manager has tenantReports feature
+  - Rate limiting: hourly (5) and daily (20) limits per IP/property
+  - Returns 403 with upgrade message if subscription lapsed
+  - Returns 429 with retryAfter if rate limit exceeded
+- Public TenantReportForm page:
+  - Accessible at /property/report/:masterQR
+  - React Hook Form with Zod validation
+  - Optional contact info (name, phone, email)
+  - Issue type selection (8 categories)
+  - Priority selection
+  - Success confirmation page
+- Security: IP-based rate limiting, entitlement enforcement, abuse logging
+- Manager dashboard: Uses existing /property-manager/reports page with filtering
+
 ## External Dependencies
 
 -   **Stripe:** Payment processing, subscription management, customer portal, webhooks.
