@@ -30,6 +30,10 @@ import PropertyManagerTasks from "@/pages/property-manager/tasks";
 import PropertyManagerVisits from "@/pages/property-manager/visits";
 import PropertyManagerTenantReports from "@/pages/property-manager/tenant-reports";
 import PropertyHistory from "@/pages/property-history";
+import WorkerAppShell from "@/layouts/WorkerAppShell";
+import CheckInLanding from "@/pages/worker/CheckInLanding";
+import CheckInByCode from "@/pages/worker/CheckInByCode";
+import ActiveVisit from "@/pages/worker/ActiveVisit";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -64,6 +68,19 @@ function Router() {
         <Route path="/property/public/:masterQR" component={PropertyHistory} />
         <Route path="/property/:id" component={PropertyView} />
       </Switch>
+    );
+  }
+
+  // Worker routes (authenticated, use WorkerAppShell)
+  if (isAuthenticated && location.startsWith("/worker")) {
+    return (
+      <WorkerAppShell>
+        <Switch>
+          <Route path="/worker/check-in" component={CheckInLanding} />
+          <Route path="/worker/check-in/:masterQr" component={CheckInByCode} />
+          <Route path="/worker/visit/:visitId" component={ActiveVisit} />
+        </Switch>
+      </WorkerAppShell>
     );
   }
 

@@ -405,6 +405,12 @@ export const managedProperties = pgTable("managed_properties", {
   propertyId: uuid("property_id").notNull().references(() => properties.id), // Can be reassigned to different managers over time
   managementStatus: varchar("management_status").default("ACTIVE"), // ACTIVE, INACTIVE
   masterQrCode: varchar("master_qr_code").notNull().unique(), // Required unique QR for this managed property
+  
+  // Geofence configuration for worker check-in validation
+  geofenceCenter: jsonb("geofence_center").$type<{lat: number, lng: number}>(),
+  geofenceRadiusMeters: decimal("geofence_radius_meters", { precision: 10, scale: 2 }).default("100"), // Default 100m radius
+  geofenceManualOverrideAllowed: boolean("geofence_manual_override_allowed").default(true),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({

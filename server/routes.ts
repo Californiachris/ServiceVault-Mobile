@@ -3789,11 +3789,81 @@ Instructions:
     }
   });
 
+  // Get worker's active visits
+  app.get('/api/worker/visits/active', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get worker record for authenticated user
+      const worker = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (worker.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get active visits for this worker
+      const activeVisits = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(
+          eq(propertyVisits.workerId, worker[0].id),
+          eq(propertyVisits.status, 'IN_PROGRESS')
+        ));
+      
+      res.json(activeVisits);
+    } catch (error) {
+      console.error('Error getting active visits:', error);
+      res.status(500).json({ error: 'Failed to get active visits' });
+    }
+  });
+
+  // Get a specific visit by ID
+  app.get('/api/worker/visits/:visitId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { visitId } = req.params;
+      
+      // Get worker record for authenticated user
+      const worker = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (worker.length === 0) {
+        return res.status(403).json({ error: 'Worker account not found' });
+      }
+      
+      // Get visit and verify it belongs to this worker
+      const [visit] = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(
+          eq(propertyVisits.id, visitId),
+          eq(propertyVisits.workerId, worker[0].id)
+        ))
+        .limit(1);
+      
+      if (!visit) {
+        return res.status(404).json({ error: 'Visit not found' });
+      }
+      
+      res.json(visit);
+    } catch (error) {
+      console.error('Error getting visit:', error);
+      res.status(500).json({ error: 'Failed to get visit' });
+    }
+  });
+
   // Worker check-in endpoint (accessible to workers and property managers)
   app.post('/api/worker/check-in', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { masterQrCode, location, method } = req.body;
+      const { masterQrCode, location, method, overrideReason } = req.body;
       
       if (!masterQrCode) {
         return res.status(400).json({ error: 'QR code is required' });
@@ -3824,17 +3894,79 @@ Instructions:
         return res.status(403).json({ error: 'You are not authorized to check in at this property. Contact your property manager.' });
       }
       
+      // Check for existing active visit for this worker
+      const existingActiveVisit = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(
+          eq(propertyVisits.workerId, worker[0].id),
+          eq(propertyVisits.status, 'IN_PROGRESS')
+        ))
+        .limit(1);
+      
+      if (existingActiveVisit.length > 0) {
+        return res.status(409).json({ 
+          error: 'You already have an active visit. Please complete it before starting a new one.',
+          activeVisitId: existingActiveVisit[0].id
+        });
+      }
+      
+      // Require GPS location for check-in
+      if (!location || !location.lat || !location.lng) {
+        return res.status(400).json({ 
+          error: 'GPS location is required for check-in. Please enable location services.',
+          requiresLocation: true
+        });
+      }
+      
+      // Validate geofence
+      const { evaluateGeofenceStatus } = await import('./geofence');
+      
+      const geofenceResult = evaluateGeofenceStatus(
+        location,
+        managedProperty[0].geofenceCenter,
+        parseFloat(managedProperty[0].geofenceRadiusMeters ?? '100'),
+        managedProperty[0].geofenceManualOverrideAllowed ?? true
+      );
+      
+      const locationWithVerified = {
+        ...location,
+        verified: geofenceResult.status === 'ok',
+      };
+      
+      // Hard block if too far and no override reason provided
+      if (geofenceResult.status === 'hard_block' && !overrideReason) {
+        // If manual override is not allowed, reject completely
+        if (!geofenceResult.overrideAllowed) {
+          return res.status(403).json({ 
+            error: 'Manual override is not allowed for this property. Please move closer to check in.',
+            geofence: geofenceResult,
+            requiresOverride: false
+          });
+        }
+        
+        return res.status(409).json({ 
+          error: 'Geofence validation failed',
+          geofence: geofenceResult,
+          requiresOverride: true
+        });
+      }
+      
       // Create visit record
       const [visit] = await db.insert(propertyVisits).values({
         managedPropertyId: managedProperty[0].id,
         workerId: worker[0].id,
         checkInAt: new Date(),
-        checkInLocation: location || null,
+        checkInLocation: locationWithVerified || null,
         checkInMethod: method || 'QR',
         status: 'IN_PROGRESS',
+        visitSummary: overrideReason ? `Manual override: ${overrideReason}` : null,
       }).returning();
       
-      res.json(visit);
+      res.json({ 
+        visit,
+        geofence: geofenceResult 
+      });
     } catch (error) {
       console.error('Error checking in:', error);
       res.status(500).json({ error: 'Failed to check in' });

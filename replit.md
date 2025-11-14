@@ -78,6 +78,27 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - Added proper entitlement checks, loading states, and regeneration logic
 - Security: Revoked QRs cannot be updated, only regenerated; all endpoints protected
 
+**Task 3: Worker GPS Check-In/Out System (COMPLETED)**
+- Added geofence configuration to managedProperties schema:
+  - geofenceCenter (JSONB with lat/lng)
+  - geofenceRadiusMeters (default 100m)
+  - geofenceManualOverrideAllowed (default true)
+- Created server/geofence.ts service:
+  - Haversine distance calculation
+  - evaluateGeofenceStatus with three states (ok, soft_warning, hard_block)
+- Backend API routes:
+  - GET /api/worker/visits/active (polling active visits)
+  - GET /api/worker/visits/:visitId (get specific visit)
+  - Enhanced POST /api/worker/check-in with GPS requirement, geofence validation, override handling
+  - Existing PATCH /api/worker/check-out/:visitId (updates with location, photos, summary)
+- Worker Portal frontend:
+  - WorkerAppShell layout with active visit indicator
+  - CheckInLanding page (manual QR code entry)
+  - CheckInByCode page (geolocation capture, geofence validation UI)
+  - ActiveVisit page (live timer, task checklist, notes, check-out)
+- Security: GPS location required, geofence properly enforced, manual override with reason logging
+- Mobile-first responsive design with proper error handling
+
 ## External Dependencies
 
 -   **Stripe:** Payment processing, subscription management, customer portal, webhooks.
