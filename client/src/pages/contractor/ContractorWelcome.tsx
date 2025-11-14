@@ -12,6 +12,34 @@ import {
   CheckCircle2
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
+import { BenefitsSection, MarketingBenefit } from "@/components/marketing/BenefitsSection";
+
+const contractorBenefits: MarketingBenefit[] = [
+  {
+    id: "branded-stickers",
+    text: "Custom branded QR stickers for every install",
+  },
+  {
+    id: "instant-contact",
+    text: "Customers scan to view install details & contact you instantly",
+  },
+  {
+    id: "log-jobs",
+    text: "Log all jobs, warranties, photos, and service notes",
+  },
+  {
+    id: "ai-reminders",
+    text: "AI sends customers maintenance & warranty reminders with YOUR branding",
+  },
+  {
+    id: "repeat-business",
+    text: "Create lifetime repeat business automatically",
+  },
+  {
+    id: "verified-records",
+    text: "Build trust with verified digital records for homeowners, inspectors & realtors",
+  },
+];
 
 export default function ContractorWelcome() {
   const [, setLocation] = useLocation();
@@ -147,6 +175,15 @@ export default function ContractorWelcome() {
             </button>
           </p>
         </div>
+
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Contractors Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="contractor"
+          benefits={contractorBenefits}
+          testIdPrefix="contractor"
+        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

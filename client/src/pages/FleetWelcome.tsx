@@ -13,6 +13,38 @@ import {
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import { useEffect } from "react";
+import { BenefitsSection, MarketingBenefit } from "@/components/marketing/BenefitsSection";
+
+const fleetBenefits: MarketingBenefit[] = [
+  {
+    id: "track-assets",
+    text: "Track unlimited fleet assets using durable scannable IDs for each vehicle, machine, and tool",
+  },
+  {
+    id: "ai-forecasting",
+    text: "AI-powered maintenance forecasting to eliminate breakdowns and prevent costly downtime",
+  },
+  {
+    id: "auto-logging",
+    text: "Fully automatic logging of repairs, inspections, technician notes, and service events",
+  },
+  {
+    id: "smart-dashboards",
+    text: "Smart dashboards with role-based access for managers, drivers, and mechanics",
+  },
+  {
+    id: "usage-tracking",
+    text: "Usage tracking (hours, mileage, runtime, wear cycles) to plan replacements and prevent failures",
+  },
+  {
+    id: "compliance-alerts",
+    text: "Compliance alerts when service schedules or inspections are missed",
+  },
+  {
+    id: "cost-analytics",
+    text: "Cost analytics that show high-expense assets and predict end-of-life cycles",
+  },
+];
 
 export default function FleetWelcome() {
   const [, setLocation] = useLocation();
@@ -160,6 +192,15 @@ export default function FleetWelcome() {
             </button>
           </p>
         </div>
+
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Fleet Managers Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="fleet"
+          benefits={fleetBenefits}
+          testIdPrefix="fleet"
+        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

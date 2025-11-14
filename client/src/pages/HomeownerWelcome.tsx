@@ -13,6 +13,34 @@ import {
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import { useEffect } from "react";
+import { BenefitsSection, MarketingBenefit } from "@/components/marketing/BenefitsSection";
+
+const homeownerBenefits: MarketingBenefit[] = [
+  {
+    id: "log-repairs",
+    text: "Log every home repair, upgrade, and warranty in one place",
+  },
+  {
+    id: "master-qr",
+    text: "Scan your Home Master QR to save fixes instantly",
+  },
+  {
+    id: "warranty-scan",
+    text: "Scan in any warranty, for appliances, furniture, jewelry etc with ease",
+  },
+  {
+    id: "ai-detection",
+    text: "AI detects warranty, recall, and service dates and automatically sends reminders",
+  },
+  {
+    id: "lifetime-reminders",
+    text: "Get lifetime maintenance reminders for all appliances & systems",
+  },
+  {
+    id: "home-history",
+    text: "Show full home history to inspectors, insurance, and future buyers with one scan inside electrical meter box",
+  },
+];
 
 export default function HomeownerWelcome() {
   const [, setLocation] = useLocation();
@@ -160,6 +188,15 @@ export default function HomeownerWelcome() {
             </button>
           </p>
         </div>
+
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Homeowners Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="homeowner"
+          benefits={homeownerBenefits}
+          testIdPrefix="homeowner"
+        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">

@@ -13,6 +13,38 @@ import {
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import { useEffect } from "react";
+import { BenefitsSection, MarketingBenefit } from "@/components/marketing/BenefitsSection";
+
+const propertyManagerBenefits: MarketingBenefit[] = [
+  {
+    id: "multi-property",
+    text: "Manage multiple properties from a single dashboard",
+  },
+  {
+    id: "gps-checkin",
+    text: "Worker check-in/out with GPS verification",
+  },
+  {
+    id: "task-assignment",
+    text: "Task assignment with photo/video completion proof",
+  },
+  {
+    id: "tenant-reports",
+    text: "Tenant issue reporting via public QR codes",
+  },
+  {
+    id: "activity-timeline",
+    text: "Complete activity timeline for all properties",
+  },
+  {
+    id: "worker-tracking",
+    text: "Track worker performance and visit history",
+  },
+  {
+    id: "property-analytics",
+    text: "Generate property reports and analytics",
+  },
+];
 
 export default function PropertyManagerWelcome() {
   const [, setLocation] = useLocation();
@@ -160,6 +192,15 @@ export default function PropertyManagerWelcome() {
             </button>
           </p>
         </div>
+
+        {/* Key Benefits */}
+        <BenefitsSection
+          heading="Why Property Managers Love ServiceVault"
+          eyebrow="Key Benefits"
+          accentVariant="property-manager"
+          benefits={propertyManagerBenefits}
+          testIdPrefix="property-manager"
+        />
 
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">
