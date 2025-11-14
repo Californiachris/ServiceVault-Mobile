@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlements } from "@/hooks/use-entitlements";
 import { Link } from "wouter";
 import { useState, useMemo } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { DashboardTabs } from "@/components/DashboardTabs";
+import { MasterQRDialog } from "@/components/MasterQRDialog";
 import {
   Home,
   QrCode,
@@ -62,8 +64,14 @@ const PROPERTY_TYPE_ICONS: Record<string, any> = {
 
 export default function HomeownerDashboard() {
   const { user } = useAuth();
+  const { isLoading: entitlementsLoading } = useEntitlements();
   const [searchQuery, setSearchQuery] = useState("");
   const [activePropertyType, setActivePropertyType] = useState<string>("ALL");
+  const [masterQRDialog, setMasterQRDialog] = useState<{ open: boolean; propertyId: string; propertyName: string }>({
+    open: false,
+    propertyId: "",
+    propertyName: "",
+  });
   const debouncedSearch = useDebounce(searchQuery, 300);
   
   const { data, isLoading } = useQuery<HomeownerDashboardData>({
@@ -396,56 +404,78 @@ export default function HomeownerDashboard() {
                   {filteredProperties.map((property: any) => {
                     const PropertyIcon = property.propertyType ? PROPERTY_TYPE_ICONS[property.propertyType] || Home : Home;
                     return (
-                      <Link key={property.id} href={`/property/${property.id}`}>
-                        <div
-                          className="group rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 cursor-pointer p-4"
-                          data-testid={`property-card-${property.id}`}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              {/* Property Type Icon */}
-                              <div className="flex-shrink-0">
-                                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                  <PropertyIcon className="h-5 w-5 text-primary" />
-                                </div>
+                      <div
+                        key={property.id}
+                        className="group rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200"
+                        data-testid={`property-card-${property.id}`}
+                      >
+                        <Link href={`/property/${property.id}`}>
+                          <div className="flex items-center gap-4 p-4 cursor-pointer">
+                            {/* Property Type Icon */}
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <PropertyIcon className="h-5 w-5 text-primary" />
                               </div>
-                              
-                              {/* Property Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
-                                    {property.name || 'Unnamed Property'}
-                                  </h3>
-                                  {property.propertyType && PROPERTY_TYPE_LABELS[property.propertyType] && (
-                                    <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                      {PROPERTY_TYPE_LABELS[property.propertyType]}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {property.addressLine1 || 'No address'}
-                                  {property.city && `, ${property.city}`}
-                                </p>
-                                <div className="flex items-center gap-3 mt-2">
-                                  <span className="flex items-center gap-1 text-xs">
-                                    <Shield className="h-3 w-3 text-green-500" />
-                                    <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+                            </div>
+                            
+                            {/* Property Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
+                                  {property.name || 'Unnamed Property'}
+                                </h3>
+                                {property.propertyType && PROPERTY_TYPE_LABELS[property.propertyType] && (
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    {PROPERTY_TYPE_LABELS[property.propertyType]}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {property.addressLine1 || 'No address'}
+                                {property.city && `, ${property.city}`}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2">
+                                <span className="flex items-center gap-1 text-xs">
+                                  <Shield className="h-3 w-3 text-green-500" />
+                                  <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+                                </span>
+                                {property.masterIdentifierId && (
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <QrCode className="h-3 w-3" />
+                                    QR Active
                                   </span>
-                                  {property.masterIdentifierId && (
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <QrCode className="h-3 w-3" />
-                                      QR Active
-                                    </span>
-                                  )}
-                                </div>
+                                )}
                               </div>
                             </div>
 
                             {/* Arrow */}
                             <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
                           </div>
+                        </Link>
+                        
+                        {/* Master QR Button - Outside Link */}
+                        <div className="px-4 pb-4 border-t border-border/50 pt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setMasterQRDialog({
+                                open: true,
+                                propertyId: property.id,
+                                propertyName: property.name || 'Unnamed Property',
+                              });
+                            }}
+                            disabled={entitlementsLoading}
+                            data-testid={`button-master-qr-${property.id}`}
+                            className="w-full"
+                          >
+                            <QrCode className="h-4 w-4 mr-2" />
+                            Master QR Code
+                          </Button>
                         </div>
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>
@@ -606,6 +636,14 @@ export default function HomeownerDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Master QR Dialog */}
+      <MasterQRDialog
+        propertyId={masterQRDialog.propertyId}
+        propertyName={masterQRDialog.propertyName}
+        open={masterQRDialog.open}
+        onOpenChange={(open) => setMasterQRDialog({ ...masterQRDialog, open })}
+      />
     </div>
   );
 }

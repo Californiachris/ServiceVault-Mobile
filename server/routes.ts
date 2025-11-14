@@ -5,6 +5,7 @@ import { db } from "./db";
 import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
 import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets, managedProperties, workers, propertyTasks, propertyVisits, tenantReports, propertyTaskCompletions } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
+import { attachEntitlements, requireEntitlement } from './entitlements/middleware';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import Stripe from "stripe";
@@ -42,6 +43,9 @@ import { NotificationService } from "./notifications";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Attach entitlements to all authenticated requests
+  app.use(attachEntitlements);
 
   // Dev-only role override middleware
   app.use((req: any, res, next) => {
@@ -1138,8 +1142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate new Master QR for property
-  app.post('/api/properties/:id/master-identifier', isAuthenticated, async (req: any, res) => {
+  // Get Master QR for property
+  app.get('/api/properties/:id/master-identifier', isAuthenticated, requireEntitlement('masterQR'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id: propertyId } = req.params;
@@ -1147,6 +1151,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const property = await storage.getProperty(propertyId);
       if (!property || property.ownerId !== userId) {
         return res.status(404).json({ error: "Property not found" });
+      }
+
+      let masterIdentifier = null;
+      let publicVisibility = null;
+      let revokedAt = null;
+
+      if (property.masterIdentifierId) {
+        const [identifier] = await db
+          .select()
+          .from(identifiers)
+          .where(eq(identifiers.id, property.masterIdentifierId))
+          .limit(1);
+
+        if (identifier) {
+          masterIdentifier = identifier.code;
+          revokedAt = identifier.deactivatedAt;
+        }
+      }
+
+      publicVisibility = property.publicVisibility as any || {
+        showFullAddress: false,
+        showContractors: true,
+        showDocuments: false,
+        showCosts: false,
+      };
+
+      res.json({
+        masterIdentifier,
+        publicVisibility,
+        revokedAt,
+      });
+    } catch (error) {
+      console.error("Error fetching master identifier:", error);
+      res.status(500).json({ error: "Failed to fetch master identifier" });
+    }
+  });
+
+  // Generate new Master QR for property
+  app.post('/api/properties/:id/master-identifier', isAuthenticated, requireEntitlement('masterQR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id: propertyId } = req.params;
+      const { privacySettings } = req.body;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Validate privacy settings if provided
+      if (privacySettings) {
+        const validKeys = ['showFullAddress', 'showContractors', 'showDocuments', 'showCosts'];
+        const invalidKeys = Object.keys(privacySettings).filter(k => !validKeys.includes(k));
+        if (invalidKeys.length > 0) {
+          return res.status(400).json({ error: 'Invalid privacy settings keys' });
+        }
+        for (const key of validKeys) {
+          if (privacySettings[key] !== undefined && typeof privacySettings[key] !== 'boolean') {
+            return res.status(400).json({ error: `Privacy setting ${key} must be boolean` });
+          }
+        }
+      }
+
+      // If property already has a master identifier, check if revoked
+      if (property.masterIdentifierId) {
+        const [identifier] = await db
+          .select()
+          .from(identifiers)
+          .where(eq(identifiers.id, property.masterIdentifierId))
+          .limit(1);
+
+        // If identifier is revoked, allow regeneration but deny privacy-only updates
+        if (identifier?.deactivatedAt) {
+          // If this is just a privacy update attempt (not regeneration), reject it
+          if (privacySettings && req.body.regenerate !== true) {
+            return res.status(400).json({ 
+              error: "Master QR code has been revoked. Please regenerate to make changes.",
+              revoked: true
+            });
+          }
+          // If regenerate flag is set, fall through to create new identifier
+          // Clear the old masterIdentifierId so we create a fresh one
+          await storage.updateProperty(propertyId, { masterIdentifierId: null });
+        } else {
+          // Identifier is active - allow privacy updates
+          if (privacySettings) {
+            await storage.updateProperty(propertyId, { publicVisibility: privacySettings });
+          }
+          return res.json({ masterIdentifier: identifier.code });
+        }
       }
 
       // Generate unique code for master QR
@@ -1159,10 +1253,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         qrPath: `/qr/master/${code}.png`, // QR image will be generated on-demand
       }).returning();
 
-      // Update property with new master identifier
-      await storage.updateProperty(propertyId, { masterIdentifierId: identifier.id });
+      // Update property with new master identifier and privacy settings
+      await storage.updateProperty(propertyId, {
+        masterIdentifierId: identifier.id,
+        ...(privacySettings && { publicVisibility: privacySettings }),
+      });
 
-      res.json({ identifier, qrCode: code });
+      res.json({ masterIdentifier: code });
     } catch (error) {
       console.error("Error generating master identifier:", error);
       res.status(500).json({ error: "Failed to generate master identifier" });
@@ -1170,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Revoke existing Master QR
-  app.post('/api/properties/:id/master-identifier/revoke', isAuthenticated, async (req: any, res) => {
+  app.post('/api/properties/:id/master-identifier/revoke', isAuthenticated, requireEntitlement('masterQR'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id: propertyId } = req.params;

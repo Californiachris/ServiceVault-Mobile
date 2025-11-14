@@ -48,8 +48,35 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 ### Authentication & Authorization
 - **Replit Authentication:** OIDC integration, session-based authentication with PostgreSQL store, Passport.js, JWT.
 - **Access Control:** Role-based access (HOMEOWNER, CONTRACTOR, INSPECTOR, ADMIN, FLEET, PROPERTY_MANAGER, WORKER), object-level ACL for Google Cloud Storage, protected routes with middleware.
+- **Entitlement System:** Feature-based access control using getUserEntitlements service, requireEntitlement middleware, and useEntitlements hook. All premium features protected at both frontend and backend layers.
 - **Worker Identity Verification:** Worker check-in/out uses authenticated user identity (req.user.claims.sub → workers.userId) to prevent privilege escalation.
-- **Security Features:** Rate limiting on AI parsing, input validation, hash chain integrity, admin role enforcement, worker authorization checks.
+- **Security Features:** Rate limiting on AI parsing, input validation, hash chain integrity, admin role enforcement, worker authorization checks, entitlement enforcement.
+
+## Recent Implementations (November 2025)
+
+**Task 1: Subscription Entitlement Service (COMPLETED)**
+- Created shared/planFeatures.ts with feature definitions for all 4 subscription tiers
+- Implemented server/entitlements/service.ts (getUserEntitlements)
+- Created server/entitlements/middleware.ts (attachEntitlements, requireEntitlement)
+- Added /api/entitlements endpoint for frontend access
+- Created useEntitlements React Query hook
+- Built FeatureGate component for conditional UI rendering
+- All premium features now protected with double-layer security (frontend + backend)
+
+**Task 2: Homeowner Master QR System (COMPLETED)**
+- Added publicVisibility JSONB column to properties schema
+- Created Master QR backend endpoints:
+  - POST /api/properties/:id/master-identifier (generate/regenerate with entitlement check)
+  - POST /api/properties/:id/master-identifier/revoke (deactivate QR)
+  - GET /api/properties/:id/master-identifier (fetch status)
+  - GET /api/properties/public/history/:masterQR (public timeline with privacy filtering)
+  - GET /api/properties/:id/history (authenticated owner timeline)
+- Built MasterQRDialog component with three states (first-run, active, revoked)
+- Created PropertyHistory public page (/property/public/:masterQR)
+- Integrated Master QR management into HomeownerDashboard
+- Implemented privacy controls (showFullAddress, showContractors, showDocuments, showCosts)
+- Added proper entitlement checks, loading states, and regeneration logic
+- Security: Revoked QRs cannot be updated, only regenerated; all endpoints protected
 
 ## External Dependencies
 
