@@ -100,7 +100,7 @@ export default function FleetPricing() {
       window.location.href = '/api/login';
       return;
     }
-    setOnboardingModal({ plan: 'fleet' });
+    setOnboardingModal({ plan: 'fleet_base' });
   };
 
   const handleOnboardingComplete = async (data: any) => {

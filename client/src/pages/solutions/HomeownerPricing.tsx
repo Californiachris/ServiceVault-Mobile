@@ -100,7 +100,7 @@ export default function HomeownerPricing() {
       window.location.href = '/api/login';
       return;
     }
-    setOnboardingModal({ plan: 'homeowner' });
+    setOnboardingModal({ plan: 'homeowner_base' });
   };
 
   const handleOnboardingComplete = async (data: any) => {

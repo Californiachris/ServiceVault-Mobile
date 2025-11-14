@@ -101,7 +101,7 @@ export default function PropertyManagerPricing() {
       window.location.href = '/api/login';
       return;
     }
-    setOnboardingModal({ plan: 'property_manager' });
+    setOnboardingModal({ plan: 'property_manager_base' });
   };
 
   const handleOnboardingComplete = async (data: any) => {
