@@ -10,6 +10,13 @@ import { storage } from "./storage";
 // Demo data seeding disabled
 // import { seedDemoData } from "./seedDemoData";
 
+// Extend session type to include redirect path
+declare module 'express-session' {
+  interface SessionData {
+    redirectAfterLogin?: string;
+  }
+}
+
 // Public mode: Skip authentication entirely
 const AUTH_MODE = process.env.AUTH_MODE || 'public';
 const DEMO_USER_ID = 'demo-user-public';
@@ -159,6 +166,9 @@ export async function setupAuth(app: Express) {
     }
     
     const claims = tokens.claims();
+    if (!claims) {
+      return verified(new Error("Failed to get claims from tokens"));
+    }
     const userId = claims["sub"];
     await upsertUser(claims, role);
     
@@ -193,6 +203,12 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    // Store the intended redirect path in session before authentication
+    const redirectPath = req.query.redirect as string;
+    if (redirectPath && redirectPath.startsWith('/')) {
+      req.session.redirectAfterLogin = redirectPath;
+    }
+    
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -200,9 +216,21 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successRedirect: "/dashboard",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${req.hostname}`, (err: any, user: any) => {
+      if (err || !user) {
+        return res.redirect("/api/login");
+      }
+      
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          return res.redirect("/api/login");
+        }
+        
+        // Use stored redirect path or default to /dashboard
+        const redirectPath = req.session.redirectAfterLogin || "/dashboard";
+        delete req.session.redirectAfterLogin; // Clean up
+        res.redirect(redirectPath);
+      });
     })(req, res, next);
   });
 

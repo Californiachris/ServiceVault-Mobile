@@ -128,7 +128,31 @@ function Router() {
     );
   }
 
-  // UNAUTHENTICATED fallback
+  // UNAUTHENTICATED fallback - redirect to login for specific protected routes
+  // Only dashboard routes, not public marketing pages
+  const protectedRoutePatterns = [
+    "/property-manager",   // Property manager dashboard (not /solutions/property-managers which is public)
+    "/dashboard",          // General dashboard
+    "/settings",           // Settings pages
+    "/homeowner",          // Homeowner dashboard
+    "/tools/install",      // Contractor install tool
+    "/tools/inspect",      // Inspector tool
+  ];
+  
+  const isProtectedRoute = protectedRoutePatterns.some(path => 
+    location === path || location.startsWith(path + "/")
+  );
+  
+  if (isProtectedRoute) {
+    const redirectUrl = `/api/login?redirect=${encodeURIComponent(location)}`;
+    window.location.href = redirectUrl;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <Switch>
       <Route path="/" component={Landing} />

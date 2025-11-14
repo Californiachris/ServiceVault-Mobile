@@ -54,6 +54,23 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 
 ## Recent Implementations (November 2025)
 
+**Public Marketing Pages & Auth Redirect Flow (COMPLETED - November 14, 2025)**
+- Created 4 premium welcome pages at `/solutions/*` namespace:
+  - `/solutions/contractors` → ContractorWelcome
+  - `/solutions/homeowners` → HomeownerWelcome
+  - `/solutions/fleet` → FleetWelcome
+  - `/solutions/property-managers` → PropertyManagerWelcome
+- All pages feature complete SEO (title, meta descriptions, OG tags, Twitter cards)
+- Landing page role cards route to corresponding `/solutions/*` pages
+- Implemented auth redirect flow with return path preservation:
+  - Backend: `/api/login` accepts `?redirect=` parameter and stores in session
+  - Backend: `/api/callback` custom handler uses stored redirect path
+  - Frontend: Passes current location when redirecting to login
+  - Session type extended to support `redirectAfterLogin` property
+- Routing architecture: Public marketing (`/solutions/*`) cleanly separated from authenticated dashboards (`/property-manager`, `/dashboard`, etc.)
+- Protected route logic: Specific dashboard routes require authentication, preserves intended destination post-login
+- Marketing funnel flow: Landing card → Welcome page → Get Started/Pricing → Login → Dashboard
+
 **Contractor Experience Redesign (COMPLETED - November 14, 2025)**
 - New 3-tier pricing structure: Starter ($49.99/mo, 50 stickers), Pro ($69.99/mo, 100 stickers), Elite ($120/mo, 250 stickers)
 - Value-first onboarding flow: Welcome page → Plan Selection → Payment → Dashboard
