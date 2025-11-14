@@ -162,44 +162,6 @@ export default function HomeownerWelcome() {
           testIdPrefix="homeowner"
         />
 
-        <div className="text-center">
-          {/* Primary CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg"
-              className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-xl"
-              onClick={() => setLocation("/solutions/homeowners/pricing")}
-              data-testid="button-get-started"
-            >
-              Get Started
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            
-            <Button 
-              size="lg"
-              variant="outline"
-              className="w-full sm:w-auto text-lg px-8 py-6 border-2"
-              onClick={() => setLocation("/solutions/homeowners/pricing")}
-              data-testid="button-view-pricing"
-            >
-              View Pricing
-            </Button>
-          </div>
-
-          <p className="mt-4 text-sm text-muted-foreground">
-            <button 
-              className="underline hover:text-primary transition-colors"
-              onClick={() => {
-                const howItWorks = document.getElementById('how-it-works');
-                howItWorks?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              data-testid="button-how-it-works-scroll"
-            >
-              See how it works (30-second overview)
-            </button>
-          </p>
-        </div>
-
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">
           <div className="text-center mb-12">
@@ -237,13 +199,12 @@ export default function HomeownerWelcome() {
           <div className="text-center">
             <Button 
               size="lg"
-              variant="outline"
-              className="text-base px-6 py-5 border-2"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-lg px-10 py-6 shadow-xl"
               onClick={() => setLocation("/solutions/homeowners/pricing")}
-              data-testid="button-get-master-qr"
+              data-testid="button-view-plans"
             >
-              Get Your Master QR
-              <ArrowRight className="ml-2 h-4 w-4" />
+              View Plans
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
         </div>

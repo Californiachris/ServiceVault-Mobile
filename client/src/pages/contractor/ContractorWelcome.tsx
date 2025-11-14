@@ -161,32 +161,6 @@ export default function ContractorWelcome() {
           testIdPrefix="contractor"
         />
 
-        <div className="text-center">
-          {/* Primary CTA */}
-          <Button 
-            size="lg"
-            className="w-full md:w-auto text-lg px-8 py-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-xl"
-            onClick={() => setLocation("/solutions/contractors/pricing")}
-            data-testid="button-generate-sticker-pack"
-          >
-            Generate Your Sticker Pack
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-
-          <p className="mt-4 text-sm text-muted-foreground">
-            <button 
-              className="underline hover:text-primary transition-colors"
-              onClick={() => {
-                const howItWorks = document.getElementById('how-it-works');
-                howItWorks?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              data-testid="button-how-it-works-scroll"
-            >
-              See how it works (30-second overview)
-            </button>
-          </p>
-        </div>
-
         {/* How It Works - 3 Steps */}
         <div id="how-it-works" className="mt-24 scroll-mt-24">
           <div className="text-center mb-12">
@@ -224,13 +198,12 @@ export default function ContractorWelcome() {
           <div className="text-center">
             <Button 
               size="lg"
-              variant="outline"
-              className="text-base px-6 py-5 border-2"
-              onClick={() => setLocation("/contractor/plans")}
-              data-testid="button-choose-plan"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-lg px-10 py-6 shadow-xl"
+              onClick={() => setLocation("/solutions/contractors/pricing")}
+              data-testid="button-view-plans"
             >
-              Choose Your Plan & Get Stickers
-              <ArrowRight className="ml-2 h-4 w-4" />
+              View Plans
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
         </div>
