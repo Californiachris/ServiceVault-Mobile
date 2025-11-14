@@ -28,7 +28,8 @@ import {
   ChevronRight,
   Building,
   Building2,
-  Warehouse
+  Warehouse,
+  FileCheck
 } from "lucide-react";
 
 interface HomeownerDashboardData {
@@ -82,6 +83,23 @@ export default function HomeownerDashboard() {
   const { data: preferences } = useQuery<UserPreferences>({
     queryKey: ["/api/user/preferences"],
     retry: false,
+  });
+
+  // Fetch warranty summaries for all properties
+  const propertyIds = (data?.properties || []).map((p: any) => p.id);
+  const { data: warrantySummaries, isLoading: warrantiesLoading } = useQuery({
+    queryKey: ["/api/warranties/properties", propertyIds],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const summaries = await Promise.all(
+        propertyIds.map(async (propertyId: string) => {
+          const res = await fetch(`/api/warranties/property/${propertyId}`);
+          if (!res.ok) return [];
+          return res.json();
+        })
+      );
+      return summaries.flat();
+    },
   });
 
   const properties = data?.properties || [];
@@ -543,6 +561,82 @@ export default function HomeownerDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI-Parsed Warranty Summaries */}
+        <div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="h-5 w-5" />
+                  Warranty Summaries
+                  <Sparkles className="h-4 w-4 text-blue-500" />
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {warrantiesLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ) : !warrantySummaries || warrantySummaries.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileCheck className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">No warranty summaries yet</p>
+                  <p className="text-xs text-muted-foreground">Upload warranty documents to auto-parse with AI</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {warrantySummaries.slice(0, 5).map((summary: any) => (
+                    <div
+                      key={summary.id}
+                      className="p-3 bg-muted/50 rounded-lg border border-border"
+                      data-testid={`warranty-summary-${summary.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <FileCheck className="h-4 w-4 text-blue-500" />
+                            <p className="text-sm font-medium">
+                              {summary.parsedData?.productName || summary.parsedData?.brand || 'Warranty Document'}
+                            </p>
+                            {summary.parsedData?.brand && summary.parsedData?.model && (
+                              <Badge variant="outline" className="text-xs">
+                                {summary.parsedData.model}
+                              </Badge>
+                            )}
+                          </div>
+                          {summary.parsedData?.warrantyEndDate && (
+                            <p className="text-xs text-muted-foreground">
+                              Valid until: {new Date(summary.parsedData.warrantyEndDate).toLocaleDateString()}
+                            </p>
+                          )}
+                          {summary.parsedData?.maintenanceSchedule && summary.parsedData.maintenanceSchedule.length > 0 && (
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              {summary.parsedData.maintenanceSchedule.length} maintenance reminder{summary.parsedData.maintenanceSchedule.length > 1 ? 's' : ''} created
+                            </p>
+                          )}
+                          {summary.confidence && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              AI Confidence: {Math.round(parseFloat(summary.confidence) * 100)}%
+                            </p>
+                          )}
+                        </div>
+                        <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      </div>
+                    </div>
+                  ))}
+                  {warrantySummaries.length > 5 && (
+                    <p className="text-xs text-center text-muted-foreground pt-2">
+                      Showing 5 of {warrantySummaries.length} warranties
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

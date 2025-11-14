@@ -480,6 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const warrantyDocs = assetDocs.filter((doc: any) => doc.type === 'WARRANTY' && doc.expiryDate);
         
         for (const doc of warrantyDocs) {
+          if (!doc.expiryDate) continue;
           const expiryDate = new Date(doc.expiryDate);
           const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
           
@@ -493,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               assetName: asset.name,
               propertyId: asset.propertyId,
               documentId: doc.id,
-              documentName: doc.name,
+              documentName: doc.title,
               expiryDate: doc.expiryDate,
               daysUntilExpiry,
               urgency,
@@ -577,14 +578,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const operators = await db
         .select()
         .from(fleetOperators)
-        .where(eq(fleetOperators.userId, userId));
+        .where(eq(fleetOperators.fleetUserId, userId));
 
       // Get operator assignments
       const operatorAssignments = await db
         .select()
         .from(fleetOperatorAssets)
         .innerJoin(fleetOperators, eq(fleetOperatorAssets.operatorId, fleetOperators.id))
-        .where(eq(fleetOperators.userId, userId));
+        .where(eq(fleetOperators.fleetUserId, userId));
 
       const assignedAssetIds = new Set(operatorAssignments.map(oa => oa.fleet_operator_assets.assetId));
 
@@ -787,8 +788,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Parallel fetch all data
       const [
-        properties,
-        workers,
+        managedPropertiesData,
+        workersData,
         allTasks,
         allReports,
         recentVisits,
@@ -864,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
       
       // Calculate stats
-      const activeWorkers = workers.filter(w => w.status === 'ACTIVE').length;
+      const activeWorkers = workersData.filter((w: any) => w.status === 'ACTIVE').length;
       const pendingTasksCount = allTasks.filter(t => t.task.status === 'PENDING').length;
       const urgentReportsCount = allReports.filter(r => r.report.priority === 'URGENT' && r.report.status === 'PENDING').length;
       
@@ -904,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         stats: {
-          totalProperties: properties.length,
+          totalProperties: managedPropertiesData.length,
           activeWorkers,
           pendingTasksCount,
           urgentReportsCount,
@@ -912,8 +913,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tasksCompletedThisWeek,
           newReportsThisWeek,
         },
-        properties,
-        workers,
+        properties: managedPropertiesData,
+        workers: workersData,
         recentVisits,
         pendingTasks,
         overdueTasks,
@@ -1865,6 +1866,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting document:", error);
       res.status(500).json({ error: "Failed to delete document" });
     }
+  });
+
+  // ===== WARRANTY PARSING ENDPOINTS =====
+  
+  app.post('/api/warranties/parse', isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { checkRateLimit, RATE_LIMITS } = await import('./rateLimiter');
+    
+    // Rate limiting
+    const rateLimitResult = checkRateLimit(userId, "warranty_parse", RATE_LIMITS.WARRANTY_PARSE);
+    if (!rateLimitResult.allowed) {
+      const retryAfter = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000);
+      return res.status(429).json({ 
+        error: "Rate limit exceeded. Please try again later.",
+        retryAfter 
+      });
+    }
+    
+    const { imageBase64, propertyId, assetId, documentId } = req.body;
+    
+    if (!imageBase64) {
+      return res.status(400).json({ error: "Image data required" });
+    }
+    
+    try {
+      const { warrantySummaries } = await import('@shared/schema');
+      
+      // Parse warranty using OpenAI
+      const parsedData = await parseWarrantyDocument(imageBase64);
+      
+      // Store warranty summary
+      const summary = await db.insert(warrantySummaries).values({
+        documentId: documentId || null,
+        propertyId: propertyId || null,
+        assetId: assetId || null,
+        parsedData,
+        warrantyStartDate: parsedData.warrantyStartDate ? new Date(parsedData.warrantyStartDate) : null,
+        warrantyEndDate: parsedData.warrantyEndDate ? new Date(parsedData.warrantyEndDate) : null,
+        confidence: parsedData.warrantyEndDate && parsedData.warrantyStartDate ? "0.90" : "0.70",
+        createdBy: userId,
+      }).returning();
+      
+      // Create maintenance reminders from schedule
+      let remindersCreated = 0;
+      if (parsedData.maintenanceSchedule && parsedData.maintenanceSchedule.length > 0) {
+        const reminderValues = parsedData.maintenanceSchedule.map(item => ({
+          assetId: assetId || null,
+          propertyId: propertyId || null,
+          dueAt: item.firstDueDate ? new Date(item.firstDueDate) : new Date(Date.now() + item.intervalMonths * 30 * 24 * 60 * 60 * 1000),
+          type: "MAINTENANCE",
+          title: item.description,
+          description: `Recommended maintenance every ${item.intervalMonths} months`,
+          frequency: "CUSTOM",
+          intervalDays: item.intervalMonths * 30,
+          source: "AI_GENERATED",
+          createdBy: userId,
+        }));
+        
+        await db.insert(reminders).values(reminderValues);
+        remindersCreated = reminderValues.length;
+      }
+      
+      res.json({ 
+        success: true, 
+        summary: summary[0],
+        remindersCreated
+      });
+    } catch (error: any) {
+      console.error("Warranty parsing error:", error);
+      res.status(500).json({ error: error.message || "Failed to parse warranty" });
+    }
+  });
+  
+  app.get('/api/warranties/property/:propertyId', isAuthenticated, async (req: any, res) => {
+    const { propertyId } = req.params;
+    const { warrantySummaries } = await import('@shared/schema');
+    
+    const summaries = await db.select()
+      .from(warrantySummaries)
+      .where(eq(warrantySummaries.propertyId, propertyId))
+      .orderBy(desc(warrantySummaries.createdAt));
+    
+    res.json(summaries);
+  });
+  
+  app.get('/api/warranties/asset/:assetId', isAuthenticated, async (req: any, res) => {
+    const { assetId } = req.params;
+    const { warrantySummaries } = await import('@shared/schema');
+    
+    const summaries = await db.select()
+      .from(warrantySummaries)
+      .where(eq(warrantySummaries.assetId, assetId))
+      .orderBy(desc(warrantySummaries.createdAt));
+    
+    res.json(summaries);
   });
 
   app.post('/api/documents/upload', isAuthenticated, async (req: any, res) => {

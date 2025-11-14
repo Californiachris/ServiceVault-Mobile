@@ -119,6 +119,20 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - Security: IP-based rate limiting, entitlement enforcement, abuse logging
 - Manager dashboard: Uses existing /property-manager/reports page with filtering
 
+**Task 5: AI Warranty Parsing (COMPLETED)**
+- Added warrantySummaries table to schema with parsedData JSONB, dates, confidence
+- Backend API endpoints:
+  - POST /api/warranties/parse (AI parsing with rate limiting: 20/hour per user)
+  - GET /api/warranties/property/:propertyId, GET /api/warranties/asset/:assetId
+- Auto-creates maintenance reminders from parsed maintenance schedule
+- Rate limiting via RATE_LIMITS.WARRANTY_PARSE  
+- Frontend integration in Homeowner Dashboard:
+  - React Query hook fetching warranty summaries for all properties
+  - Warranty Summaries card with AI confidence scores, parsed dates, maintenance reminders
+  - Loading skeletons, empty states, proper data-testid attributes
+  - Displays brand, model, warranty end date, auto-generated reminders count
+- Integration tested: Workflow running cleanly with no errors
+
 ## External Dependencies
 
 -   **Stripe:** Payment processing, subscription management, customer portal, webhooks.
