@@ -83,6 +83,22 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 - SEO meta descriptions updated to reflect new contractor pricing
 - Architect review: PASSED - meets enterprise SaaS standards
 
+**Role-Specific Pricing Pages & Isolated Conversion Funnels (COMPLETED - November 14, 2025)**
+- Created 4 isolated pricing pages at `/solutions/:role/pricing` namespace:
+  - `/solutions/contractors/pricing` → ContractorPricing (3 tiers: $49.99/$69.99/$120)
+  - `/solutions/homeowners/pricing` → HomeownerPricing ($99 setup + $10/year)
+  - `/solutions/fleet/pricing` → FleetPricing ($4.99/asset/mo)
+  - `/solutions/property-managers/pricing` → PropertyManagerPricing ($4.99/property/mo with bulk discounts)
+- Conversion funnel isolation: Each role sees ONLY their specific pricing (no cross-contamination)
+- Updated all welcome page CTAs to route to role-specific pricing pages
+- Complete SEO implementation: unique titles, meta descriptions, OG tags, Twitter cards for each page
+- Premium card-based design with consistent spacing, typography, gradients
+- All CTAs route to `/pricing?plan=:tier` for Stripe checkout integration
+- Trust signals and back navigation on all pricing pages
+- Router updated: 4 new public routes added to App.tsx
+- Architect review: PASSED - enterprise SaaS quality, optimal conversion funnel flow
+- Marketing funnel now: Landing card → Welcome (`/solutions/:role`) → Role-Specific Pricing (`/solutions/:role/pricing`) → Stripe checkout
+
 **Task 1: Subscription Entitlement Service (COMPLETED)**
 - Created shared/planFeatures.ts with feature definitions for all 4 subscription tiers
 - Implemented server/entitlements/service.ts (getUserEntitlements)
