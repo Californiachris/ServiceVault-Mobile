@@ -2997,34 +2997,90 @@ Instructions:
     }
   });
 
-  // Update managed property status
+  // Update managed property (full edit)
   app.patch('/api/property-manager/properties/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;
-      const { managementStatus } = req.body;
+      const { name, addressLine1, city, state, postalCode, country, propertyType, managementStatus } = req.body;
       
       // Verify ownership
-      const existing = await db
+      const [existing] = await db
         .select()
         .from(managedProperties)
         .where(and(eq(managedProperties.id, id), eq(managedProperties.propertyManagerId, userId)))
         .limit(1);
       
-      if (existing.length === 0) {
+      if (!existing) {
         return res.status(404).json({ error: 'Managed property not found' });
       }
       
+      // Update the underlying property if property fields provided
+      if (name || addressLine1 || city || state || postalCode || country || propertyType) {
+        const propertyUpdates: any = { updatedAt: new Date() };
+        if (name) propertyUpdates.name = name;
+        if (addressLine1) propertyUpdates.addressLine1 = addressLine1;
+        if (city) propertyUpdates.city = city;
+        if (state) propertyUpdates.state = state;
+        if (postalCode) propertyUpdates.postalCode = postalCode;
+        if (country !== undefined) propertyUpdates.country = country;
+        if (propertyType) propertyUpdates.propertyType = propertyType;
+        
+        await db
+          .update(properties)
+          .set(propertyUpdates)
+          .where(eq(properties.id, existing.propertyId));
+      }
+      
+      // Update management status if provided
+      if (managementStatus) {
+        await db
+          .update(managedProperties)
+          .set({ managementStatus, updatedAt: new Date() })
+          .where(eq(managedProperties.id, id));
+      }
+      
+      // Return updated managed property with property details
       const [updated] = await db
-        .update(managedProperties)
-        .set({ managementStatus, updatedAt: new Date() })
+        .select()
+        .from(managedProperties)
+        .innerJoin(properties, eq(managedProperties.propertyId, properties.id))
         .where(eq(managedProperties.id, id))
-        .returning();
+        .limit(1);
       
       res.json(updated);
     } catch (error) {
       console.error('Error updating managed property:', error);
       res.status(500).json({ error: 'Failed to update property' });
+    }
+  });
+  
+  // Delete managed property
+  app.delete('/api/property-manager/properties/:id', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(managedProperties)
+        .where(and(eq(managedProperties.id, id), eq(managedProperties.propertyManagerId, userId)))
+        .limit(1);
+      
+      if (!existing) {
+        return res.status(404).json({ error: 'Managed property not found' });
+      }
+      
+      // Delete the managed property link
+      await db
+        .delete(managedProperties)
+        .where(eq(managedProperties.id, id));
+      
+      res.json({ success: true, message: 'Property removed from management' });
+    } catch (error) {
+      console.error('Error deleting managed property:', error);
+      res.status(500).json({ error: 'Failed to delete property' });
     }
   });
 
