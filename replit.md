@@ -54,6 +54,18 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 
 ## Recent Implementations (November 2025)
 
+**Contractor Experience Redesign (COMPLETED - November 14, 2025)**
+- New 3-tier pricing structure: Starter ($49.99/mo, 50 stickers), Pro ($69.99/mo, 100 stickers), Elite ($120/mo, 250 stickers)
+- Value-first onboarding flow: Welcome page → Plan Selection → Payment → Dashboard
+- ContractorWelcome page with hero section, benefit bullets, "How It Works" section
+- ContractorPlanSelection page with 3 professional plan cards and "Most Popular" badge on Pro tier
+- Updated pricing.tsx contractor section with new 3-tier structure
+- Flow logic: contractors without subscriptions automatically redirect to welcome page
+- Backend fully integrated: server/routes.ts handles all 3 tiers with correct quota calculations (50/100/250)
+- All backend mappings updated: priceIds, roleMap, monthlyQuota, quotaTotal calculations
+- SEO meta descriptions updated to reflect new contractor pricing
+- Architect review: PASSED - meets enterprise SaaS standards
+
 **Task 1: Subscription Entitlement Service (COMPLETED)**
 - Created shared/planFeatures.ts with feature definitions for all 4 subscription tiers
 - Implemented server/entitlements/service.ts (getUserEntitlements)
