@@ -23,6 +23,12 @@ import ReportsPage from "@/pages/tools/reports";
 import InspectionsPage from "@/pages/tools/inspections";
 import RemindersPage from "@/pages/tools/reminders";
 import AdminFulfillmentPage from "@/pages/tools/admin-fulfillment";
+import PropertyManagerDashboard from "@/pages/dashboards/PropertyManagerDashboard";
+import PropertyManagerProperties from "@/pages/property-manager/properties";
+import PropertyManagerWorkers from "@/pages/property-manager/workers";
+import PropertyManagerTasks from "@/pages/property-manager/tasks";
+import PropertyManagerVisits from "@/pages/property-manager/visits";
+import PropertyManagerTenantReports from "@/pages/property-manager/tenant-reports";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -75,6 +81,12 @@ function Router() {
           <Route path="/tools/inspections" component={InspectionsPage} />
           <Route path="/tools/reminders" component={RemindersPage} />
           <Route path="/tools/admin-fulfillment" component={AdminFulfillmentPage} />
+          <Route path="/property-manager" component={PropertyManagerDashboard} />
+          <Route path="/property-manager/properties" component={PropertyManagerProperties} />
+          <Route path="/property-manager/workers" component={PropertyManagerWorkers} />
+          <Route path="/property-manager/tasks" component={PropertyManagerTasks} />
+          <Route path="/property-manager/visits" component={PropertyManagerVisits} />
+          <Route path="/property-manager/reports" component={PropertyManagerTenantReports} />
           <Route component={NotFound} />
         </Switch>
       </AppShell>
