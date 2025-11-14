@@ -129,7 +129,7 @@ export default function FleetWelcome() {
             <Button 
               size="lg"
               className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-xl"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/fleet/pricing")}
               data-testid="button-get-started"
             >
               Get Started
@@ -140,7 +140,7 @@ export default function FleetWelcome() {
               size="lg"
               variant="outline"
               className="w-full sm:w-auto text-lg px-8 py-6 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/fleet/pricing")}
               data-testid="button-view-pricing"
             >
               View Pricing
@@ -200,7 +200,7 @@ export default function FleetWelcome() {
               size="lg"
               variant="outline"
               className="text-base px-6 py-5 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/fleet/pricing")}
               data-testid="button-start-tracking"
             >
               Start Tracking Your Fleet

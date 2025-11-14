@@ -129,7 +129,7 @@ export default function PropertyManagerWelcome() {
             <Button 
               size="lg"
               className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-xl"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/property-managers/pricing")}
               data-testid="button-get-started"
             >
               Get Started
@@ -140,7 +140,7 @@ export default function PropertyManagerWelcome() {
               size="lg"
               variant="outline"
               className="w-full sm:w-auto text-lg px-8 py-6 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/property-managers/pricing")}
               data-testid="button-view-pricing"
             >
               View Pricing
@@ -200,7 +200,7 @@ export default function PropertyManagerWelcome() {
               size="lg"
               variant="outline"
               className="text-base px-6 py-5 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/property-managers/pricing")}
               data-testid="button-manage-properties"
             >
               Start Managing Properties

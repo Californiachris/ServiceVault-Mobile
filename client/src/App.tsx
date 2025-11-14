@@ -40,6 +40,10 @@ import ContractorPlanSelection from "@/pages/contractor/ContractorPlanSelection"
 import HomeownerWelcome from "@/pages/HomeownerWelcome";
 import FleetWelcome from "@/pages/FleetWelcome";
 import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
+import ContractorPricing from "@/pages/solutions/ContractorPricing";
+import HomeownerPricing from "@/pages/solutions/HomeownerPricing";
+import FleetPricing from "@/pages/solutions/FleetPricing";
+import PropertyManagerPricing from "@/pages/solutions/PropertyManagerPricing";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -76,9 +80,13 @@ function Router() {
         <Route path="/contractor/welcome" component={ContractorWelcome} />
         <Route path="/contractor/plans" component={ContractorPlanSelection} />
         <Route path="/solutions/contractors" component={ContractorWelcome} />
+        <Route path="/solutions/contractors/pricing" component={ContractorPricing} />
         <Route path="/solutions/homeowners" component={HomeownerWelcome} />
+        <Route path="/solutions/homeowners/pricing" component={HomeownerPricing} />
         <Route path="/solutions/fleet" component={FleetWelcome} />
+        <Route path="/solutions/fleet/pricing" component={FleetPricing} />
         <Route path="/solutions/property-managers" component={PropertyManagerWelcome} />
+        <Route path="/solutions/property-managers/pricing" component={PropertyManagerPricing} />
         <Route path="/asset/:assetId" component={PublicAsset} />
         <Route path="/property/public/:masterQR" component={PropertyHistory} />
         <Route path="/property/report/:masterQR" component={TenantReportForm} />

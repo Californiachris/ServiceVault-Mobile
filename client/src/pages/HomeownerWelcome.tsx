@@ -129,7 +129,7 @@ export default function HomeownerWelcome() {
             <Button 
               size="lg"
               className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-xl"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/homeowners/pricing")}
               data-testid="button-get-started"
             >
               Get Started
@@ -140,7 +140,7 @@ export default function HomeownerWelcome() {
               size="lg"
               variant="outline"
               className="w-full sm:w-auto text-lg px-8 py-6 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/homeowners/pricing")}
               data-testid="button-view-pricing"
             >
               View Pricing
@@ -200,7 +200,7 @@ export default function HomeownerWelcome() {
               size="lg"
               variant="outline"
               className="text-base px-6 py-5 border-2"
-              onClick={() => setLocation("/pricing")}
+              onClick={() => setLocation("/solutions/homeowners/pricing")}
               data-testid="button-get-master-qr"
             >
               Get Your Master QR

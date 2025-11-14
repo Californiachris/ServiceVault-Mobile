@@ -127,7 +127,7 @@ export default function ContractorWelcome() {
           <Button 
             size="lg"
             className="w-full md:w-auto text-lg px-8 py-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-xl"
-            onClick={() => setLocation("/contractor/plans")}
+            onClick={() => setLocation("/solutions/contractors/pricing")}
             data-testid="button-generate-sticker-pack"
           >
             Generate Your Sticker Pack
