@@ -12,7 +12,8 @@ import {
 import { useLocation } from "wouter";
 import { 
   Sparkles, Shield, Users, Building2, Zap, Check, QrCode, 
-  Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2
+  Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2,
+  Wrench, Home, Truck
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
 import vaultIcon from "@assets/file_000000009c0871fd92f0332b41379de5~3_1763079245926.png";
@@ -198,6 +199,140 @@ export default function Landing() {
           >
             SCAN • VERIFY • PROTECT
           </p>
+        </div>
+      </div>
+
+      {/* Premium Role Cards - Choose Your Path */}
+      <div className="max-w-7xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-choose-path">
+            Choose Your Path
+          </h2>
+          <p className="text-xl text-muted-foreground">
+            Select your role to see what ServiceVault can do for you
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {/* Contractor Card */}
+          <Card 
+            className="bg-card hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 group"
+            onClick={() => setLocation("/solutions/contractors")}
+            data-testid="card-role-contractor"
+          >
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Wrench className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold">For Contractors</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Turn every install into repeat business. Your logo on every asset + automatic service reminders that bring customers back to YOU every time.
+                </p>
+                <Button 
+                  className="w-full sm:w-auto"
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/solutions/contractors");
+                  }}
+                  data-testid="button-contractor-learn-more"
+                >
+                  Learn more
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Homeowner Card */}
+          <Card 
+            className="bg-card hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 group"
+            onClick={() => setLocation("/solutions/homeowners")}
+            data-testid="card-role-homeowner"
+          >
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Home className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold">For Homeowners</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Know everything about every system in your home — model numbers, installations, warranties and who to call when something needs service.
+                </p>
+                <Button 
+                  className="w-full sm:w-auto"
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/solutions/homeowners");
+                  }}
+                  data-testid="button-homeowner-learn-more"
+                >
+                  Learn more
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fleet Management Card */}
+          <Card 
+            className="bg-card hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 group"
+            onClick={() => setLocation("/solutions/fleet")}
+            data-testid="card-role-fleet"
+          >
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Truck className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold">For Fleet Management</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Every vehicle and unit logged automatically. Reduce breakdowns, track service history, and keep maintenance running on time.
+                </p>
+                <Button 
+                  className="w-full sm:w-auto"
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/solutions/fleet");
+                  }}
+                  data-testid="button-fleet-learn-more"
+                >
+                  Learn more
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Property Manager Card */}
+          <Card 
+            className="bg-card hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/50 group"
+            onClick={() => setLocation("/solutions/property-managers")}
+            data-testid="card-role-property-manager"
+          >
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Building2 className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold">For Property Managers</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  Every unit. Every asset. Every service call. Full history and contractor details in one place — even when tenants change.
+                </p>
+                <Button 
+                  className="w-full sm:w-auto"
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/solutions/property-managers");
+                  }}
+                  data-testid="button-property-manager-learn-more"
+                >
+                  Learn more
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

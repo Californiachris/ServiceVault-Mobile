@@ -1,0 +1,83 @@
+============================
+REQUIREMENT: ROLE CARDS ON LANDING PAGE
+============================
+These are NOT placeholders. They must be premium SaaS-style cards that drive users into their correct subscription funnel.
+
+VISUAL REQUIREMENTS
+-------------------
+• 4 cards arranged in a 2x2 grid on desktop, stacked vertically on mobile
+• Each card must use a clean, modern SaaS UI:
+  – White card on light grey background
+  – Rounded corners
+  – Shadow/elevation effect (subtle)
+  – Generous spacing (no crammed layouts)
+  – Each card must look clickable
+• All icons MUST share the same visual style (no clipart)
+• Font sizes must be readable on mobile (not tiny)
+
+CARD STRUCTURE (EVERY CARD MUST FOLLOW THIS EXACT FORMAT)
+----------------------------------------------------------
+[ ICON ] (high-quality, consistent style)
+[ TITLE ] (“For Contractors”, “For Homeowners”, etc.)
+[ DESCRIPTION — 1 to 2 sentences MAX, written below ]
+[ CTA BUTTON — full width on mobile ]
+
+BUTTON LABEL (for all four cards)
+----------------------------------
+“Learn more”
+
+ON CLICK BEHAVIOR (CRITICAL)
+----------------------------
+Clicking the card OR the “Learn more” button must open that role’s PUBLIC welcome page:
+
+• CONTRACTOR CARD → /contractor
+• HOMEOWNER CARD → /homeowner
+• FLEET CARD → /fleet
+• PROPERTY MANAGER CARD → /property-manager
+
+NO LOGIN REQUIRED to open these pages.
+
+COPY TO INSERT INSIDE EACH CARD
+-------------------------------
+
+CARD #1 — CONTRACTORS
+Icon: Toolbox / wrench / hard hat
+Title: For Contractors
+Description (MUST copy exactly as written):
+Turn every install into repeat business. Your logo on every asset + automatic service reminders that bring customers back to YOU every time.
+
+CARD #2 — HOMEOWNERS
+Icon: House
+Title: For Homeowners
+Description (MUST copy exactly as written):
+Know everything about every system in your home — model numbers, installations, warranties and who to call when something needs service.
+
+CARD #3 — FLEET MANAGEMENT
+Icon: Truck / vehicle
+Title: For Fleet Management
+Description (MUST copy exactly as written):
+Every vehicle and unit logged automatically. Reduce breakdowns, track service history, and keep maintenance running on time.
+
+CARD #4 — PROPERTY MANAGERS
+Icon: Apartment building
+Title: For Property Managers
+Description (MUST copy exactly as written):
+Every unit. Every asset. Every service call. Full history and contractor details in one place — even when tenants change.
+
+DO NOTS (IMPORTANT)
+-------------------
+• DO NOT make tiny or plain cards with only a title
+• DO NOT use placeholder text (lorem ipsum, etc.)
+• DO NOT nest the button inside a dropdown
+• DO NOT route anywhere except the 4 welcome pages
+• DO NOT require login at this stage
+
+SUCCESS CRITERIA
+----------------
+The role cards should instantly communicate:
+1) Who the product is for
+2) The main benefit to that user
+3) A clickable path to continue
+
+If uncertain about visual quality:
+Use ServiceTitan.com, Jobber.com, or Verkada.com as design benchmarks.

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { Link, useLocation } from "wouter";
-import { useState, useMemo, useEffect } from "react";
+import { Link } from "wouter";
+import { useState, useMemo } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,6 @@ const SPECIALTY_ICONS: Record<string, any> = {
 
 export default function ContractorDashboard() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSpecialty, setActiveSpecialty] = useState<string>("ALL");
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -101,13 +100,6 @@ export default function ContractorDashboard() {
   const quota = data?.quota || { total: 50, used: 0, remaining: 50, isQuotaLow: false };
   const clientCount = data?.clientCount || 0;
   const subscription = data?.subscription;
-
-  // Redirect to welcome page if no active subscription
-  useEffect(() => {
-    if (!isLoading && data && !subscription) {
-      setLocation("/contractor/welcome");
-    }
-  }, [isLoading, data, subscription, setLocation]);
 
   const quotaPercentage = quota.total > 0 ? (quota.used / quota.total) * 100 : 0;
   const quotaColor = quota.isQuotaLow ? "text-red-500" : quotaPercentage > 70 ? "text-orange-500" : "text-green-500";

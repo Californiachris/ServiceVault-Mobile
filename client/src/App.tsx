@@ -37,6 +37,9 @@ import ActiveVisit from "@/pages/worker/ActiveVisit";
 import TenantReportForm from "@/pages/TenantReportForm";
 import ContractorWelcome from "@/pages/contractor/ContractorWelcome";
 import ContractorPlanSelection from "@/pages/contractor/ContractorPlanSelection";
+import HomeownerWelcome from "@/pages/HomeownerWelcome";
+import FleetWelcome from "@/pages/FleetWelcome";
+import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -56,12 +59,14 @@ function Router() {
     );
   }
 
-  // Public routes without AppShell (landing, pricing, asset/property views, tenant reports)
+  // Public routes without AppShell (landing, pricing, welcome pages, asset/property views, tenant reports)
   const publicRoutes = ["/", "/pricing"];
   const isPublicRoute = publicRoutes.includes(location) || 
                         location.startsWith("/asset/") || 
-                        location.startsWith("/property/") ||
-                        location.startsWith("/contractor/");
+                        location.startsWith("/property/public/") ||
+                        location.startsWith("/property/report/") ||
+                        location.startsWith("/contractor/") ||
+                        location.startsWith("/solutions/");
 
   if (isPublicRoute) {
     return (
@@ -70,10 +75,13 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/contractor/welcome" component={ContractorWelcome} />
         <Route path="/contractor/plans" component={ContractorPlanSelection} />
+        <Route path="/solutions/contractors" component={ContractorWelcome} />
+        <Route path="/solutions/homeowners" component={HomeownerWelcome} />
+        <Route path="/solutions/fleet" component={FleetWelcome} />
+        <Route path="/solutions/property-managers" component={PropertyManagerWelcome} />
         <Route path="/asset/:assetId" component={PublicAsset} />
         <Route path="/property/public/:masterQR" component={PropertyHistory} />
         <Route path="/property/report/:masterQR" component={TenantReportForm} />
-        <Route path="/property/:id" component={PropertyView} />
       </Switch>
     );
   }
@@ -107,6 +115,7 @@ function Router() {
           <Route path="/tools/inspections" component={InspectionsPage} />
           <Route path="/tools/reminders" component={RemindersPage} />
           <Route path="/tools/admin-fulfillment" component={AdminFulfillmentPage} />
+          <Route path="/property/:id" component={PropertyView} />
           <Route path="/property-manager" component={PropertyManagerDashboard} />
           <Route path="/property-manager/properties" component={PropertyManagerProperties} />
           <Route path="/property-manager/workers" component={PropertyManagerWorkers} />
@@ -126,7 +135,6 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/scan" component={Scan} />
       <Route path="/asset/:assetId" component={PublicAsset} />
-      <Route path="/property/:id" component={PropertyView} />
       <Route component={NotFound} />
     </Switch>
   );
