@@ -15,6 +15,7 @@ import {
   Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2
 } from "lucide-react";
 import serviceVaultLogo from "@assets/servicevault-logo.png";
+import vaultIcon from "@assets/file_000000009c0871fd92f0332b41379de5~3_1763079245926.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -132,11 +133,11 @@ export default function Landing() {
         </div>
 
         {/* Split Logo Design - Vault Icon (Top) */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-10">
           <img 
-            src={serviceVaultLogo} 
+            src={vaultIcon} 
             alt="ServiceVault Vault Icon" 
-            className="h-24 w-auto object-contain"
+            className="h-40 w-auto object-contain drop-shadow-2xl"
             data-testid="logo-vault-icon"
           />
         </div>
