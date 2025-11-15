@@ -662,6 +662,73 @@ export const contractorWorkerNotifications = pgTable("contractor_worker_notifica
   contractorWorkerUnique: uniqueIndex("uq_contractor_worker_notifications").on(table.contractorId, table.workerId),
 }));
 
+// Logo Management
+export const logos = pgTable("logos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(), // UPLOADED, AI_GENERATED
+  source: varchar("source"), // CONTRACTOR, HOMEOWNER, FLEET, PROPERTY_MANAGER
+  businessName: varchar("business_name"),
+  fileUrl: varchar("file_url").notNull(), // Google Cloud Storage path
+  fileName: varchar("file_name").notNull(),
+  fileType: varchar("file_type").notNull(), // PDF, PNG, SVG, JPEG
+  fileSize: integer("file_size"), // bytes
+  isActive: boolean("is_active").default(true),
+  generationId: uuid("generation_id"), // FK to logoGenerations, set via relations
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_logos_user").on(table.userId),
+  typeIdx: index("idx_logos_type").on(table.type),
+  sourceIdx: index("idx_logos_source").on(table.source),
+  generationIdx: index("idx_logos_generation").on(table.generationId),
+}));
+
+// AI Logo Generation Sessions
+export const logoGenerations = pgTable("logo_generations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  paymentId: uuid("payment_id").references(() => logoPayments.id),
+  
+  // Generation inputs
+  businessName: varchar("business_name").notNull(),
+  industry: varchar("industry").notNull(),
+  colors: text("colors").array(),
+  style: varchar("style"), // MODERN, MINIMALIST, CLASSIC, PLAYFUL, PROFESSIONAL
+  keywords: text("keywords"),
+  
+  // Generation outputs (4 variations)
+  generatedUrls: jsonb("generated_urls").$type<string[]>(),
+  prompts: jsonb("prompts").$type<string[]>(), // The 4 expert prompts used
+  selectedLogoId: uuid("selected_logo_id"), // FK to logos, set via relations
+  
+  status: varchar("status").default("GENERATING"), // GENERATING, COMPLETED, FAILED
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  userIdx: index("idx_logo_generations_user").on(table.userId),
+  paymentIdx: index("idx_logo_generations_payment").on(table.paymentId),
+  statusIdx: index("idx_logo_generations_status").on(table.status),
+}));
+
+// Logo AI Generation Payments
+export const logoPayments = pgTable("logo_payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  stripeSessionId: varchar("stripe_session_id").unique(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).default("19.99"),
+  currency: varchar("currency").default("usd"),
+  status: varchar("status").default("PENDING"), // PENDING, COMPLETED, FAILED, REFUNDED
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_logo_payments_user").on(table.userId),
+  statusIdx: index("idx_logo_payments_status").on(table.status),
+  sessionIdx: index("idx_logo_payments_session").on(table.stripeSessionId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   contractor: one(contractors, {
@@ -909,6 +976,22 @@ export const insertContractorWorkerNotificationSchema = createInsertSchema(contr
   updatedAt: true,
 });
 
+// Logo Management Insert Schemas
+export const insertLogoSchema = createInsertSchema(logos).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertLogoGenerationSchema = createInsertSchema(logoGenerations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertLogoPaymentSchema = createInsertSchema(logoPayments).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -942,6 +1025,9 @@ export type ContractorTask = typeof contractorTasks.$inferSelect;
 export type ContractorVisit = typeof contractorVisits.$inferSelect;
 export type ContractorTaskCompletion = typeof contractorTaskCompletions.$inferSelect;
 export type ContractorWorkerNotification = typeof contractorWorkerNotifications.$inferSelect;
+export type Logo = typeof logos.$inferSelect;
+export type LogoGeneration = typeof logoGenerations.$inferSelect;
+export type LogoPayment = typeof logoPayments.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -973,3 +1059,6 @@ export type InsertContractorTask = z.infer<typeof insertContractorTaskSchema>;
 export type InsertContractorVisit = z.infer<typeof insertContractorVisitSchema>;
 export type InsertContractorTaskCompletion = z.infer<typeof insertContractorTaskCompletionSchema>;
 export type InsertContractorWorkerNotification = z.infer<typeof insertContractorWorkerNotificationSchema>;
+export type InsertLogo = z.infer<typeof insertLogoSchema>;
+export type InsertLogoGeneration = z.infer<typeof insertLogoGenerationSchema>;
+export type InsertLogoPayment = z.infer<typeof insertLogoPaymentSchema>;

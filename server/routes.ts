@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
-import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets, managedProperties, workers, propertyTasks, propertyVisits, tenantReports, propertyTaskCompletions } from "@shared/schema";
+import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets, managedProperties, workers, propertyTasks, propertyVisits, tenantReports, propertyTaskCompletions, logoPayments } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { attachEntitlements, requireEntitlement } from './entitlements/middleware';
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -3071,9 +3071,21 @@ Instructions:
         switch (event.type) {
           case 'checkout.session.completed': {
             const session = event.data.object as Stripe.Checkout.Session;
-            const { userId, plan, addOns, fleetAssetCount } = session.metadata || {};
+            const { userId, plan, addOns, fleetAssetCount, type, paymentId } = session.metadata || {};
             
-            if (userId && plan) {
+            // Handle logo generation payments (one-time $19.99)
+            if (type === 'logo_generation' && paymentId && userId) {
+              await db
+                .update(logoPayments)
+                .set({
+                  status: "COMPLETED",
+                  stripePaymentIntentId: session.payment_intent as string,
+                  paidAt: new Date(),
+                })
+                .where(eq(logoPayments.id, paymentId));
+              
+              console.log(`Logo payment ${paymentId} completed for user ${userId}`);
+            } else if (userId && plan) {
               if (session.customer) {
                 await storage.updateUserStripeInfo(
                   userId,

@@ -22,6 +22,77 @@ export interface WarrantyInfo {
   notes?: string;
 }
 
+export interface LogoGenerationParams {
+  businessName: string;
+  industry: string;
+  colors?: string[];
+  style?: string;
+  keywords?: string;
+}
+
+export interface LogoGenerationResult {
+  imageUrl: string;
+  prompt: string;
+}
+
+export async function generateLogos(params: LogoGenerationParams): Promise<LogoGenerationResult[]> {
+  const { businessName, industry, colors, style, keywords } = params;
+  
+  // Build color scheme description
+  const colorDesc = colors && colors.length > 0 
+    ? colors.join(' and ') 
+    : 'professional complementary colors';
+  
+  // Build style description
+  const styleDesc = style?.toLowerCase() || 'modern';
+  
+  // Build keyword hints
+  const keywordHints = keywords ? `, incorporating elements like ${keywords}` : '';
+  
+  // Expert prompts for 4 different logo variations
+  const prompts = [
+    // Minimalist icon-based logo
+    `Professional minimalist logo for ${businessName}, a ${industry} business. ${styleDesc} design with ${colorDesc}. Clean geometric icon with negative space, sans-serif typography, white background, vector style, corporate identity${keywordHints}`,
+    
+    // Badge/emblem style
+    `Circular badge logo for ${businessName}, ${industry} sector. ${styleDesc} emblem with ${colorDesc}, professional contractor branding, clean typography, white background, vector art style${keywordHints}`,
+    
+    // Modern wordmark
+    `Modern wordmark logo for ${businessName} (${industry}). Stylized text design with ${colorDesc}, ${styleDesc} professional font, sleek business identity, white background, vector style${keywordHints}`,
+    
+    // Abstract symbol
+    `Abstract professional logo for ${businessName}, ${industry} company. ${styleDesc} geometric symbol with ${colorDesc}, clean corporate design, white background, vector style, suitable for business cards${keywordHints}`,
+  ];
+  
+  // Generate all 4 logo variations in parallel
+  const results = await Promise.all(
+    prompts.map(async (prompt) => {
+      try {
+        const response = await openai.images.generate({
+          model: "dall-e-3",
+          prompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "hd",
+          style: "natural", // More realistic/professional looking
+        });
+        
+        const imageUrl = response.data[0]?.url;
+        if (!imageUrl) {
+          throw new Error("No image URL returned from DALL-E");
+        }
+        
+        return { imageUrl, prompt };
+      } catch (error) {
+        console.error(`Error generating logo with prompt: ${prompt}`, error);
+        throw error;
+      }
+    })
+  );
+  
+  return results;
+}
+
 export async function parseWarrantyDocument(imageBase64: string): Promise<WarrantyInfo> {
   try {
     // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user

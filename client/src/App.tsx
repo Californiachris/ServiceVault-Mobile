@@ -46,6 +46,8 @@ import ContractorPricing from "@/pages/solutions/ContractorPricing";
 import HomeownerPricing from "@/pages/solutions/HomeownerPricing";
 import FleetPricing from "@/pages/solutions/FleetPricing";
 import PropertyManagerPricing from "@/pages/solutions/PropertyManagerPricing";
+import AILogoGenerator from "@/pages/AILogoGenerator";
+import LogosPage from "@/pages/LogosPage";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -144,6 +146,8 @@ function Router() {
           <Route path="/property-manager/tasks" component={PropertyManagerTasks} />
           <Route path="/property-manager/visits" component={PropertyManagerVisits} />
           <Route path="/property-manager/reports" component={PropertyManagerTenantReports} />
+          <Route path="/logos/ai-generator" component={AILogoGenerator} />
+          <Route path="/logos" component={LogosPage} />
           <Route component={NotFound} />
         </Switch>
       </AppShell>

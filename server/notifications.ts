@@ -466,6 +466,143 @@ Your customer needs this service scheduled. Contact them to book the job!
     }
   }
 
+  async sendAdminLogoNotification(logoDetails: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+    logoType: 'UPLOADED' | 'AI_GENERATED';
+    businessName?: string;
+    fileName: string;
+    fileUrl: string;
+    source?: string;
+    generationParams?: {
+      industry?: string;
+      colors?: string[];
+      style?: string;
+    };
+  }): Promise<{ success: boolean; error?: string }> {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    
+    if (!adminEmail) {
+      console.warn('ADMIN_EMAIL not configured - skipping admin logo notification');
+      return { success: false, error: 'Admin email not configured' };
+    }
+
+    if (!this.resend) {
+      console.warn('Resend not configured - skipping admin logo notification');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    const { userId, userEmail, userName, logoType, businessName, fileName, fileUrl, source, generationParams } = logoDetails;
+    
+    const typeLabel = logoType === 'UPLOADED' ? 'Logo Uploaded' : 'AI Logo Generated';
+    const typeEmoji = logoType === 'UPLOADED' ? '📤' : '🎨';
+    
+    let detailsHTML = '';
+    if (logoType === 'AI_GENERATED' && generationParams) {
+      detailsHTML = `
+        <h3 style="color: #1a1a1a; margin-top: 20px;">Generation Parameters:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          ${generationParams.industry ? `
+            <tr>
+              <td style="padding: 8px 0; color: #888; width: 150px;"><strong>Industry:</strong></td>
+              <td style="padding: 8px 0; color: #1a1a1a;">${generationParams.industry}</td>
+            </tr>
+          ` : ''}
+          ${generationParams.style ? `
+            <tr>
+              <td style="padding: 8px 0; color: #888;"><strong>Style:</strong></td>
+              <td style="padding: 8px 0; color: #1a1a1a;">${generationParams.style}</td>
+            </tr>
+          ` : ''}
+          ${generationParams.colors && generationParams.colors.length > 0 ? `
+            <tr>
+              <td style="padding: 8px 0; color: #888;"><strong>Colors:</strong></td>
+              <td style="padding: 8px 0; color: #1a1a1a;">${generationParams.colors.join(', ')}</td>
+            </tr>
+          ` : ''}
+        </table>
+      `;
+    }
+
+    try {
+      await this.resend.emails.send({
+        from: 'ServiceVault Logos <logos@servicevault.app>',
+        to: adminEmail,
+        subject: `${typeEmoji} New ${typeLabel} - ${businessName || userName} ${source ? `(${source})` : ''}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #00D9FF 0%, #8B5CF6 100%); padding: 24px; border-radius: 8px 8px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${typeEmoji} ${typeLabel}</h1>
+            </div>
+            
+            <div style="background: white; padding: 24px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+              <h2 style="color: #1a1a1a; margin-top: 0;">Customer Information</h2>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 8px 0; color: #888; width: 150px;"><strong>Name:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${userName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Email:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${userEmail}</td>
+                </tr>
+                ${businessName ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Business Name:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${businessName}</td>
+                </tr>
+                ` : ''}
+                ${source ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>Source:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a;">${source}</td>
+                </tr>
+                ` : ''}
+                <tr>
+                  <td style="padding: 8px 0; color: #888;"><strong>User ID:</strong></td>
+                  <td style="padding: 8px 0; color: #1a1a1a; font-family: monospace; font-size: 12px;">${userId}</td>
+                </tr>
+              </table>
+
+              <h3 style="color: #1a1a1a;">Logo Details</h3>
+              <div style="background: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+                <p style="margin: 4px 0; color: #1a1a1a;"><strong>File Name:</strong> ${fileName}</p>
+                <p style="margin: 4px 0; color: #1a1a1a;"><strong>Type:</strong> ${logoType.replace('_', ' ')}</p>
+              </div>
+
+              ${detailsHTML}
+
+              <div style="background: #e7f3ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                <h3 style="color: #004085; margin: 0 0 12px 0;">📥 Download Logo</h3>
+                <p style="color: #004085; margin: 8px 0;">
+                  <a href="${fileUrl}" style="color: #007bff; text-decoration: none; font-weight: bold;">
+                    Click here to download the logo
+                  </a>
+                </p>
+                <p style="color: #004085; margin: 8px 0; font-size: 12px;">
+                  Use this logo for custom-branded QR sticker fulfillment.
+                </p>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
+              <p style="color: #888; font-size: 12px; margin: 0;">
+                ServiceVault Logo Notification<br>
+                This email was sent automatically when a customer ${logoType === 'UPLOADED' ? 'uploaded' : 'generated'} a logo.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      console.log(`Admin logo notification sent to ${adminEmail} for user ${userId}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Admin logo notification send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   isConfigured(): { email: boolean; sms: boolean } {
     return {
       email: !!this.resend,

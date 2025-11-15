@@ -12,9 +12,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Users, ClipboardList, Clock, CheckCircle2, Plus, MapPin, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { LogoWidget } from "@/components/LogoWidget";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -58,6 +60,7 @@ interface WorkerStatus {
 }
 
 export default function ContractorDashboard() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   
@@ -294,6 +297,11 @@ export default function ContractorDashboard() {
               <p className="text-xs text-muted-foreground">Tasks finished</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Logo Widget */}
+        <div className="max-w-md">
+          <LogoWidget source="CONTRACTOR" businessName={user?.email || undefined} />
         </div>
         
         {/* Worker Status Cards */}
