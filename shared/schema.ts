@@ -561,6 +561,107 @@ export const propertyVisits = pgTable("property_visits", {
   propertyStatusIdx: index("idx_visits_property_status").on(table.managedPropertyId, table.status),
 }));
 
+// Contractor - Workers
+export const contractorWorkers = pgTable("contractor_workers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  userId: varchar("user_id").unique().references(() => users.id), // Optional but unique when set
+  name: varchar("name").notNull(),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  role: varchar("role").notNull(), // HVAC_TECH, PLUMBER, ELECTRICIAN, ROOFER, GENERAL_LABOR, etc.
+  status: varchar("status").default("ACTIVE"), // ACTIVE, INACTIVE
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  contractorIdx: index("idx_contractor_workers_contractor").on(table.contractorId),
+  statusIdx: index("idx_contractor_workers_status").on(table.status),
+}));
+
+// Contractor - Tasks
+export const contractorTasks = pgTable("contractor_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  address: varchar("address"), // Job site address
+  taskType: varchar("task_type").default("GENERAL"), // GENERAL, HVAC, PLUMBING, ELECTRICAL, ROOFING, INSTALLATION
+  priority: varchar("priority").default("MEDIUM"), // LOW, MEDIUM, HIGH, URGENT
+  status: varchar("status").default("PENDING"), // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  assignedTo: uuid("assigned_to").references(() => contractorWorkers.id),
+  scheduledFor: timestamp("scheduled_for"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  contractorIdx: index("idx_contractor_tasks_contractor").on(table.contractorId),
+  assignedToIdx: index("idx_contractor_tasks_assigned").on(table.assignedTo),
+  statusIdx: index("idx_contractor_tasks_status").on(table.status),
+  scheduledIdx: index("idx_contractor_tasks_scheduled").on(table.scheduledFor),
+}));
+
+// Contractor - Visits (Vehicle/Job Site Check-ins)
+export const contractorVisits = pgTable("contractor_visits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  workerId: uuid("worker_id").notNull().references(() => contractorWorkers.id),
+  vehicleAssetId: uuid("vehicle_asset_id").references(() => assets.id), // Link to vehicle/truck asset if scanning vehicle QR
+  
+  // Check-in
+  checkInAt: timestamp("check_in_at").notNull(),
+  checkInLocation: jsonb("check_in_location").$type<{lat: number, lng: number, address?: string}>(),
+  checkInMethod: varchar("check_in_method").default("QR"), // QR, NFC, MANUAL
+  checkInIdentifierCode: varchar("check_in_identifier_code"), // The QR code scanned
+  
+  // Check-out
+  checkOutAt: timestamp("check_out_at"),
+  checkOutLocation: jsonb("check_out_location").$type<{lat: number, lng: number, address?: string}>(),
+  checkOutMethod: varchar("check_out_method"), // QR, NFC, MANUAL
+  
+  // Visit summary
+  tasksCompleted: integer("tasks_completed").default(0),
+  visitSummary: text("visit_summary"),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  status: varchar("status").default("IN_PROGRESS"), // IN_PROGRESS, COMPLETED
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  contractorIdx: index("idx_contractor_visits_contractor").on(table.contractorId),
+  workerIdx: index("idx_contractor_visits_worker").on(table.workerId),
+  statusIdx: index("idx_contractor_visits_status").on(table.status),
+  checkInIdx: index("idx_contractor_visits_checkin").on(table.checkInAt),
+}));
+
+// Contractor - Task Completions
+export const contractorTaskCompletions = pgTable("contractor_task_completions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => contractorTasks.id),
+  visitId: uuid("visit_id").references(() => contractorVisits.id),
+  completedBy: uuid("completed_by").notNull().references(() => contractorWorkers.id),
+  photoUrls: jsonb("photo_urls").$type<string[]>(),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at").notNull().defaultNow(),
+}, (table) => ({
+  taskIdx: index("idx_contractor_task_completions_task").on(table.taskId),
+  visitIdx: index("idx_contractor_task_completions_visit").on(table.visitId),
+}));
+
+// Contractor - Worker Notification Settings
+export const contractorWorkerNotifications = pgTable("contractor_worker_notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contractorId: uuid("contractor_id").notNull().references(() => contractors.id),
+  workerId: uuid("worker_id").references(() => contractorWorkers.id), // null means applies to all workers
+  notifyCheckIn: boolean("notify_check_in").default(true),
+  notifyCheckOut: boolean("notify_check_out").default(true),
+  notifyTaskComplete: boolean("notify_task_complete").default(false),
+  notificationMethod: varchar("notification_method").default("EMAIL"), // EMAIL, SMS, BOTH
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  contractorIdx: index("idx_contractor_notifications_contractor").on(table.contractorId),
+  workerIdx: index("idx_contractor_notifications_worker").on(table.workerId),
+  contractorWorkerUnique: uniqueIndex("uq_contractor_worker_notifications").on(table.contractorId, table.workerId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   contractor: one(contractors, {
@@ -782,6 +883,32 @@ export const insertPropertyVisitSchema = createInsertSchema(propertyVisits).omit
   id: true,
 });
 
+// Contractor Management Insert Schemas
+export const insertContractorWorkerSchema = createInsertSchema(contractorWorkers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertContractorTaskSchema = createInsertSchema(contractorTasks).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertContractorVisitSchema = createInsertSchema(contractorVisits).omit({
+  id: true,
+});
+
+export const insertContractorTaskCompletionSchema = createInsertSchema(contractorTaskCompletions).omit({
+  id: true,
+});
+
+export const insertContractorWorkerNotificationSchema = createInsertSchema(contractorWorkerNotifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -810,6 +937,11 @@ export type PropertyTask = typeof propertyTasks.$inferSelect;
 export type PropertyTaskCompletion = typeof propertyTaskCompletions.$inferSelect;
 export type TenantReport = typeof tenantReports.$inferSelect;
 export type PropertyVisit = typeof propertyVisits.$inferSelect;
+export type ContractorWorker = typeof contractorWorkers.$inferSelect;
+export type ContractorTask = typeof contractorTasks.$inferSelect;
+export type ContractorVisit = typeof contractorVisits.$inferSelect;
+export type ContractorTaskCompletion = typeof contractorTaskCompletions.$inferSelect;
+export type ContractorWorkerNotification = typeof contractorWorkerNotifications.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -836,3 +968,8 @@ export type InsertPropertyTask = z.infer<typeof insertPropertyTaskSchema>;
 export type InsertPropertyTaskCompletion = z.infer<typeof insertPropertyTaskCompletionSchema>;
 export type InsertTenantReport = z.infer<typeof insertTenantReportSchema>;
 export type InsertPropertyVisit = z.infer<typeof insertPropertyVisitSchema>;
+export type InsertContractorWorker = z.infer<typeof insertContractorWorkerSchema>;
+export type InsertContractorTask = z.infer<typeof insertContractorTaskSchema>;
+export type InsertContractorVisit = z.infer<typeof insertContractorVisitSchema>;
+export type InsertContractorTaskCompletion = z.infer<typeof insertContractorTaskCompletionSchema>;
+export type InsertContractorWorkerNotification = z.infer<typeof insertContractorWorkerNotificationSchema>;
