@@ -9,6 +9,7 @@ import { generateLogos } from "./openaiClient";
 import Stripe from "stripe";
 import { NotificationService } from "./notifications";
 import { storage } from "./storage";
+import { isAuthenticated } from "./replitAuth";
 
 // Initialize services
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -49,12 +50,8 @@ const selectLogoSchema = z.object({
 
 export function registerLogoRoutes(app: Express) {
   // Check if user has access to logo generation (paid or demo mode)
-  app.get('/api/logos/check-access', async (req: any, res: Response) => {
+  app.get('/api/logos/check-access', isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       // Demo mode: if Stripe is not configured, grant access automatically
       if (!stripe) {
         return res.json(true);
@@ -77,12 +74,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Get upload URL and create logo record
-  app.post("/api/logos/upload", async (req: any, res: Response) => {
+  app.post("/api/logos/upload", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       if (!objectStorageService) {
         return res.status(503).json({ 
           error: "File upload is currently unavailable. Please contact support.",
@@ -173,12 +166,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Complete logo upload (activate after successful file upload)
-  app.post("/api/logos/upload/complete", async (req: any, res: Response) => {
+  app.post("/api/logos/upload/complete", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
       
       // Validate request body
@@ -222,12 +211,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Get all logos for the authenticated user
-  app.get("/api/logos", async (req: any, res: Response) => {
+  app.get("/api/logos", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
 
       const userLogos = await db
@@ -244,12 +229,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Delete a logo
-  app.delete("/api/logos/:id", async (req: any, res: Response) => {
+  app.delete("/api/logos/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
       const logoId = req.params.id;
 
@@ -289,12 +270,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Get a specific logo by ID
-  app.get("/api/logos/:id", async (req: any, res: Response) => {
+  app.get("/api/logos/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
       const logoId = req.params.id;
 
@@ -326,12 +303,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Generate AI logos using DALL-E 3
-  app.post("/api/logos/generate", async (req: any, res: Response) => {
+  app.post("/api/logos/generate", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
 
       // Validate request body
@@ -439,12 +412,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Get generation status and results
-  app.get("/api/logos/generations/:id", async (req: any, res: Response) => {
+  app.get("/api/logos/generations/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
       const generationId = req.params.id;
 
@@ -475,12 +444,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Get all generations for user
-  app.get("/api/logos/generations", async (req: any, res: Response) => {
+  app.get("/api/logos/generations", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
 
       const userGenerations = await db
@@ -497,12 +462,8 @@ export function registerLogoRoutes(app: Express) {
   });
 
   // Select and save a generated logo
-  app.post("/api/logos/select", async (req: any, res: Response) => {
+  app.post("/api/logos/select", isAuthenticated, async (req: any, res: Response) => {
     try {
-      if (!req.isAuthenticated() || !req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
       const userId = req.user.claims.sub;
 
       // Validate request body
@@ -592,12 +553,8 @@ export function registerLogoRoutes(app: Express) {
 
   // Create Stripe checkout session for logo generation ($19.99 one-time payment)
   if (stripe) {
-    app.post("/api/logos/checkout", async (req: any, res: Response) => {
+    app.post("/api/logos/checkout", isAuthenticated, async (req: any, res: Response) => {
       try {
-        if (!req.isAuthenticated() || !req.user) {
-          return res.status(401).json({ error: "Not authenticated" });
-        }
-
         const userId = req.user.claims.sub;
 
         // Get user email for Stripe
