@@ -69,12 +69,10 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
     prompts.map(async (prompt) => {
       try {
         const response = await openai.images.generate({
-          model: "dall-e-3",
+          model: "gpt-image-1",
           prompt,
           n: 1,
           size: "1024x1024",
-          quality: "hd",
-          style: "natural", // More realistic/professional looking
         });
         
         const imageUrl = response.data[0]?.url;

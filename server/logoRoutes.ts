@@ -361,21 +361,22 @@ export function registerLogoRoutes(app: Express) {
         status: "GENERATING",
       }).returning();
 
-      // Generate logos using DALL-E 3 (async - runs in background)
-      // We return immediately so the frontend can poll for updates
-      generateLogos({
-        businessName,
-        industry,
-        colors,
-        style,
-        keywords,
-      }).then(async (results) => {
+      // Generate logos using gpt-image-1 (wait for completion)
+      try {
+        const results = await generateLogos({
+          businessName,
+          industry,
+          colors,
+          style,
+          keywords,
+        });
+
         // Extract URLs and prompts
         const generatedUrls = results.map(r => r.imageUrl);
         const prompts = results.map(r => r.prompt);
 
         // Update generation record with results
-        await db
+        const [updatedGeneration] = await db
           .update(logoGenerations)
           .set({
             generatedUrls,
@@ -383,28 +384,47 @@ export function registerLogoRoutes(app: Express) {
             status: "COMPLETED",
             completedAt: new Date(),
           })
-          .where(eq(logoGenerations.id, generation.id));
+          .where(eq(logoGenerations.id, generation.id))
+          .returning();
 
-      }).catch(async (error) => {
-        console.error("Error generating logos:", error);
+        // Transform to frontend format
+        const logoStyles = ["Minimalist Icon", "Badge Emblem", "Modern Wordmark", "Abstract Symbol"];
+        const logos = generatedUrls.map((url, index) => ({
+          id: `${generation.id}-${index}`,
+          url,
+          style: logoStyles[index] || "Professional",
+          description: prompts[index] || "Professional logo design",
+        }));
+
+        // Return complete generation with logos
+        res.json({
+          id: updatedGeneration.id,
+          businessName: updatedGeneration.businessName,
+          industry: updatedGeneration.industry,
+          colors: updatedGeneration.colors,
+          style: updatedGeneration.style,
+          logos,
+          selectedLogoId: null,
+          createdAt: (updatedGeneration.createdAt || new Date()).toISOString(),
+        });
+      } catch (logoError: any) {
+        console.error("Error generating logos:", logoError);
         
         // Update generation record with error
         await db
           .update(logoGenerations)
           .set({
             status: "FAILED",
-            errorMessage: error.message || "Failed to generate logos",
+            errorMessage: logoError.message || "Failed to generate logos",
             completedAt: new Date(),
           })
           .where(eq(logoGenerations.id, generation.id));
-      });
 
-      // Return generation ID so frontend can poll for status
-      res.json({ 
-        generationId: generation.id,
-        status: "GENERATING",
-        message: "Logo generation started. Poll /api/logos/generations/:id for status."
-      });
+        return res.status(500).json({ 
+          error: "Logo generation failed", 
+          message: logoError.message || "Failed to generate logos with AI" 
+        });
+      }
     } catch (error) {
       console.error("Error initiating logo generation:", error);
       res.status(500).json({ error: "Failed to start logo generation" });
