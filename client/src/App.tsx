@@ -152,6 +152,7 @@ function Router() {
           <Route path="/property-manager/tasks" component={PropertyManagerTasks} />
           <Route path="/property-manager/visits" component={PropertyManagerVisits} />
           <Route path="/property-manager/reports" component={PropertyManagerTenantReports} />
+          <Route path="/logos/generator" component={AILogoGenerator} />
           <Route path="/logos/ai-generator" component={AILogoGenerator} />
           <Route path="/logos" component={LogosPage} />
           <Route component={NotFound} />
