@@ -63,6 +63,16 @@ function Router() {
     );
   }
 
+  // Handle /login route - redirect to backend auth
+  if (location === "/login") {
+    window.location.href = "/api/login";
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   // Public routes without AppShell (landing, pricing, welcome pages, asset/property views, tenant reports)
   const publicRoutes = ["/", "/pricing"];
   const isPublicRoute = publicRoutes.includes(location) || 
