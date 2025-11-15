@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
+import BrandedHeader from "@/components/BrandedHeader";
 import { 
   Building2, 
   Users, 

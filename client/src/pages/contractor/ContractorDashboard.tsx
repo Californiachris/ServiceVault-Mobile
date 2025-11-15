@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Users, ClipboardList, Clock, CheckCircle2, Plus, MapPin, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { LogoWidget } from "@/components/LogoWidget";
+import BrandedHeader from "@/components/BrandedHeader";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Task title is required"),
@@ -126,6 +127,12 @@ export default function ContractorDashboard() {
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Branded Header */}
+        <BrandedHeader 
+          sector="contractor"
+          subtitle="Manage your team and track all installations"
+        />
+        
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

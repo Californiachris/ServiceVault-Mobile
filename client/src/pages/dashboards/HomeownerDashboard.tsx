@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { DashboardTabs } from "@/components/DashboardTabs";
 import { MasterQRDialog } from "@/components/MasterQRDialog";
+import BrandedHeader from "@/components/BrandedHeader";
 import {
   Home,
   QrCode,

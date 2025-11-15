@@ -48,6 +48,7 @@ import FleetPricing from "@/pages/solutions/FleetPricing";
 import PropertyManagerPricing from "@/pages/solutions/PropertyManagerPricing";
 import AILogoGenerator from "@/pages/AILogoGenerator";
 import LogosPage from "@/pages/LogosPage";
+import CheckoutPage from "@/pages/CheckoutPage";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -121,6 +122,11 @@ function Router() {
         </Switch>
       </WorkerAppShell>
     );
+  }
+
+  // Checkout route (authenticated, full-page without AppShell)
+  if (isAuthenticated && location === "/checkout") {
+    return <CheckoutPage />;
   }
 
   // AUTHENTICATED routes: Wrap in AppShell with top bar + bottom nav

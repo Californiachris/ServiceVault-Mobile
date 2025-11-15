@@ -69,12 +69,14 @@ export default function HomeownerPricing() {
       const response = await apiRequest("POST", "/api/onboarding/complete", data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Welcome to ServiceVault!",
-        description: "Your account has been set up successfully.",
+        description: "Let's set up your family branding...",
       });
-      setLocation("/dashboard");
+      // Redirect to checkout with plan details
+      const planParam = variables.plan || 'homeowner_base';
+      setLocation(`/checkout?plan=${planParam}&sector=homeowner`);
     },
     onError: (error: any) => {
       toast({

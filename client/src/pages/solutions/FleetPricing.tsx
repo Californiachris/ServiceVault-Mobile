@@ -69,12 +69,14 @@ export default function FleetPricing() {
       const response = await apiRequest("POST", "/api/onboarding/complete", data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Welcome to ServiceVault!",
-        description: "Your account has been set up successfully.",
+        description: "Let's set up your company branding...",
       });
-      setLocation("/dashboard");
+      // Redirect to checkout with plan details
+      const planParam = variables.plan || 'fleet_base';
+      setLocation(`/checkout?plan=${planParam}&sector=fleet`);
     },
     onError: (error: any) => {
       toast({

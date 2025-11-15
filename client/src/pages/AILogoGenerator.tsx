@@ -150,6 +150,15 @@ export default function AILogoGenerator() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/logos'] });
       queryClient.invalidateQueries({ queryKey: ['/api/logos/generations'] });
+      
+      // If user came from checkout, redirect to dashboard
+      const fromCheckout = sessionStorage.getItem('fromCheckout');
+      if (fromCheckout) {
+        sessionStorage.removeItem('fromCheckout');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500); // Short delay to show success message
+      }
     },
     onError: (error: any) => {
       toast({
