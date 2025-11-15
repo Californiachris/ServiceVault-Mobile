@@ -53,6 +53,7 @@ export default function AILogoGenerator() {
   const [industry, setIndustry] = useState("");
   const [colors, setColors] = useState<string[]>([]);
   const [colorInput, setColorInput] = useState("");
+  const [keywords, setKeywords] = useState("");
   const [style, setStyle] = useState("modern");
   
   // UI state
@@ -110,7 +111,8 @@ export default function AILogoGenerator() {
         businessName,
         industry: industry || undefined,
         colors: colors.length > 0 ? colors : undefined,
-        style: style || undefined,
+        style: style ? style.toUpperCase() : undefined,
+        keywords: keywords || undefined,
       });
       return await res.json() as Generation;
     },
@@ -432,6 +434,21 @@ export default function AILogoGenerator() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Description/Keywords */}
+            <div className="space-y-2">
+              <Label htmlFor="keywords">Logo Description (Optional)</Label>
+              <Input
+                id="keywords"
+                placeholder="e.g., tools, strength, mountains, reliability"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                data-testid="input-keywords"
+              />
+              <p className="text-xs text-muted-foreground">
+                Describe what you want in your logo - specific objects, themes, or concepts
+              </p>
             </div>
 
             {/* Style */}
