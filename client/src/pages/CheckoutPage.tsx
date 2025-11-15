@@ -9,7 +9,7 @@ import { Upload, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface CheckoutPageProps {
   plan: string;
@@ -80,21 +80,34 @@ export default function CheckoutPage() {
 
   const uploadLogoMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", "UPLOADED");
-      
-      const response = await fetch("/api/logos/upload", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      // Step 1: Get upload URL from backend
+      const initResponse = await apiRequest('POST', '/api/logos/upload', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        source: sector.toUpperCase(),
+      });
+      const { uploadURL, logoId } = await initResponse.json();
+
+      // Step 2: Upload file to object storage
+      const uploadResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to upload logo");
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
       }
 
-      return response.json();
+      // Step 3: Complete the upload (activates the logo)
+      await apiRequest('POST', '/api/logos/upload/complete', {
+        logoId,
+      });
+
+      return { logoId };
     },
   });
 
@@ -105,10 +118,14 @@ export default function CheckoutPage() {
       // If user uploaded a logo, save it first
       if (uploadedFile && !useAI) {
         await uploadLogoMutation.mutateAsync(uploadedFile);
+        // Invalidate logos cache so dashboard shows new logo
+        queryClient.invalidateQueries({ queryKey: ['/api/logos'] });
         toast({
           title: "Logo saved!",
           description: "Your branding has been applied to your account.",
         });
+        // Short delay to let cache update
+        await new Promise(resolve => setTimeout(resolve, 500));
         setLocation("/dashboard");
         return;
       }
@@ -117,8 +134,8 @@ export default function CheckoutPage() {
       if (useAI) {
         // In demo mode, skip payment and go straight to generator
         toast({
-          title: "Demo Mode",
-          description: "Redirecting to AI logo generator...",
+          title: "Demo Mode - AI Logo Generator",
+          description: "Redirecting to create your professional logos...",
         });
         // Store flag that user came from checkout
         sessionStorage.setItem("fromCheckout", "true");

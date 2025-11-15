@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { db } from "./db";
 import { logos, logoGenerations, logoPayments, users, insertLogoSchema } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ObjectStorageService } from "./objectStorage";
 import { randomUUID } from "crypto";
@@ -31,7 +31,6 @@ const uploadInitSchema = z.object({
 
 const completeUploadSchema = z.object({
   logoId: z.string().uuid(),
-  fileUrl: z.string().min(1),
 });
 
 const generateLogoSchema = z.object({
@@ -45,7 +44,7 @@ const generateLogoSchema = z.object({
 
 const selectLogoSchema = z.object({
   generationId: z.string().uuid(),
-  selectedLogoUrl: z.string().min(1),
+  logoIndex: z.number().int().min(0).max(3),
 });
 
 export function registerLogoRoutes(app: Express) {
@@ -133,7 +132,7 @@ export function registerLogoRoutes(app: Express) {
       // Construct the object path for retrieval
       const objectPath = `/objects/uploads/${objectId}`;
 
-      // Create logo record in database
+      // Create logo record in database (inactive until upload is confirmed)
       const [logo] = await db.insert(logos).values({
         userId,
         type: "UPLOADED",
@@ -143,7 +142,7 @@ export function registerLogoRoutes(app: Express) {
         fileName,
         fileType,
         fileSize,
-        isActive: true,
+        isActive: false, // Will be activated after successful upload
       }).returning();
 
       // Send admin notification (non-blocking)
@@ -173,6 +172,55 @@ export function registerLogoRoutes(app: Express) {
     }
   });
 
+  // Complete logo upload (activate after successful file upload)
+  app.post("/api/logos/upload/complete", async (req: any, res: Response) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const userId = req.user.claims.sub;
+      
+      // Validate request body
+      const validationResult = completeUploadSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request", 
+          details: validationResult.error.errors 
+        });
+      }
+
+      const { logoId } = validationResult.data;
+
+      // Find logo and verify ownership
+      const [logo] = await db
+        .select()
+        .from(logos)
+        .where(and(
+          eq(logos.id, logoId),
+          eq(logos.userId, userId)
+        ))
+        .limit(1);
+
+      if (!logo) {
+        return res.status(404).json({ error: "Logo not found" });
+      }
+
+      // Single atomic UPDATE with parameterized query: sets isActive = true for target logo, false for all others
+      // This prevents race conditions and SQL injection
+      await db.execute(sql`
+        UPDATE ${logos} 
+        SET ${logos.isActive} = (${logos.id} = ${logoId}) 
+        WHERE ${logos.userId} = ${userId}
+      `);
+
+      res.json({ success: true, logoId });
+    } catch (error) {
+      console.error("Error completing logo upload:", error);
+      res.status(500).json({ error: "Failed to complete upload" });
+    }
+  });
+
   // Get all logos for the authenticated user
   app.get("/api/logos", async (req: any, res: Response) => {
     try {
@@ -185,13 +233,10 @@ export function registerLogoRoutes(app: Express) {
       const userLogos = await db
         .select()
         .from(logos)
-        .where(and(
-          eq(logos.userId, userId),
-          eq(logos.isActive, true)
-        ))
+        .where(eq(logos.userId, userId))
         .orderBy(desc(logos.createdAt));
 
-      res.json({ logos: userLogos });
+      res.json(userLogos);
     } catch (error) {
       console.error("Error fetching logos:", error);
       res.status(500).json({ error: "Failed to fetch logos" });
@@ -469,7 +514,7 @@ export function registerLogoRoutes(app: Express) {
         });
       }
 
-      const { generationId, selectedLogoUrl } = validationResult.data;
+      const { generationId, logoIndex } = validationResult.data;
 
       // Find generation and verify ownership
       const [generation] = await db
@@ -486,13 +531,14 @@ export function registerLogoRoutes(app: Express) {
         return res.status(404).json({ error: "Generation not found or not completed" });
       }
 
-      // Verify the selected URL is one of the generated URLs
+      // Get the selected URL from the array using the index
       const generatedUrls = generation.generatedUrls as string[] || [];
-      if (!generatedUrls.includes(selectedLogoUrl)) {
-        return res.status(400).json({ error: "Selected logo URL is not from this generation" });
+      if (logoIndex >= generatedUrls.length) {
+        return res.status(400).json({ error: "Invalid logo index" });
       }
+      const selectedLogoUrl = generatedUrls[logoIndex];
 
-      // Create logo record for the selected logo
+      // Create logo record for the selected logo (inactive initially)
       const [logo] = await db.insert(logos).values({
         userId,
         type: "AI_GENERATED",
@@ -501,8 +547,15 @@ export function registerLogoRoutes(app: Express) {
         fileName: `${generation.businessName.replace(/\s+/g, '_')}_logo.png`,
         fileType: "image/png",
         generationId: generation.id,
-        isActive: true,
+        isActive: false, // Will be activated atomically below
       }).returning();
+
+      // Single atomic UPDATE: activate this logo and deactivate all others for this user
+      await db.execute(sql`
+        UPDATE ${logos} 
+        SET ${logos.isActive} = (${logos.id} = ${logo.id}) 
+        WHERE ${logos.userId} = ${userId}
+      `);
 
       // Update generation to mark which logo was selected
       await db
@@ -585,7 +638,7 @@ export function registerLogoRoutes(app: Express) {
           mode: "payment", // One-time payment
           success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/logos/generator?success=true&payment_id=${payment.id}`,
           cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/logos/generator?canceled=true`,
-          customer_email: user.email,
+          customer_email: user.email || undefined,
           metadata: {
             userId,
             paymentId: payment.id,
