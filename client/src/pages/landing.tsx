@@ -15,7 +15,7 @@ import {
   Camera, Bell, Upload, TrendingUp, Phone, Globe, Lock, Server, Link2,
   Wrench, Home, Truck
 } from "lucide-react";
-import serviceVaultLogo from "@assets/servicevault-logo.png";
+import vaultLogo from "@assets/1000003104-removebg-preview_1763181118443.png";
 import vaultIcon from "@assets/file_000000009c0871fd92f0332b41379de5~3_1763079245926.png";
 
 export default function Landing() {
@@ -73,12 +73,12 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-3" data-testid="logo-servicevault">
             <img 
-              src={serviceVaultLogo} 
+              src={vaultLogo} 
               alt="ServiceVault Logo" 
-              className="h-14 w-14 object-contain"
+              className="h-16 w-16 object-contain"
             />
             <span className="text-2xl font-extrabold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
-              ServiceVault
+              ServiceVault™
             </span>
           </div>
           <div>
