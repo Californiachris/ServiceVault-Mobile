@@ -81,9 +81,9 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2" data-testid="link-home">
             <img 
-              src="/attached_assets/servicevault-logo.png" 
+              src="/attached_assets/1000003104-removebg-preview_1763181118443.png" 
               alt="ServiceVault Logo" 
-              className="h-10 w-10 object-contain hover:opacity-90 transition-opacity"
+              className="h-12 w-12 object-contain hover:opacity-90 transition-opacity"
             />
             <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
               ServiceVault
