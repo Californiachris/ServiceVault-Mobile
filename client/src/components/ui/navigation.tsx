@@ -81,7 +81,7 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3" data-testid="link-home">
             <img 
-              src="/vault-logo.png" 
+              src="/vault-logo.png?v=3" 
               alt="ServiceVault Logo" 
               className="h-16 w-16 object-contain hover:opacity-90 transition-opacity"
             />
