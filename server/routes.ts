@@ -61,11 +61,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Seed fleet data on startup (idempotent)
   seedFleetData().catch(err => console.error("Fleet data seeding error:", err));
 
-  // Initialize object storage service
-  const objectStorageService = new ObjectStorageService();
+  // Check if object storage is configured
+  const hasObjectStorage = !!(process.env.PUBLIC_OBJECT_SEARCH_PATHS && process.env.PRIVATE_OBJECT_DIR);
+  if (!hasObjectStorage) {
+    console.warn('Object Storage not configured - file upload/download features will be disabled');
+  }
+  
+  // Initialize object storage service (only if configured)
+  const objectStorageService = hasObjectStorage ? new ObjectStorageService() : null;
   
   // Initialize notification service
   const notificationService = new NotificationService(storage);
+  
+  // Check if OpenAI is configured
+  const hasOpenAI = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY);
+  if (!hasOpenAI) {
+    console.warn('OpenAI not configured - AI warranty parsing will be disabled');
+  }
 
   // Auth tier selection endpoint (stores tier in session before login redirect)
   app.post('/api/auth/selection', (req: any, res) => {
@@ -207,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If logo URL provided, set ACL to make it publicly readable
-      if (familyLogoUrl) {
+      if (familyLogoUrl && objectStorageService) {
         try {
           await objectStorageService.trySetObjectEntityAclPolicy(familyLogoUrl, {
             owner: userId,
@@ -257,14 +269,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.logoUrl = logoUrl;
         
         // Set ACL to make logo publicly readable
-        try {
-          await objectStorageService.trySetObjectEntityAclPolicy(logoUrl, {
-            owner: userId,
-            visibility: "public",
-          });
-        } catch (error) {
-          console.error("Error setting ACL for contractor logo:", error);
-          // Continue anyway - logo might still work
+        if (objectStorageService) {
+          try {
+            await objectStorageService.trySetObjectEntityAclPolicy(logoUrl, {
+              owner: userId,
+              visibility: "public",
+            });
+          } catch (error) {
+            console.error("Error setting ACL for contractor logo:", error);
+            // Continue anyway - logo might still work
+          }
         }
       }
 
@@ -693,81 +707,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Object storage routes for file uploads
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
-    try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      const canAccess = await objectStorageService.canAccessObjectEntity({
-        objectFile,
-        userId: userId,
-        requestedPermission: ObjectPermission.READ,
-      });
-      if (!canAccess) {
-        return res.sendStatus(401);
+  // Object storage routes for file uploads (only if configured)
+  if (hasObjectStorage && objectStorageService) {
+    app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
+      const userId = req.user?.claims?.sub;
+      try {
+        const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+        const canAccess = await objectStorageService.canAccessObjectEntity({
+          objectFile,
+          userId: userId,
+          requestedPermission: ObjectPermission.READ,
+        });
+        if (!canAccess) {
+          return res.sendStatus(401);
+        }
+        objectStorageService.downloadObject(objectFile, res);
+      } catch (error) {
+        console.error("Error checking object access:", error);
+        if (error instanceof ObjectNotFoundError) {
+          return res.sendStatus(404);
+        }
+        return res.sendStatus(500);
       }
-      objectStorageService.downloadObject(objectFile, res);
-    } catch (error) {
-      console.error("Error checking object access:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
+    });
+
+    app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+      try {
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        
+        // Extract the object ID from the URL to construct the object path
+        // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
+        const urlParts = uploadURL.split('/');
+        const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
+        const objectIdWithQuery = urlParts[objectIdIndex];
+        const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
+        
+        // Construct the object path that will be used to retrieve the file
+        // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
+        // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
+        const objectPath = `/objects/uploads/${objectId}`;
+        
+        res.json({ uploadURL, objectPath });
+      } catch (error) {
+        console.error("Error getting upload URL:", error);
+        res.status(500).json({ error: "Failed to get upload URL" });
       }
-      return res.sendStatus(500);
-    }
-  });
+    });
 
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
-    try {
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      
-      // Extract the object ID from the URL to construct the object path
-      // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
-      const urlParts = uploadURL.split('/');
-      const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
-      const objectIdWithQuery = urlParts[objectIdIndex];
-      const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
-      
-      // Construct the object path that will be used to retrieve the file
-      // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
-      // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
-      const objectPath = `/objects/uploads/${objectId}`;
-      
-      res.json({ uploadURL, objectPath });
-    } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ error: "Failed to get upload URL" });
-    }
-  });
-
-  // Get upload URL for family branding logos
-  app.post('/api/upload/branding', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Use the existing upload URL method - it creates path like /PRIVATE_DIR/uploads/{uuid}
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      
-      // Extract the object ID from the URL to construct the object path
-      // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
-      const urlParts = uploadURL.split('/');
-      const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
-      const objectIdWithQuery = urlParts[objectIdIndex];
-      const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
-      
-      // Construct the object path that will be used to retrieve the file
-      // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
-      // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
-      const objectPath = `/objects/uploads/${objectId}`;
-      
-      res.json({ 
-        uploadURL, 
-        objectPath
+    // Get upload URL for family branding logos
+    app.post('/api/upload/branding', isAuthenticated, async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        
+        // Use the existing upload URL method - it creates path like /PRIVATE_DIR/uploads/{uuid}
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        
+        // Extract the object ID from the URL to construct the object path
+        // URL format: https://storage.googleapis.com/.../BUCKET/PRIVATE_DIR/uploads/UUID?...
+        const urlParts = uploadURL.split('/');
+        const objectIdIndex = urlParts.findIndex(part => part === 'uploads') + 1;
+        const objectIdWithQuery = urlParts[objectIdIndex];
+        const objectId = objectIdWithQuery ? objectIdWithQuery.split('?')[0] : randomUUID();
+        
+        // Construct the object path that will be used to retrieve the file
+        // getObjectEntityFile expects /objects/{entityId} where entityId is appended to privateDir
+        // Since upload creates privateDir/uploads/{uuid}, entityId should be "uploads/{uuid}"
+        const objectPath = `/objects/uploads/${objectId}`;
+        
+        res.json({ 
+          uploadURL, 
+          objectPath
+        });
+      } catch (error) {
+        console.error("Error getting upload URL:", error);
+        res.status(500).json({ error: "Failed to get upload URL" });
+      }
+    });
+  } else {
+    // Fallback routes when object storage is not configured
+    app.get("/objects/:objectPath(*)", isAuthenticated, (req, res) => {
+      res.status(503).json({ 
+        error: "File storage is currently unavailable. Please contact support@servicevault.app.",
+        service: "object_storage",
+        configured: false
       });
-    } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ error: "Failed to get upload URL" });
-    }
-  });
+    });
+
+    app.post("/api/objects/upload", isAuthenticated, (req, res) => {
+      res.status(503).json({ 
+        error: "File upload is currently unavailable. Please contact support@servicevault.app.",
+        service: "object_storage",
+        configured: false
+      });
+    });
+
+    app.post('/api/upload/branding', isAuthenticated, (req, res) => {
+      res.status(503).json({ 
+        error: "File upload is currently unavailable. Please contact support@servicevault.app.",
+        service: "object_storage",
+        configured: false
+      });
+    });
+  }
 
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
@@ -1775,6 +1816,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enrich documents with signed view URLs and metadata
       const enrichedDocuments = await Promise.all(
         documents.map(async (doc) => {
+          // If object storage is not configured, return document with null URL
+          if (!objectStorageService) {
+            return {
+              id: doc.id,
+              title: doc.title,
+              type: doc.type,
+              description: doc.description,
+              uploadedAt: doc.uploadedAt,
+              issueDate: doc.issueDate,
+              expiryDate: doc.expiryDate,
+              amount: doc.amount,
+              objectPath: null,
+              mimeType: "application/octet-stream",
+              size: 0,
+            };
+          }
+          
           try {
             const [signedUrl, metadata] = await Promise.all([
               objectStorageService.getSignedViewURL(doc.path),
@@ -1831,11 +1889,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Set ACL policy for the uploaded object
-      const normalizedPath = objectStorageService.normalizeObjectEntityPath(objectPath);
-      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userId,
-        visibility: "private",
-      });
+      let normalizedPath = objectPath;
+      if (objectStorageService) {
+        normalizedPath = objectStorageService.normalizeObjectEntityPath(objectPath);
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+          owner: userId,
+          visibility: "private",
+        });
+      }
 
       const document = await storage.createDocument({
         uploadedBy: userId,
@@ -1871,6 +1932,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== WARRANTY PARSING ENDPOINTS =====
   
   app.post('/api/warranties/parse', isAuthenticated, async (req: any, res) => {
+    // Check if OpenAI is configured
+    if (!hasOpenAI) {
+      return res.status(503).json({ 
+        error: "AI warranty parsing is currently unavailable. Please contact support@servicevault.app.",
+        service: "openai",
+        configured: false
+      });
+    }
+    
     const userId = req.user.claims.sub;
     const { checkRateLimit, RATE_LIMITS } = await import('./rateLimiter');
     
@@ -1990,11 +2060,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Set ACL policy for the uploaded object
-      const normalizedPath = objectStorageService.normalizeObjectEntityPath(objectPath);
-      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: userId,
-        visibility: "private",
-      });
+      let normalizedPath = objectPath;
+      if (objectStorageService) {
+        normalizedPath = objectStorageService.normalizeObjectEntityPath(objectPath);
+        await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+          owner: userId,
+          visibility: "private",
+        });
+      }
 
       // Create document with user description OR auto-generate from scanned QR metadata
       let finalDescription = description;
@@ -2016,7 +2089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If this is a WARRANTY document with an assetId, auto-trigger AI parsing in the background
       // This creates automatic maintenance reminders based on the warranty document
-      if (type === 'WARRANTY' && assetId) {
+      if (type === 'WARRANTY' && assetId && hasOpenAI && objectStorageService) {
         setImmediate(async () => {
           try {
             console.log(`Auto-triggering AI warranty parsing for document ${document.id}`);
@@ -2115,6 +2188,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/documents/parse-warranty', isAuthenticated, async (req: any, res) => {
+    // Check if OpenAI is configured
+    if (!hasOpenAI) {
+      return res.status(503).json({ 
+        error: "AI warranty parsing is currently unavailable. Please contact support@servicevault.app.",
+        service: "openai",
+        configured: false
+      });
+    }
+    
     try {
       const userId = req.user.claims.sub;
       const { imageBase64, assetId } = req.body;
@@ -2242,6 +2324,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // AI Document Extraction - Comprehensive endpoint for assets, warranties, receipts
   app.post('/api/ai/documents/extract', isAuthenticated, async (req: any, res) => {
+    // Check if OpenAI and Object Storage are configured
+    if (!hasOpenAI) {
+      return res.status(503).json({ 
+        error: "AI document extraction is currently unavailable. Please contact support@servicevault.app.",
+        service: "openai",
+        configured: false
+      });
+    }
+    if (!objectStorageService) {
+      return res.status(503).json({ 
+        error: "File storage is currently unavailable. Please contact support@servicevault.app.",
+        service: "object_storage",
+        configured: false
+      });
+    }
+    
     try {
       const userId = req.user.claims.sub;
       const { objectPath, extractionType } = req.body;
