@@ -79,14 +79,14 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2" data-testid="link-home">
+          <Link href="/" className="flex items-center gap-3" data-testid="link-home">
             <img 
-              src="/attached_assets/1000003104-removebg-preview_1763181118443.png" 
+              src="/vault-logo.png" 
               alt="ServiceVault Logo" 
-              className="h-12 w-12 object-contain hover:opacity-90 transition-opacity"
+              className="h-16 w-16 object-contain hover:opacity-90 transition-opacity"
             />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
-              ServiceVault
+            <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+              ServiceVault™
             </span>
           </Link>
           
