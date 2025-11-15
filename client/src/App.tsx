@@ -37,6 +37,7 @@ import ActiveVisit from "@/pages/worker/ActiveVisit";
 import TenantReportForm from "@/pages/TenantReportForm";
 import ContractorWelcome from "@/pages/contractor/ContractorWelcome";
 import ContractorPlanSelection from "@/pages/contractor/ContractorPlanSelection";
+import WorkerCheckIn from "@/pages/contractor/WorkerCheckIn";
 import HomeownerWelcome from "@/pages/HomeownerWelcome";
 import FleetWelcome from "@/pages/FleetWelcome";
 import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
@@ -89,6 +90,7 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/contractor/welcome" component={ContractorWelcome} />
         <Route path="/contractor/plans" component={ContractorPlanSelection} />
+        <Route path="/contractor/worker-checkin" component={WorkerCheckIn} />
         <Route path="/solutions/contractors" component={ContractorWelcome} />
         <Route path="/solutions/contractors/pricing" component={ContractorPricing} />
         <Route path="/solutions/homeowners" component={HomeownerWelcome} />

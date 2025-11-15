@@ -107,6 +107,7 @@ export default function Scan() {
   const [, setLocation] = useLocation();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<'asset' | 'checkin' | null>(null); // Track which action button was clicked
   const [showInstallForm, setShowInstallForm] = useState(false);
   const [showServiceEventDialog, setShowServiceEventDialog] = useState(false);
   const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
@@ -377,7 +378,15 @@ export default function Scan() {
       }
     }
     
-    // Normal ServiceVault asset code handling
+    // Handle contractor check-in mode
+    if (scanMode === 'checkin') {
+      // Store scanned code and mode for worker check-in flow
+      sessionStorage.setItem('contractorCheckInCode', code);
+      setLocation(`/contractor/worker-checkin?code=${encodeURIComponent(code)}`);
+      return;
+    }
+    
+    // Normal ServiceVault asset code handling (for asset logging or default scan)
     setScannedCode(code);
     setIsScanning(false);
     setShowInstallForm(false);
@@ -494,27 +503,64 @@ export default function Scan() {
               </CardHeader>
               <CardContent>
                 {!isScanning ? (
-                  <div className="text-center space-y-4">
+                  <div className="text-center space-y-6">
                     <div className="w-full aspect-square bg-muted/20 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
                       <div className="text-center">
                         <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                         <p className="text-muted-foreground mb-4">
-                          Click to activate camera and scan QR codes
+                          Choose an action below to scan
                         </p>
-                        <Button 
-                          onClick={() => setIsScanning(true)}
-                          data-testid="button-start-scanning"
-                        >
-                          <Camera className="mr-2 h-4 w-4" />
-                          Start Scanning
-                        </Button>
                       </div>
                     </div>
+                    
+                    {/* Premium Action Buttons */}
+                    {user?.role === 'CONTRACTOR' && (
+                      <div className="grid grid-cols-1 gap-4">
+                        <Button 
+                          onClick={() => {
+                            setScanMode('asset');
+                            setIsScanning(true);
+                          }}
+                          size="lg"
+                          className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold h-14"
+                          data-testid="button-log-asset"
+                        >
+                          <Plus className="mr-2 h-5 w-5" />
+                          Log New Asset
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            setScanMode('checkin');
+                            setIsScanning(true);
+                          }}
+                          size="lg"
+                          variant="outline"
+                          className="border-2 border-gradient bg-transparent hover:bg-primary/5 font-semibold h-14"
+                          data-testid="button-check-in-out"
+                        >
+                          <QrCode className="mr-2 h-5 w-5" />
+                          Check In / Check Out
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {user?.role !== 'CONTRACTOR' && (
+                      <Button 
+                        onClick={() => setIsScanning(true)}
+                        data-testid="button-start-scanning"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Start Scanning
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <QRScanner 
                     onScan={handleScan} 
-                    onClose={() => setIsScanning(false)}
+                    onClose={() => {
+                      setIsScanning(false);
+                      setScanMode(null);
+                    }}
                     onStatusChange={handleCameraStatusChange}
                     onFallbackRequest={handleFallbackRequest}
                   />
