@@ -18,7 +18,7 @@ import {
   LogOut,
   User
 } from "lucide-react";
-import serviceVaultLogo from "@assets/servicevault-logo.png";
+import vaultLogo from "@assets/1000003104-removebg-preview_1763181118443.png";
 
 interface AppShellProps {
   children: ReactNode;
@@ -83,12 +83,12 @@ export default function AppShell({ children }: AppShellProps) {
           {/* Logo */}
           <div className="flex items-center gap-2 h-16 px-6 border-b border-border">
             <img 
-              src={serviceVaultLogo} 
+              src={vaultLogo} 
               alt="ServiceVault Logo" 
-              className="h-10 w-10 object-contain"
+              className="h-14 w-14 object-contain"
             />
-            <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
-              ServiceVault
+            <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+              ServiceVault™
             </span>
           </div>
 
@@ -165,12 +165,12 @@ export default function AppShell({ children }: AppShellProps) {
       <div className="lg:hidden sticky top-0 z-[100] flex items-center justify-between h-16 px-4 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="flex items-center gap-2">
           <img 
-            src={serviceVaultLogo} 
+            src={vaultLogo} 
             alt="ServiceVault Logo" 
-            className="h-8 w-8 object-contain"
+            className="h-12 w-12 object-contain"
           />
-          <span className="text-base font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
-            ServiceVault
+          <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+            ServiceVault™
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -198,12 +198,12 @@ export default function AppShell({ children }: AppShellProps) {
               {/* Mobile Logo */}
               <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0">
                 <img 
-                  src={serviceVaultLogo} 
+                  src={vaultLogo} 
                   alt="ServiceVault Logo" 
-                  className="h-10 w-10 object-contain"
+                  className="h-14 w-14 object-contain"
                 />
-                <span className="text-lg font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
-                  ServiceVault
+                <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+                  ServiceVault™
                 </span>
               </div>
 
