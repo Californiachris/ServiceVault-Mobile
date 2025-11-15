@@ -11,7 +11,7 @@ import {
   FileText,
   Bell
 } from "lucide-react";
-import serviceVaultLogo from "@assets/servicevault-logo.png";
+import vaultLogo from "@assets/1000003104-removebg-preview_1763181118443.png";
 import { useEffect } from "react";
 import { BenefitsSection, MarketingBenefit } from "@/components/marketing/BenefitsSection";
 
@@ -90,11 +90,11 @@ export default function HomeownerWelcome() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src={serviceVaultLogo} 
+              src={vaultLogo} 
               alt="ServiceVault Logo" 
               className="h-12 w-12 object-contain"
             />
-            <span className="text-xl font-bold tracking-tight">ServiceVault</span>
+            <span className="text-xl font-bold tracking-tight">ServiceVault™</span>
           </div>
           <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
             <Home className="h-3 w-3 mr-1" />

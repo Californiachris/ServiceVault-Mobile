@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { Check, ArrowLeft, Sparkles } from "lucide-react";
-import serviceVaultLogo from "@assets/servicevault-logo.png";
+import vaultLogo from "@assets/1000003104-removebg-preview_1763181118443.png";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
@@ -123,11 +123,11 @@ export default function ContractorPricing() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src={serviceVaultLogo} 
+              src={vaultLogo} 
               alt="ServiceVault Logo" 
               className="h-12 w-12 object-contain"
             />
-            <span className="text-xl font-bold tracking-tight">ServiceVault</span>
+            <span className="text-xl font-bold tracking-tight">ServiceVault™</span>
           </div>
           <Button 
             variant="ghost" 

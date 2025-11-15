@@ -424,7 +424,7 @@ export default function PublicAsset() {
         {/* Powered by ServiceVault */}
         <div className="text-center py-6">
           <p className="text-xs text-muted-foreground">
-            Powered by <span className="font-semibold text-primary">ServiceVault</span> - Premium Asset Tracking
+            Powered by <span className="font-semibold text-primary">ServiceVault™</span> - Premium Asset Tracking
           </p>
         </div>
       </div>
