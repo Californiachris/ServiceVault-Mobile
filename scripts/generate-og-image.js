@@ -20,10 +20,10 @@ async function generateOGImage() {
       </svg>
     `;
 
-    // Load the vault logo
+    // Load the vault logo - fill the entire space
     const logoPath = path.join(process.cwd(), 'client', 'public', 'vault-logo.png');
     const logo = await sharp(logoPath)
-      .resize(600, 600, { fit: 'inside' }) // Make it bigger to fill more space
+      .resize(WIDTH, HEIGHT, { fit: 'cover' }) // Fill entire preview box
       .toBuffer();
 
     // Create background
