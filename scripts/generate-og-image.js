@@ -12,19 +12,18 @@ async function generateOGImage() {
       <svg width="${WIDTH}" height="${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#0e7490;stop-opacity:1" />
-            <stop offset="50%" style="stop-color:#0891b2;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
           </linearGradient>
         </defs>
         <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#grad)"/>
       </svg>
     `;
 
-    // Load the logo
-    const logoPath = path.join(process.cwd(), 'client', 'public', 'logo.png');
+    // Load the vault logo
+    const logoPath = path.join(process.cwd(), 'client', 'public', 'vault-logo.png');
     const logo = await sharp(logoPath)
-      .resize(400, 400, { fit: 'inside' }) // Resize logo to fit nicely
+      .resize(600, 600, { fit: 'inside' }) // Make it bigger to fill more space
       .toBuffer();
 
     // Create background
