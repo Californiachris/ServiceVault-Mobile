@@ -336,23 +336,30 @@ export default function AILogoGenerator() {
         </div>
       ) : generationStatus === 'generating' ? (
         // Show Generating State
-        <Card className="border-2">
-          <CardContent className="p-12 text-center space-y-6">
+        <Card className="border-2 border-primary/20 shadow-2xl">
+          <CardContent className="p-12 text-center space-y-8">
             <div className="flex justify-center">
-              <div className="rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 p-6 animate-pulse">
-                <Wand2 className="h-16 w-16 text-primary" />
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full blur-2xl opacity-30 animate-pulse" />
+                <div className="relative rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 p-8 animate-pulse">
+                  <Wand2 className="h-20 w-20 text-primary animate-[spin_3s_ease-in-out_infinite]" />
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-semibold">Creating Your Logos...</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Our AI is crafting 4 professional logo variations for {businessName}
+            <div className="space-y-3">
+              <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-purple-600 bg-clip-text text-transparent">
+                Creating Your Logos...
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto text-lg">
+                ServiceVault™ AI is crafting 4 professional logo variations for {businessName}
               </p>
             </div>
-            <Progress value={66} className="max-w-md mx-auto h-2" />
-            <p className="text-sm text-muted-foreground">
-              This usually takes 30-60 seconds
-            </p>
+            <div className="space-y-3 max-w-md mx-auto">
+              <Progress value={66} className="h-3 bg-gradient-to-r from-cyan-100 to-purple-100 dark:from-cyan-950 dark:to-purple-950" />
+              <p className="text-sm text-muted-foreground font-medium">
+                This usually takes 30-60 seconds
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -473,18 +480,18 @@ export default function AILogoGenerator() {
             <Button
               onClick={handleGenerate}
               size="lg"
-              className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700"
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               disabled={generateMutation.isPending || checkingAccess}
               data-testid="button-generate-logos"
             >
               {generateMutation.isPending ? (
                 <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  <Loader2 className="h-6 w-6 mr-2 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-5 w-5 mr-2" />
+                  <Sparkles className="h-6 w-6 mr-2" />
                   Generate 4 Logo Variations
                 </>
               )}

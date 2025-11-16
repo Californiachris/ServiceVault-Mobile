@@ -76,7 +76,7 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
         });
         
         // gpt-image-1 returns base64 data in b64_json field, not URLs
-        const base64Data = response.data[0]?.b64_json;
+        const base64Data = response.data?.[0]?.b64_json;
         if (!base64Data) {
           console.error("❌ No base64 data in response:", response.data);
           throw new Error("No image data returned from gpt-image-1");
