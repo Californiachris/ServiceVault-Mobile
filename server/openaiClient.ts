@@ -75,13 +75,15 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
           size: "1024x1024",
         });
         
-        console.log("🎨 gpt-image-1 response:", JSON.stringify(response, null, 2));
-        
-        const imageUrl = response.data[0]?.url;
-        if (!imageUrl) {
-          console.error("❌ Response data:", response.data);
-          throw new Error("No image URL returned from gpt-image-1");
+        // gpt-image-1 returns base64 data in b64_json field, not URLs
+        const base64Data = response.data[0]?.b64_json;
+        if (!base64Data) {
+          console.error("❌ No base64 data in response:", response.data);
+          throw new Error("No image data returned from gpt-image-1");
         }
+        
+        // Convert base64 to data URL for frontend display
+        const imageUrl = `data:image/png;base64,${base64Data}`;
         
         return { imageUrl, prompt };
       } catch (error) {

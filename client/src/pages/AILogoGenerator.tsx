@@ -213,7 +213,7 @@ export default function AILogoGenerator() {
           <CardHeader>
             <CardTitle>Sign In Required</CardTitle>
             <CardDescription>
-              Please sign in to use the AI Logo Generator
+              Please sign in to use ServiceVault™ AI Logo Generator
             </CardDescription>
           </CardHeader>
         </Card>
@@ -236,9 +236,9 @@ export default function AILogoGenerator() {
             <Wand2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">AI Logo Generator</h1>
+            <h1 className="text-3xl font-bold">ServiceVault™ AI Logo Generator</h1>
             <p className="text-muted-foreground">
-              Professional logos in seconds with DALL-E 3
+              Professional logos powered by advanced AI
             </p>
           </div>
         </div>
@@ -531,7 +531,7 @@ export default function AILogoGenerator() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>Powered by DALL-E 3 AI</span>
+                  <span>Powered by ServiceVault™ AI</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
