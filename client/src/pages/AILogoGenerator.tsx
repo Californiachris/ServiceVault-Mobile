@@ -529,48 +529,54 @@ export default function AILogoGenerator() {
 
       {/* Logo Selection Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent data-testid="dialog-confirm-logo">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              Confirm Logo Selection
-            </DialogTitle>
-            <DialogDescription>
-              This is an important decision that affects your business branding
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {pendingLogoIndex !== null && currentGeneration && (
-              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-2">
-                <img 
-                  src={currentGeneration.logos[pendingLogoIndex].url} 
-                  alt="Selected logo preview"
-                  className="w-full max-h-48 object-contain"
-                />
+        <DialogContent className="max-h-[90vh] flex flex-col p-0" data-testid="dialog-confirm-logo">
+          <div className="px-6 pt-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                Confirm Logo Selection
+              </DialogTitle>
+              <DialogDescription>
+                This is an important decision that affects your business branding
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="overflow-y-auto px-6 flex-1">
+            <div className="space-y-4 py-4">
+              {pendingLogoIndex !== null && currentGeneration && (
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border-2">
+                  <img 
+                    src={currentGeneration.logos[pendingLogoIndex].url} 
+                    alt="Selected logo preview"
+                    className="w-full max-h-48 object-contain"
+                  />
+                </div>
+              )}
+              <div className="space-y-3 bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                <p className="font-semibold text-orange-900 dark:text-orange-100">
+                  Are you absolutely sure you want to select this logo?
+                </p>
+                <ul className="space-y-2 text-sm text-orange-800 dark:text-orange-200">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>This logo will appear on your dashboard</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>This logo will be emailed to admin for your custom QR stickers</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>All future sticker orders will use this logo</span>
+                  </li>
+                </ul>
+                <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mt-3">
+                  You can change your logo later in Settings for $5.99/regeneration
+                </p>
               </div>
-            )}
-            <div className="space-y-3 bg-orange-50 dark:bg-orange-950/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-              <p className="font-semibold text-orange-900 dark:text-orange-100">
-                Are you absolutely sure you want to select this logo?
-              </p>
-              <ul className="space-y-2 text-sm text-orange-800 dark:text-orange-200">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>This logo will appear on your dashboard</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>This logo will be emailed to admin for your custom QR stickers</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>All future sticker orders will use this logo</span>
-                </li>
-              </ul>
-              <p className="text-sm text-orange-800 dark:text-orange-200 font-medium mt-3">
-                You can change your logo later in Settings for $5.99/regeneration
-              </p>
             </div>
+          </div>
+          <div className="border-t p-6">
             <div className="flex gap-2">
               <Button
                 variant="outline"
