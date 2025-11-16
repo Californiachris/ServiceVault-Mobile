@@ -640,6 +640,91 @@ export function registerLogoRoutes(app: Express) {
       }
     });
 
+    // Create Stripe checkout session for logo regeneration ($5.99 per session)
+    app.post("/api/logos/regenerate-checkout", isAuthenticated, async (req: any, res: Response) => {
+      try {
+        const userId = req.user.claims.sub;
+
+        // Check if user has already paid for initial AI access
+        const [existingPayment] = await db
+          .select()
+          .from(logoPayments)
+          .where(and(
+            eq(logoPayments.userId, userId),
+            eq(logoPayments.status, "COMPLETED")
+          ))
+          .limit(1);
+
+        if (!existingPayment) {
+          return res.status(403).json({ 
+            error: "Access denied",
+            message: "You must purchase the initial AI Logo Generator ($19.99) before regenerating logos" 
+          });
+        }
+
+        // Get user email for Stripe
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        // Create a pending regeneration payment record
+        const [payment] = await db.insert(logoPayments).values({
+          userId,
+          amount: "5.99",
+          currency: "usd",
+          status: "PENDING",
+        }).returning();
+
+        // Create Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: "Regenerate AI Logos",
+                  description: "Generate 4 new AI logo variations for your business",
+                },
+                unit_amount: 599, // $5.99 in cents
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment", // One-time payment
+          success_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/logos/generator?success=true&payment_id=${payment.id}`,
+          cancel_url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/logos/generator?canceled=true`,
+          customer_email: user.email || undefined,
+          metadata: {
+            userId,
+            paymentId: payment.id,
+            type: "logo_regeneration",
+          },
+        });
+
+        // Update payment with Stripe session ID
+        await db
+          .update(logoPayments)
+          .set({ stripeSessionId: session.id })
+          .where(eq(logoPayments.id, payment.id));
+
+        res.json({ 
+          sessionId: session.id, 
+          url: session.url,
+          paymentId: payment.id,
+        });
+      } catch (error) {
+        console.error("Error creating regeneration checkout session:", error);
+        res.status(500).json({ error: "Failed to create checkout session" });
+      }
+    });
+
     // Webhook handler for logo payment confirmations
     // This will be handled by the main Stripe webhook in routes.ts
     // We just need to make sure the webhook handler knows about logo payments
@@ -649,6 +734,13 @@ export function registerLogoRoutes(app: Express) {
       res.status(200).json({ 
         demo: true,
         message: "Demo mode - payment skipped. You can generate logos for free.",
+      });
+    });
+
+    app.post("/api/logos/regenerate-checkout", async (req: any, res: Response) => {
+      res.status(200).json({ 
+        demoMode: true,
+        message: "Demo mode - regeneration payment skipped.",
       });
     });
   }

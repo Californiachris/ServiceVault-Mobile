@@ -25,7 +25,8 @@ Design philosophy: Premium, professional, trustworthy - like Stripe/Linear/Notio
 
 ### Data Storage
 - **Database:** PostgreSQL (Neon serverless) with Drizzle ORM.
-- **Core Tables:** `users`, `sessions`, `contractors`, `properties`, `identifiers`, `assets`, `events`, `documents`, `reminders`, `inspections`, `transfers`, `subscriptions`. Dedicated tables for `managedProperties`, `workers`, `propertyTasks`, `propertyVisits`, and `tenantReports` support property management functionality.
+- **Core Tables:** `users`, `sessions`, `contractors`, `properties`, `identifiers`, `assets`, `events`, `documents`, `reminders`, `inspections`, `transfers`, `subscriptions`, `logos`, `logoGenerations`, `logoPayments`. Dedicated tables for `managedProperties`, `workers`, `propertyTasks`, `propertyVisits`, and `tenantReports` support property management functionality.
+- **Logo System:** Users can upload logos or generate AI logos. Each user has one `isActive` logo that appears on dashboards and future QR sticker orders. Logo selection requires explicit confirmation.
 
 ### Authentication & Authorization
 - **Replit Authentication:** OIDC integration, session-based authentication with PostgreSQL store, Passport.js, JWT.

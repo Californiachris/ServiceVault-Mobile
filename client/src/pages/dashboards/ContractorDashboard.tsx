@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { DashboardTabs } from "@/components/DashboardTabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import BrandedHeader from "@/components/BrandedHeader";
 import {
   Building2,
   QrCode,
@@ -212,6 +214,13 @@ export default function ContractorDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 pb-24">
+      {/* Branded Header with Logo */}
+      <BrandedHeader 
+        sector="contractor"
+        companyName={contractor?.companyName}
+        subtitle="Professional asset tracking & job management"
+      />
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -225,9 +234,6 @@ export default function ContractorDashboard() {
                 Contractor
               </Badge>
             </div>
-            <p className="text-muted-foreground text-sm md:text-base">
-              {contractor?.companyName || "Your contracting business"} — Professional asset tracking
-            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild data-testid="button-order-stickers">
@@ -271,14 +277,43 @@ export default function ContractorDashboard() {
           )}
         </div>
 
-        {/* Specialty Tabs */}
+        {/* Specialty Filter Dropdown */}
         {specialtyTabs.length > 1 && (
           <div className="mt-6">
-            <DashboardTabs
-              tabs={specialtyTabs}
-              activeValue={activeSpecialty}
-              onChange={setActiveSpecialty}
-            />
+            <Label htmlFor="specialty-filter" className="text-sm font-medium mb-2 block">
+              Filter by Job Type
+            </Label>
+            <Select value={activeSpecialty} onValueChange={setActiveSpecialty}>
+              <SelectTrigger 
+                id="specialty-filter" 
+                className="w-full md:w-64"
+                data-testid="select-specialty-filter"
+              >
+                <SelectValue placeholder="Select job type" />
+              </SelectTrigger>
+              <SelectContent>
+                {specialtyTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <SelectItem 
+                      key={tab.id} 
+                      value={tab.id}
+                      data-testid={`select-item-${tab.id}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {Icon && <Icon className="h-4 w-4" />}
+                        <span>{tab.label}</span>
+                        {tab.count !== undefined && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {tab.count}
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +22,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bell, Mail, Smartphone, BellOff, Trash2, Building2, Upload, Image as ImageIcon } from "lucide-react";
+import { Loader2, Bell, Mail, Smartphone, BellOff, Trash2, Building2, Upload, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 const notificationSettingsSchema = z.object({
   phone: z.string().optional(),
@@ -59,8 +61,18 @@ interface Contractor {
   logoUrl: string | null;
 }
 
+interface Logo {
+  id: string;
+  userId: string;
+  fileName: string;
+  fileUrl: string;
+  logoType: "UPLOADED" | "AI_GENERATED";
+  isActive: boolean;
+}
+
 export default function Settings() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ['/api/auth/user'],
@@ -71,6 +83,21 @@ export default function Settings() {
     enabled: user?.role === 'CONTRACTOR',
     select: (data: any) => data?.contractor,
   });
+
+  // Fetch user's logos
+  const { data: logos = [] } = useQuery<Logo[]>({
+    queryKey: ['/api/logos'],
+    retry: false,
+  });
+
+  // Check if user has paid for AI logo generation
+  const { data: hasAIAccess } = useQuery({
+    queryKey: ['/api/logos/check-access'],
+    enabled: !!user,
+  });
+
+  // Get the active logo
+  const activeLogo = logos.find(logo => logo.isActive);
 
   const [companyName, setCompanyName] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -221,6 +248,31 @@ export default function Settings() {
         variant: "destructive",
         title: "Deletion failed",
         description: error.message || "Failed to delete account. Please try again or contact support.",
+      });
+    },
+  });
+
+  const regenerateCheckoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/logos/regenerate-checkout', {});
+      return await res.json() as { url: string; demoMode?: boolean };
+    },
+    onSuccess: (data) => {
+      if (data.demoMode) {
+        toast({
+          title: "Demo Mode Active",
+          description: "Regeneration is free in demo mode! Redirecting to generator...",
+        });
+        setTimeout(() => setLocation('/logos/generator'), 1000);
+      } else if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Payment Failed",
+        description: error.message || "Could not create checkout session",
+        variant: "destructive",
       });
     },
   });
@@ -378,89 +430,136 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Contractor Branding - Only shown for contractors */}
-          {user?.role === 'CONTRACTOR' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Company Branding
-                </CardTitle>
-                <CardDescription>
-                  Customize your company logo for QR stickers and customer notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          {/* Logo Management - Available for all users */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Logo Management
+              </CardTitle>
+              <CardDescription>
+                Manage your branding for dashboard and QR stickers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Active Logo Display */}
+              {activeLogo && (
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    placeholder="Your Company LLC"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    data-testid="input-company-name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Company Logo</Label>
-                  <div className="flex items-start gap-4">
-                    {logoPreview && (
-                      <div className="flex-shrink-0">
-                        <div className="w-24 h-24 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                          <img
-                            src={logoPreview}
-                            alt="Logo preview"
-                            className="w-full h-full object-contain"
-                            data-testid="img-logo-preview"
-                          />
-                        </div>
+                  <Label>Current Active Logo</Label>
+                  <div className="flex items-start gap-4 p-4 border-2 rounded-lg bg-gradient-to-br from-cyan-50/30 to-purple-50/30 dark:from-cyan-950/10 dark:to-purple-950/10">
+                    <div className="flex-shrink-0">
+                      <div className="w-24 h-24 border-2 rounded-lg overflow-hidden bg-white dark:bg-gray-900 flex items-center justify-center p-2">
+                        <img
+                          src={activeLogo.fileUrl}
+                          alt="Active logo"
+                          className="w-full h-full object-contain"
+                          data-testid="img-active-logo"
+                        />
                       </div>
-                    )}
+                    </div>
                     <div className="flex-1">
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('logo-upload')?.click()}
-                          className="w-full"
-                          data-testid="button-upload-logo"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          {logoPreview ? 'Change Logo' : 'Upload Logo'}
-                        </Button>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                          Active
+                        </Badge>
+                        <Badge variant="outline">
+                          {activeLogo.logoType === 'AI_GENERATED' ? 'AI Generated' : 'Uploaded'}
+                        </Badge>
                       </div>
-                      <input
-                        id="logo-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                        data-testid="input-logo-file"
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        PNG, JPG up to 5MB. Will appear on QR stickers and customer emails.
+                      <p className="text-sm text-muted-foreground">
+                        This logo appears on your dashboard and will be used for all future QR sticker orders.
                       </p>
                     </div>
                   </div>
                 </div>
+              )}
 
-                <div className="flex justify-end">
+              {/* Logo Options Based on User Type */}
+              <div className="space-y-4">
+                <Label>Logo Options</Label>
+                <div className="grid gap-3">
+                  {/* Upload New Logo - Free for all users */}
                   <Button
                     type="button"
-                    onClick={() => saveContractorBrandingMutation.mutate()}
-                    disabled={saveContractorBrandingMutation.isPending || !companyName.trim()}
-                    data-testid="button-save-branding"
+                    variant="outline"
+                    onClick={() => setLocation('/logos/upload')}
+                    className="w-full justify-start h-auto py-4"
+                    data-testid="button-upload-new-logo"
                   >
-                    {saveContractorBrandingMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Save Company Branding
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-lg bg-blue-500/10 p-2">
+                        <Upload className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold">Upload New Logo</div>
+                        <div className="text-sm text-muted-foreground font-normal">
+                          Free • Upload your own logo file (PNG, JPG up to 5MB)
+                        </div>
+                      </div>
+                    </div>
                   </Button>
+
+                  {/* AI Generator Options */}
+                  {!hasAIAccess ? (
+                    // User hasn't paid - Show unlock AI button
+                    <Button
+                      type="button"
+                      onClick={() => setLocation('/logos/generator')}
+                      className="w-full justify-start h-auto py-4 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700"
+                      data-testid="button-unlock-ai"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-white/20 p-2">
+                          <Wand2 className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">Unlock AI Logo Generator</div>
+                          <div className="text-sm font-normal opacity-90">
+                            $19.99 one-time • Unlimited generations until you pick one
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  ) : (
+                    // User has paid - Show regenerate button
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => regenerateCheckoutMutation.mutate()}
+                      className="w-full justify-start h-auto py-4 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+                      disabled={regenerateCheckoutMutation.isPending}
+                      data-testid="button-regenerate-logos"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-purple-500/10 p-2">
+                          {regenerateCheckoutMutation.isPending ? (
+                            <Loader2 className="h-5 w-5 text-purple-600 dark:text-purple-400 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-foreground">
+                            {regenerateCheckoutMutation.isPending ? "Processing..." : "Regenerate New Logos"}
+                          </div>
+                          <div className="text-sm text-muted-foreground font-normal">
+                            $5.99 per session • Generate 4 new AI logo variations
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm text-blue-900 dark:text-blue-200">
+                  <strong>Note:</strong> When you select a new logo (uploaded or AI-generated), you'll be asked to confirm your selection. The confirmed logo will automatically replace your current logo on your dashboard and future sticker orders.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex justify-end gap-3">
             <Button
