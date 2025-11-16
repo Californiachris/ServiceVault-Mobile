@@ -1,0 +1,93 @@
+Please keep all existing user-facing flows exactly the same:
+
+Landing → 4 role cards (Homeowner / Contractor / Fleet / Property Mgmt)  
+→ Sector-specific welcome page → View Plans → Pick Plan  
+→ Checkout with logo step (upload OR $20 AI logo generator)  
+→ Dashboard with their logo + family/ company name.
+
+We just need to make sure this structure will scale cleanly to the first 2,000–10,000 users without lag or crashing. Please review and adjust the implementation to follow these rules:
+
+1) DATA MODEL & QUERIES
+- Make sure we have clean, normalized tables for at least:
+  • users  
+  • accounts / organizations (contractor, PM company, fleet company, household, etc.)  
+  • subscriptions / plans  
+  • assets (any tagged equipment/vehicle/property item)  
+  • tags (QR/NFC codes linked to assets)  
+  • events / history logs (installs, maintenance, inspections, check-ins, etc.)  
+  • logos / branding (logo URL + display name/family name)  
+- Dashboards and sector pages should NEVER query “all assets” or “all events.”
+  Every data query should be filtered on:
+  • current user  
+  • current account/organization  
+  • sector/role, where applicable.
+- Use server-side filters/queries instead of loading full tables and filtering on the front-end.
+
+2) DASHBOARDS & LIST PAGES
+- Each dashboard (Homeowner / Contractor / Fleet / Property Mgmt) must only load what the user actually sees on first paint:
+  • current user’s/account’s assets  
+  • a short recent history list (e.g. last 10–20 events)
+- If there are large histories or asset lists, use:
+  • pagination (“Load more”) or  
+  • lazy loading / infinite scroll  
+  so we never pull hundreds or thousands of records at once.
+- Wherever possible, use indexed fields (account_id, role, created_at, asset_id) so queries remain fast as data grows.
+
+3) LOGO HANDLING (UPLOAD + AI GENERATOR)
+- Keep the current UX exactly as is:  
+  At checkout, user sees options:
+  • upload their own logo  
+  • OR pay $20 for unlimited AI logo generations until they pick one.
+- Implementation requirements:
+  • Store actual logo images in object/cloud storage (e.g. S3, Supabase storage, etc.) and store only URLs + metadata in the DB.  
+  • Do NOT store binary blobs or base64 images directly in main tables.  
+  • The AI logo generator should be implemented via a backend/API call (server-side), not heavy client-side processing.
+  • Limit each “generate” action to a reasonable number of candidates (e.g. 3–6 logos at a time), not dozens.
+  • When the user chooses a final logo:
+      - mark it as the “active” logo for that account  
+      - clean up or archive unused generated logos after a set time to avoid unbounded storage growth
+  • After they select and save a logo, the AI generator access should be locked unless they pay again (as currently designed), but this should just be a simple flag/field check, not a bunch of extra logic in the UI.
+
+4) POST-CHECKOUT / SUBSCRIPTION HANDOFF
+- The role → welcome → plans → checkout → logo → dashboard flow should be driven by subscription + account state, not fragile UI logic.
+- Stripe integration:
+  • Front-end should only create Stripe Checkout Session and redirect.  
+  • Subscription activation / plan level / billing status should all be handled by Stripe webhooks on the backend.  
+  • On successful webhook, update the account + user records, then route them to the correct dashboard on next login.
+- This keeps the front-end light, and avoids race conditions or crashes if Stripe is slow.
+
+5) REMINDERS, AI, AND HEAVY LOGIC
+- Any heavy logic (AI analysis, reminder scheduling, batch notifications, predictive maintenance logic, etc.) MUST NOT run directly in the UI.
+  Instead:
+  • Use background workers, cron jobs, or serverless functions that operate on the database.  
+  • Front-end should only show results that are already computed/stored.
+- For reminders and automations:
+  • Store reminder rules and schedules in the DB  
+  • Run a backend job (e.g. every few minutes) that checks which reminders need to fire next  
+  • Write outgoing reminders/notifications from the backend only.
+
+6) ROLE-BASED ACCESS & ROW-LEVEL SECURITY
+- Make sure all queries are filtered by:
+  • account/organization  
+  • role (homeowner, contractor, fleet, PM) where applicable  
+  • user ownership / row-level security
+- This is both for security and performance: users should never see or load data that doesn’t belong to them.
+- Any “cross-actor” view (e.g. property managers seeing contractor logs, contractors seeing their own history on a property) should still be backed by indexed and filtered queries, not raw scans of giant tables.
+
+7) FRONT-END PERFORMANCE BEST PRACTICES
+- Minimize the amount of data sent to the client:
+  • Avoid loading full history logs or very large lists on first render.  
+  • Break dashboards into sections and load each section as needed.
+- Avoid running complex calculations in the browser. Anything that can be precomputed or done on the server should be.
+- Reuse components and keep UI state lean so React/Next.js rendering stays cheap even as data grows.
+
+8) NO FLOW CHANGES, ONLY UNDER-THE-HOOD OPTIMIZATION
+- Please do NOT change the visible user flow or page order. Everything should still feel like:
+  Landing → role card → role welcome page → view plans → choose plan → checkout with logo step → (optional AI logo generator) → dashboard with their logo + name.
+- All work should focus on:
+  • tightening database schema  
+  • optimizing queries  
+  • making sure background jobs handle heavy logic  
+  • ensuring we can smoothly handle at least the first 2,000–10,000 users without crashes or noticeable lag.
+
+Goal: Keep the current UX exactly the same, but make sure the architecture and implementation follow scalable best practices so we don’t hit performance walls as the user base grows.
