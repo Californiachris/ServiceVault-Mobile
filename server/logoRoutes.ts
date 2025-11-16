@@ -198,9 +198,9 @@ export function registerLogoRoutes(app: Express) {
       // Single atomic UPDATE with parameterized query: sets isActive = true for target logo, false for all others
       // This prevents race conditions and SQL injection
       await db.execute(sql`
-        UPDATE ${logos} 
-        SET ${logos.isActive} = (${logos.id} = ${logoId}) 
-        WHERE ${logos.userId} = ${userId}
+        UPDATE logos 
+        SET is_active = (id = ${logoId}) 
+        WHERE user_id = ${userId}
       `);
 
       res.json({ success: true, logoId });
@@ -533,9 +533,9 @@ export function registerLogoRoutes(app: Express) {
 
       // Single atomic UPDATE: activate this logo and deactivate all others for this user
       await db.execute(sql`
-        UPDATE ${logos} 
-        SET ${logos.isActive} = (${logos.id} = ${logo.id}) 
-        WHERE ${logos.userId} = ${userId}
+        UPDATE logos 
+        SET is_active = (id = ${logo.id}) 
+        WHERE user_id = ${userId}
       `);
 
       // Update generation to mark which logo was selected
