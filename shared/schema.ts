@@ -693,7 +693,7 @@ export const logoGenerations = pgTable("logo_generations", {
   businessName: varchar("business_name").notNull(),
   industry: varchar("industry").notNull(),
   colors: text("colors").array(),
-  style: varchar("style"), // MODERN, MINIMALIST, CLASSIC, PLAYFUL, PROFESSIONAL
+  style: varchar("style"), // MODERN, PROFESSIONAL, PLAYFUL, ELEGANT, BOLD, VINTAGE
   keywords: text("keywords"),
   
   // Generation outputs (4 variations)
@@ -985,6 +985,8 @@ export const insertLogoSchema = createInsertSchema(logos).omit({
 export const insertLogoGenerationSchema = createInsertSchema(logoGenerations).omit({
   id: true,
   createdAt: true,
+}).extend({
+  style: z.enum(["MODERN", "PROFESSIONAL", "PLAYFUL", "ELEGANT", "BOLD", "VINTAGE"]).optional(),
 });
 
 export const insertLogoPaymentSchema = createInsertSchema(logoPayments).omit({

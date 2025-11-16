@@ -38,7 +38,7 @@ const generateLogoSchema = z.object({
   businessName: z.string().min(1),
   industry: z.string().min(1),
   colors: z.array(z.string()).optional(),
-  style: z.enum(["MODERN", "MINIMALIST", "CLASSIC", "PLAYFUL", "PROFESSIONAL"]).optional(),
+  style: z.enum(["MODERN", "PROFESSIONAL", "PLAYFUL", "ELEGANT", "BOLD", "VINTAGE"]).optional(),
   keywords: z.string().optional(),
   paymentId: z.string().uuid().optional(), // Optional for demo mode
 });

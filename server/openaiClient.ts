@@ -43,25 +43,43 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
     ? colors.join(' and ') 
     : 'professional complementary colors';
   
-  // Build style description
-  const styleDesc = style?.toLowerCase() || 'modern';
+  // Intelligent style mapping with detailed design attributes
+  const styleAttributes = {
+    MODERN: 'sleek modern minimalist, clean lines, contemporary sans-serif',
+    PROFESSIONAL: 'corporate professional trustworthy, refined classic, timeless',
+    PLAYFUL: 'creative playful energetic, dynamic rounded shapes, approachable',
+    ELEGANT: 'sophisticated elegant refined, graceful curves, luxury premium',
+    BOLD: 'strong bold powerful, thick geometric shapes, confident impactful',
+    VINTAGE: 'classic vintage retro, heritage traditional, nostalgic timeless'
+  };
   
-  // Build keyword hints
-  const keywordHints = keywords ? `, incorporating elements like ${keywords}` : '';
+  const styleDesc = style && styleAttributes[style as keyof typeof styleAttributes] 
+    ? styleAttributes[style as keyof typeof styleAttributes]
+    : styleAttributes.MODERN;
   
-  // Expert prompts for 4 different logo variations
+  // Intelligent industry context - add specific visual cues
+  const industryContext = keywords 
+    ? `${industry} (${keywords})` 
+    : industry;
+  
+  // Build contextual keyword hints
+  const keywordHints = keywords 
+    ? `, featuring ${keywords} as a visual element` 
+    : '';
+  
+  // Expert prompts for 4 different logo variations with intelligent context
   const prompts = [
-    // Minimalist icon-based logo
-    `Professional minimalist logo for ${businessName}, a ${industry} business. ${styleDesc} design with ${colorDesc}. Clean geometric icon with negative space, sans-serif typography, white background, vector style, corporate identity${keywordHints}`,
+    // Icon-based logo with industry context
+    `Professional ${styleDesc} icon logo for ${businessName}, ${industryContext}. Ultra-premium design with ${colorDesc}, clean geometric symbol${keywordHints}, negative space mastery, perfect symmetry, white background, vector illustration, award-winning design`,
     
-    // Badge/emblem style
-    `Circular badge logo for ${businessName}, ${industry} sector. ${styleDesc} emblem with ${colorDesc}, professional contractor branding, clean typography, white background, vector art style${keywordHints}`,
+    // Badge/emblem with industry personality
+    `Circular ${styleDesc} badge emblem for ${businessName}, ${industryContext}. Premium quality with ${colorDesc}${keywordHints}, professional contractor branding, expert craftsmanship, white background, vector art, distinctive mark`,
     
-    // Modern wordmark
-    `Modern wordmark logo for ${businessName} (${industry}). Stylized text design with ${colorDesc}, ${styleDesc} professional font, sleek business identity, white background, vector style${keywordHints}`,
+    // Wordmark with style personality
+    `${styleDesc.split(',')[0]} wordmark logo for ${businessName} (${industryContext}). Stylized custom lettering with ${colorDesc}${keywordHints}, typographic excellence, memorable identity, white background, vector design, premium brand`,
     
-    // Abstract symbol
-    `Abstract professional logo for ${businessName}, ${industry} company. ${styleDesc} geometric symbol with ${colorDesc}, clean corporate design, white background, vector style, suitable for business cards${keywordHints}`,
+    // Abstract symbol with smart context
+    `Abstract ${styleDesc} symbol logo for ${businessName}, ${industryContext} company. Unique geometric mark with ${colorDesc}${keywordHints}, sophisticated visual identity, scalable design, white background, vector perfect, iconic brand`,
   ];
   
   // Generate all 4 logo variations in parallel
