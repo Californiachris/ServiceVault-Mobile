@@ -1,0 +1,43 @@
+Hey, quick direction update:
+
+Let’s treat performance and scale as part of the build now, not a v2 thing. I want ServiceVault architected like it already has 20K–100K users, even while we’re testing with friends.
+
+Please do the following across the app (without changing any user-facing flows):
+
+1) Pagination everywhere
+- For all list endpoints (assets, jobs, events, reminders, properties, units, vehicles, documents, etc.) add LIMIT/OFFSET or cursor-based pagination.
+- Default page size: 10–20 records.
+- Frontend: add "Load More" or infinite scroll instead of loading all records at once.
+- Make sure filters + search still work correctly with pagination.
+
+2) Move filtering + stats into the database
+- Any filtering currently happening in JavaScript (date ranges, status filters, contractorId, userId, etc.) should be moved into SQL WHERE clauses.
+- Any aggregate stats (counts by status, upcoming reminders, overdue, etc.) should be done with SQL aggregations instead of looping in JS.
+- Goal: API should return exactly the data the UI needs, already filtered, instead of doing heavy work in the browser.
+
+3) Background worker for reminders & heavy tasks
+- Set up a background job system (cron / job queue) that runs on a schedule to:
+  - Process due maintenance/warranty reminders.
+  - Queue and send notifications (email/SMS/push) instead of doing it in API requests.
+  - Any future “heavy” processes (e.g., nightly summary jobs, bulk operations) should go here.
+- API calls should stay fast and not block on sending reminders.
+
+4) Proper indexing
+- Add database indexes on all frequently-used filter/join fields, for example:
+  - userId, contractorId, orgId, role
+  - assetId, jobId, vehicleId, propertyId, unitId
+  - createdAt / updatedAt / dueAt / reminderAt
+- Double-check that all main list screens hit indexed fields so queries stay fast as data grows.
+
+5) No change to UX, just faster under the hood
+- Keep all flows and screens exactly as they are now:
+  - Landing → sector → sector welcome → view plans → checkout/logo → dashboard.
+- Only change how the data is loaded / processed so we’re ready for 20K+ users with no rewrites.
+
+End goal:
+ServiceVault should comfortably support 20K–100K accounts with:
+- Fast dashboards (no huge payloads).
+- Reliable reminders via background jobs.
+- Database doing the heavy lifting instead of the frontend.
+
+If you see any other low-hanging fruit that will help with scale (caching, query cleanup, etc.), feel free to add it and note what you changed.
