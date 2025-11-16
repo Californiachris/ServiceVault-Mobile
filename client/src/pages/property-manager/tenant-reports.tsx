@@ -63,8 +63,31 @@ export default function TenantReports() {
   const [offset, setOffset] = useState(0);
   const [allReports, setAllReports] = useState<TenantReport[]>([]);
 
+  // Reset offset when filters change
+  useEffect(() => {
+    setOffset(0);
+    setAllReports([]);
+  }, [severityFilter, statusFilter]);
+
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ["/api/property-manager/tenant-reports/paginated", limit, offset],
+    queryKey: ["/api/property-manager/tenant-reports/paginated", { limit, offset, severity: severityFilter, status: statusFilter }],
+    queryFn: async ({ queryKey }) => {
+      const endpoint = queryKey[0] as string;
+      const params = queryKey[1] as Record<string, any>;
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'all' && value !== 'ALL' && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+      
+      const response = await fetch(`${endpoint}?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tenant reports');
+      }
+      return response.json();
+    },
   });
 
   useEffect(() => {
@@ -117,11 +140,9 @@ export default function TenantReports() {
     });
   };
 
-  const filteredReports = allReports?.filter((r) => {
-    if (severityFilter !== "all" && r.report.severity !== severityFilter) return false;
-    if (statusFilter !== "all" && r.report.status !== statusFilter) return false;
-    return true;
-  });
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering
+  const filteredReports = allReports;
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

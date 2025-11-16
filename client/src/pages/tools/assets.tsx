@@ -72,11 +72,11 @@ export default function AssetsPage() {
     }
   }, []);
 
-  // Reset offset when property changes
+  // Reset offset when property or filters change
   useEffect(() => {
     setOffset(0);
     setAllAssets([]);
-  }, [selectedProperty]);
+  }, [selectedProperty, searchTerm, categoryFilter]);
 
   const { data: properties, isLoading: propertiesLoading } = useQuery({
     queryKey: ["/api/properties"],
@@ -85,7 +85,24 @@ export default function AssetsPage() {
   });
 
   const { data: paginatedData, isLoading: assetsLoading } = useQuery({
-    queryKey: ["/api/assets/paginated", selectedProperty, limit, offset],
+    queryKey: ["/api/assets/paginated", { limit, offset, search: searchTerm, category: categoryFilter, propertyId: selectedProperty }],
+    queryFn: async ({ queryKey }) => {
+      const endpoint = queryKey[0] as string;
+      const params = queryKey[1] as Record<string, any>;
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'all' && value !== 'ALL' && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+      
+      const response = await fetch(`${endpoint}?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch assets');
+      }
+      return response.json();
+    },
     enabled: isAuthenticated && !!selectedProperty,
     retry: false,
   });
@@ -169,16 +186,9 @@ export default function AssetsPage() {
     claimMutation.mutate(claimForm);
   };
 
-  const filteredAssets = (Array.isArray(allAssets) ? allAssets : []).filter((asset: any) => {
-    const matchesSearch = searchTerm === '' || 
-      asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      asset.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      asset.model?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = categoryFilter === 'ALL' || asset.category === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering
+  const filteredAssets = Array.isArray(allAssets) ? allAssets : [];
 
   if (!isAuthenticated) {
     return (

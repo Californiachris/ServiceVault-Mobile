@@ -41,8 +41,31 @@ export default function Visits() {
   const [offset, setOffset] = useState(0);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
 
+  // Reset offset when filters change
+  useEffect(() => {
+    setOffset(0);
+    setAllVisits([]);
+  }, [propertyFilter, workerFilter]);
+
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ["/api/property-manager/visits/paginated", limit, offset],
+    queryKey: ["/api/property-manager/visits/paginated", { limit, offset, propertyId: propertyFilter, workerId: workerFilter }],
+    queryFn: async ({ queryKey }) => {
+      const endpoint = queryKey[0] as string;
+      const params = queryKey[1] as Record<string, any>;
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'all' && value !== 'ALL' && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+      
+      const response = await fetch(`${endpoint}?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch visits');
+      }
+      return response.json();
+    },
   });
 
   useEffect(() => {
@@ -63,11 +86,9 @@ export default function Visits() {
     queryKey: ["/api/property-manager/workers"],
   });
 
-  const filteredVisits = allVisits?.filter((v) => {
-    if (propertyFilter !== "all" && v.property.id !== propertyFilter) return false;
-    if (workerFilter !== "all" && v.worker.id !== workerFilter) return false;
-    return true;
-  });
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering
+  const filteredVisits = allVisits;
 
   const getVisitDuration = (checkIn: string, checkOut: string | null) => {
     if (!checkOut) return "In progress";

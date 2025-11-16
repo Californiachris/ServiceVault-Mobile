@@ -61,8 +61,31 @@ export default function Tasks() {
   const [offset, setOffset] = useState(0);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
 
+  // Reset offset when filters change
+  useEffect(() => {
+    setOffset(0);
+    setAllTasks([]);
+  }, [statusFilter, priorityFilter]);
+
   const { data: paginatedData, isLoading } = useQuery({
-    queryKey: ["/api/property-manager/tasks/paginated", limit, offset],
+    queryKey: ["/api/property-manager/tasks/paginated", { limit, offset, status: statusFilter, priority: priorityFilter }],
+    queryFn: async ({ queryKey }) => {
+      const endpoint = queryKey[0] as string;
+      const params = queryKey[1] as Record<string, any>;
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'all' && value !== 'ALL' && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+      
+      const response = await fetch(`${endpoint}?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks');
+      }
+      return response.json();
+    },
   });
 
   useEffect(() => {
@@ -133,11 +156,9 @@ export default function Tasks() {
     addTaskMutation.mutate(data);
   };
 
-  const filteredTasks = allTasks?.filter((t) => {
-    if (statusFilter !== "all" && t.task.status !== statusFilter) return false;
-    if (priorityFilter !== "all" && t.task.priority !== priorityFilter) return false;
-    return true;
-  });
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering
+  const filteredTasks = allTasks;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
