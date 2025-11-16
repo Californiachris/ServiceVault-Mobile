@@ -75,9 +75,12 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
           size: "1024x1024",
         });
         
+        console.log("🎨 gpt-image-1 response:", JSON.stringify(response, null, 2));
+        
         const imageUrl = response.data[0]?.url;
         if (!imageUrl) {
-          throw new Error("No image URL returned from DALL-E");
+          console.error("❌ Response data:", response.data);
+          throw new Error("No image URL returned from gpt-image-1");
         }
         
         return { imageUrl, prompt };
