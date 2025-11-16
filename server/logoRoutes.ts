@@ -38,8 +38,9 @@ const generateLogoSchema = z.object({
   businessName: z.string().min(1),
   industry: z.string().min(1),
   colors: z.array(z.string()).optional(),
-  style: z.enum(["MODERN", "PROFESSIONAL", "PLAYFUL", "ELEGANT", "BOLD", "VINTAGE"]).optional(),
+  style: z.enum(["MODERN", "PROFESSIONAL", "PLAYFUL", "ELEGANT", "BOLD", "VINTAGE", "CLASSIC", "CREST", "COAT_OF_ARMS"]).optional(),
   keywords: z.string().optional(),
+  isHomeowner: z.boolean().optional(),
   paymentId: z.string().uuid().optional(), // Optional for demo mode
 });
 
@@ -316,7 +317,7 @@ export function registerLogoRoutes(app: Express) {
         });
       }
 
-      const { businessName, industry, colors, style, keywords, paymentId } = validationResult.data;
+      const { businessName, industry, colors, style, keywords, isHomeowner, paymentId } = validationResult.data;
 
       // Check if payment is required (not in demo mode)
       const isStripeConfigured = !!process.env.STRIPE_SECRET_KEY;
@@ -369,6 +370,7 @@ export function registerLogoRoutes(app: Express) {
           colors,
           style,
           keywords,
+          isHomeowner,
         });
 
         // Extract URLs and prompts

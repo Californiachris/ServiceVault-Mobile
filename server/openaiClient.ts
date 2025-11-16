@@ -28,6 +28,7 @@ export interface LogoGenerationParams {
   colors?: string[];
   style?: string;
   keywords?: string;
+  isHomeowner?: boolean;
 }
 
 export interface LogoGenerationResult {
@@ -36,15 +37,15 @@ export interface LogoGenerationResult {
 }
 
 export async function generateLogos(params: LogoGenerationParams): Promise<LogoGenerationResult[]> {
-  const { businessName, industry, colors, style, keywords } = params;
+  const { businessName, industry, colors, style, keywords, isHomeowner } = params;
   
   // Build color scheme description
   const colorDesc = colors && colors.length > 0 
     ? colors.join(' and ') 
-    : 'professional complementary colors';
+    : (isHomeowner ? 'meaningful complementary colors' : 'professional complementary colors');
   
   // Intelligent style mapping with detailed design attributes
-  const styleAttributes = {
+  const businessStyleAttributes = {
     MODERN: 'sleek modern minimalist, clean lines, contemporary sans-serif',
     PROFESSIONAL: 'corporate professional trustworthy, refined classic, timeless',
     PLAYFUL: 'creative playful energetic, dynamic rounded shapes, approachable',
@@ -53,12 +54,24 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
     VINTAGE: 'classic vintage retro, heritage traditional, nostalgic timeless'
   };
   
+  const familyStyleAttributes = {
+    MODERN: 'clean modern family emblem, sleek contemporary design, meaningful minimalist',
+    CLASSIC: 'timeless classic family crest, traditional heritage design, elegant legacy',
+    PLAYFUL: 'joyful family symbol, warm approachable design, cheerful vibrant',
+    ELEGANT: 'sophisticated family coat of arms, refined graceful curves, prestigious heritage',
+    CREST: 'traditional family crest, heraldic shield design, ancestral legacy symbol',
+    COAT_OF_ARMS: 'authentic family coat of arms, heraldic tradition, noble heritage emblem',
+    VINTAGE: 'vintage family heritage logo, nostalgic traditional, timeless family legacy'
+  };
+  
+  const styleAttributes = isHomeowner ? {...businessStyleAttributes, ...familyStyleAttributes} : businessStyleAttributes;
+  
   const styleDesc = style && styleAttributes[style as keyof typeof styleAttributes] 
     ? styleAttributes[style as keyof typeof styleAttributes]
-    : styleAttributes.MODERN;
+    : (isHomeowner ? familyStyleAttributes.CLASSIC : businessStyleAttributes.MODERN);
   
-  // Intelligent industry context - add specific visual cues
-  const industryContext = keywords 
+  // Intelligent industry/interest context - add specific visual cues
+  const contextDesc = keywords 
     ? `${industry} (${keywords})` 
     : industry;
   
@@ -67,19 +80,31 @@ export async function generateLogos(params: LogoGenerationParams): Promise<LogoG
     ? `, featuring ${keywords} as a visual element` 
     : '';
   
-  // Expert prompts for 4 different logo variations with intelligent context
-  const prompts = [
+  // Expert prompts for 4 different logo variations with role-specific context
+  const prompts = isHomeowner ? [
+    // Family crest with shield
+    `${styleDesc} family crest for ${businessName}, ${contextDesc}. Heraldic shield design with ${colorDesc}${keywordHints}, meaningful family symbols, heritage and legacy, white background, vector illustration, timeless keepsake`,
+    
+    // Circular family emblem
+    `Circular ${styleDesc} family emblem for ${businessName}, ${contextDesc}. Beautiful family seal with ${colorDesc}${keywordHints}, personal heritage design, warm and meaningful, white background, vector art, cherished family symbol`,
+    
+    // Monogram with family name
+    `${styleDesc.split(',')[0]} family monogram for ${businessName} (${contextDesc}). Elegant custom lettering with ${colorDesc}${keywordHints}, meaningful family identity, personal heritage, white background, vector design, treasured legacy`,
+    
+    // Abstract family symbol
+    `Abstract ${styleDesc} family symbol for ${businessName}, ${contextDesc}. Unique meaningful mark with ${colorDesc}${keywordHints}, family unity and values, generational legacy, white background, vector perfect, cherished family emblem`,
+  ] : [
     // Icon-based logo with industry context
-    `Professional ${styleDesc} icon logo for ${businessName}, ${industryContext}. Ultra-premium design with ${colorDesc}, clean geometric symbol${keywordHints}, negative space mastery, perfect symmetry, white background, vector illustration, award-winning design`,
+    `Professional ${styleDesc} icon logo for ${businessName}, ${contextDesc}. Ultra-premium design with ${colorDesc}, clean geometric symbol${keywordHints}, negative space mastery, perfect symmetry, white background, vector illustration, award-winning design`,
     
     // Badge/emblem with industry personality
-    `Circular ${styleDesc} badge emblem for ${businessName}, ${industryContext}. Premium quality with ${colorDesc}${keywordHints}, professional contractor branding, expert craftsmanship, white background, vector art, distinctive mark`,
+    `Circular ${styleDesc} badge emblem for ${businessName}, ${contextDesc}. Premium quality with ${colorDesc}${keywordHints}, professional contractor branding, expert craftsmanship, white background, vector art, distinctive mark`,
     
     // Wordmark with style personality
-    `${styleDesc.split(',')[0]} wordmark logo for ${businessName} (${industryContext}). Stylized custom lettering with ${colorDesc}${keywordHints}, typographic excellence, memorable identity, white background, vector design, premium brand`,
+    `${styleDesc.split(',')[0]} wordmark logo for ${businessName} (${contextDesc}). Stylized custom lettering with ${colorDesc}${keywordHints}, typographic excellence, memorable identity, white background, vector design, premium brand`,
     
     // Abstract symbol with smart context
-    `Abstract ${styleDesc} symbol logo for ${businessName}, ${industryContext} company. Unique geometric mark with ${colorDesc}${keywordHints}, sophisticated visual identity, scalable design, white background, vector perfect, iconic brand`,
+    `Abstract ${styleDesc} symbol logo for ${businessName}, ${contextDesc} company. Unique geometric mark with ${colorDesc}${keywordHints}, sophisticated visual identity, scalable design, white background, vector perfect, iconic brand`,
   ];
   
   // Generate all 4 logo variations in parallel

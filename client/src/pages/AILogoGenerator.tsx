@@ -49,6 +49,9 @@ export default function AILogoGenerator() {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // Determine if user is homeowner or business
+  const isHomeowner = user?.role === 'HOMEOWNER';
+  
   // Form state
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -116,6 +119,7 @@ export default function AILogoGenerator() {
         colors: colors.length > 0 ? colors : undefined,
         style: style ? style.toUpperCase() : undefined,
         keywords: keywords || undefined,
+        isHomeowner: isHomeowner,
       });
       return await res.json() as Generation;
     },
@@ -123,8 +127,10 @@ export default function AILogoGenerator() {
       setCurrentGeneration(data);
       setGenerationStatus('complete');
       toast({
-        title: "Logos Generated!",
-        description: "4 professional logo variations are ready. Select your favorite!",
+        title: isHomeowner ? "Family Logos Generated!" : "Logos Generated!",
+        description: isHomeowner 
+          ? "4 unique family logo variations are ready. Select your favorite!" 
+          : "4 professional logo variations are ready. Select your favorite!",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/logos/generations'] });
     },
@@ -150,8 +156,10 @@ export default function AILogoGenerator() {
     },
     onSuccess: () => {
       toast({
-        title: "Logo Selected!",
-        description: "Your logo has been saved. Admin has been notified for sticker fulfillment.",
+        title: isHomeowner ? "Family Logo Selected!" : "Logo Selected!",
+        description: isHomeowner 
+          ? "Your family logo has been saved. Admin has been notified for sticker fulfillment." 
+          : "Your logo has been saved. Admin has been notified for sticker fulfillment.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/logos'] });
       queryClient.invalidateQueries({ queryKey: ['/api/logos/generations'] });
@@ -177,8 +185,8 @@ export default function AILogoGenerator() {
   const handleGenerate = () => {
     if (!businessName) {
       toast({
-        title: "Business Name Required",
-        description: "Please enter your business name",
+        title: isHomeowner ? "Family Name Required" : "Business Name Required",
+        description: isHomeowner ? "Please enter your family name" : "Please enter your business name",
         variant: "destructive",
       });
       return;
@@ -254,9 +262,13 @@ export default function AILogoGenerator() {
             <Wand2 className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">ServiceVault™ AI Logo Generator</h1>
+            <h1 className="text-3xl font-bold">
+              ServiceVault™ AI {isHomeowner ? "Family Logo" : "Logo"} Generator
+            </h1>
             <p className="text-muted-foreground">
-              Professional logos powered by advanced AI
+              {isHomeowner 
+                ? "Create beautiful family logos & crests powered by advanced AI" 
+                : "Professional logos powered by advanced AI"}
             </p>
           </div>
         </div>
@@ -276,10 +288,12 @@ export default function AILogoGenerator() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                Your Logo Variations
+                {isHomeowner ? "Your Family Logo Variations" : "Your Logo Variations"}
               </CardTitle>
               <CardDescription>
-                Select your favorite design. We'll prepare custom-branded QR stickers!
+                {isHomeowner 
+                  ? "Select your favorite family crest. We'll prepare custom QR stickers with your family logo!" 
+                  : "Select your favorite design. We'll prepare custom-branded QR stickers!"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -366,10 +380,10 @@ export default function AILogoGenerator() {
             </div>
             <div className="space-y-3">
               <h3 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-purple-600 bg-clip-text text-transparent">
-                Creating Your Logos...
+                Creating Your {isHomeowner ? "Family Logos" : "Logos"}...
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto text-lg">
-                ServiceVault™ AI is crafting 4 professional logo variations for {businessName}
+                ServiceVault™ AI is crafting 4 {isHomeowner ? "unique family logo variations" : "professional logo variations"} for {businessName}
               </p>
             </div>
             <div className="space-y-3 max-w-md mx-auto">
@@ -389,42 +403,63 @@ export default function AILogoGenerator() {
               Logo Details
             </CardTitle>
             <CardDescription>
-              Tell us about your business and preferred style
+              {isHomeowner 
+                ? "Tell us about your family and preferred style" 
+                : "Tell us about your business and preferred style"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Business Name */}
+            {/* Business/Family Name */}
             <div className="space-y-2">
               <Label htmlFor="business-name">
-                Business Name <span className="text-red-500">*</span>
+                {isHomeowner ? "Family Name" : "Business Name"} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="business-name"
-                placeholder="e.g., ServiceVault, Acme Corp"
+                placeholder={isHomeowner ? "e.g., The Johnsons, Smith Family" : "e.g., ServiceVault, Acme Corp"}
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 data-testid="input-business-name"
               />
             </div>
 
-            {/* Industry */}
+            {/* Industry/Interests */}
             <div className="space-y-2">
-              <Label htmlFor="industry">Industry (Optional)</Label>
+              <Label htmlFor="industry">
+                {isHomeowner ? "What matters to your family? (Optional)" : "Industry (Optional)"}
+              </Label>
               <Select value={industry} onValueChange={setIndustry}>
                 <SelectTrigger id="industry" data-testid="select-industry">
-                  <SelectValue placeholder="Select industry" />
+                  <SelectValue placeholder={isHomeowner ? "Select interests" : "Select industry"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="technology">Technology</SelectItem>
-                  <SelectItem value="construction">Construction</SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="hospitality">Hospitality</SelectItem>
-                  <SelectItem value="education">Education</SelectItem>
-                  <SelectItem value="real-estate">Real Estate</SelectItem>
-                  <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {isHomeowner ? (
+                    <>
+                      <SelectItem value="family">Family & Togetherness</SelectItem>
+                      <SelectItem value="nature">Nature & Outdoors</SelectItem>
+                      <SelectItem value="sports">Sports & Athletics</SelectItem>
+                      <SelectItem value="arts">Arts & Creativity</SelectItem>
+                      <SelectItem value="travel">Travel & Adventure</SelectItem>
+                      <SelectItem value="pets">Pets & Animals</SelectItem>
+                      <SelectItem value="music">Music & Entertainment</SelectItem>
+                      <SelectItem value="heritage">Heritage & Tradition</SelectItem>
+                      <SelectItem value="tech">Technology & Innovation</SelectItem>
+                      <SelectItem value="faith">Faith & Community</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="technology">Technology</SelectItem>
+                      <SelectItem value="construction">Construction</SelectItem>
+                      <SelectItem value="healthcare">Healthcare</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="hospitality">Hospitality</SelectItem>
+                      <SelectItem value="education">Education</SelectItem>
+                      <SelectItem value="real-estate">Real Estate</SelectItem>
+                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -466,13 +501,17 @@ export default function AILogoGenerator() {
               <Label htmlFor="keywords">Logo Description (Optional)</Label>
               <Input
                 id="keywords"
-                placeholder="e.g., tools, strength, mountains, reliability"
+                placeholder={isHomeowner 
+                  ? "e.g., mountains, tree, shield, unity, strength" 
+                  : "e.g., tools, strength, mountains, reliability"}
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
                 data-testid="input-keywords"
               />
               <p className="text-xs text-muted-foreground">
-                Describe what you want in your logo - specific objects, themes, or concepts
+                {isHomeowner 
+                  ? "Describe what you want in your family logo - symbols, themes, or values"
+                  : "Describe what you want in your logo - specific objects, themes, or concepts"}
               </p>
             </div>
 
@@ -484,12 +523,26 @@ export default function AILogoGenerator() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="modern">Modern & Minimal</SelectItem>
-                  <SelectItem value="professional">Professional & Corporate</SelectItem>
-                  <SelectItem value="playful">Playful & Creative</SelectItem>
-                  <SelectItem value="elegant">Elegant & Sophisticated</SelectItem>
-                  <SelectItem value="bold">Bold & Dynamic</SelectItem>
-                  <SelectItem value="vintage">Vintage & Classic</SelectItem>
+                  {isHomeowner ? (
+                    <>
+                      <SelectItem value="modern">Modern & Clean</SelectItem>
+                      <SelectItem value="classic">Classic & Timeless</SelectItem>
+                      <SelectItem value="playful">Playful & Fun</SelectItem>
+                      <SelectItem value="elegant">Elegant & Sophisticated</SelectItem>
+                      <SelectItem value="crest">Traditional Crest</SelectItem>
+                      <SelectItem value="coat_of_arms">Coat of Arms</SelectItem>
+                      <SelectItem value="vintage">Vintage & Heritage</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="modern">Modern & Minimal</SelectItem>
+                      <SelectItem value="professional">Professional & Corporate</SelectItem>
+                      <SelectItem value="playful">Playful & Creative</SelectItem>
+                      <SelectItem value="elegant">Elegant & Sophisticated</SelectItem>
+                      <SelectItem value="bold">Bold & Dynamic</SelectItem>
+                      <SelectItem value="vintage">Vintage & Classic</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -537,7 +590,9 @@ export default function AILogoGenerator() {
                 Confirm Logo Selection
               </DialogTitle>
               <DialogDescription>
-                This is an important decision that affects your business branding
+                {isHomeowner 
+                  ? "This is an important decision that will represent your family" 
+                  : "This is an important decision that affects your business branding"}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -618,7 +673,9 @@ export default function AILogoGenerator() {
               AI Logo Generation
             </DialogTitle>
             <DialogDescription>
-              Professional AI-generated logos for your business
+              {isHomeowner 
+                ? "Beautiful AI-generated logos & crests for your family" 
+                : "Professional AI-generated logos for your business"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -630,7 +687,9 @@ export default function AILogoGenerator() {
               <div className="mt-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <span>4 professional logo variations per generation</span>
+                  <span>{isHomeowner 
+                    ? "4 unique family logo variations per generation" 
+                    : "4 professional logo variations per generation"}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
