@@ -95,7 +95,10 @@ export const properties = pgTable("properties", {
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  ownerIdx: index("idx_properties_owner").on(table.ownerId),
+  createdAtIdx: index("idx_properties_created").on(table.createdAt),
+}));
 
 // QR/NFC Identifiers
 export const identifiers = pgTable("identifiers", {
@@ -109,7 +112,10 @@ export const identifiers = pgTable("identifiers", {
   tamperState: varchar("tamper_state").default("OK"), // OK, TRIPPED
   deactivatedAt: timestamp("deactivated_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  contractorIdx: index("idx_identifiers_contractor").on(table.contractorId),
+  claimedAtIdx: index("idx_identifiers_claimed").on(table.claimedAt),
+}));
 
 // Assets
 export const assets = pgTable("assets", {
@@ -162,7 +168,12 @@ export const events = pgTable("events", {
   hash: varchar("hash"),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  assetIdx: index("idx_events_asset").on(table.assetId),
+  createdByIdx: index("idx_events_created_by").on(table.createdBy),
+  createdAtIdx: index("idx_events_created_at").on(table.createdAt),
+  assetCreatedIdx: index("idx_events_asset_created").on(table.assetId, table.createdAt),
+}));
 
 // Documents
 export const documents = pgTable("documents", {
@@ -179,7 +190,13 @@ export const documents = pgTable("documents", {
   description: text("description"),
   deletedAt: timestamp("deleted_at"),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
-});
+}, (table) => ({
+  assetIdx: index("idx_documents_asset").on(table.assetId),
+  propertyIdx: index("idx_documents_property").on(table.propertyId),
+  uploadedByIdx: index("idx_documents_uploaded_by").on(table.uploadedBy),
+  uploadedAtIdx: index("idx_documents_uploaded_at").on(table.uploadedAt),
+  propertyUploadedIdx: index("idx_documents_property_uploaded").on(table.propertyId, table.uploadedAt),
+}));
 
 // Warranty Summaries (AI-parsed warranty data)
 export const warrantySummaries = pgTable("warranty_summaries", {
@@ -243,7 +260,13 @@ export const reminders = pgTable("reminders", {
   
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => ({
+  assetIdx: index("idx_reminders_asset").on(table.assetId),
+  propertyIdx: index("idx_reminders_property").on(table.propertyId),
+  dueAtIdx: index("idx_reminders_due_at").on(table.dueAt),
+  statusIdx: index("idx_reminders_status").on(table.status),
+  dueStatusIdx: index("idx_reminders_due_status").on(table.dueAt, table.status),
+}));
 
 // Transfers
 export const transfers = pgTable("transfers", {
@@ -256,7 +279,11 @@ export const transfers = pgTable("transfers", {
   initiatedAt: timestamp("initiated_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   signature: text("signature"),
-});
+}, (table) => ({
+  assetIdx: index("idx_transfers_asset").on(table.assetId),
+  fromUserIdx: index("idx_transfers_from_user").on(table.fromUserId),
+  toUserIdx: index("idx_transfers_to_user").on(table.toUserId),
+}));
 
 // Inspections
 export const inspections = pgTable("inspections", {
@@ -268,7 +295,10 @@ export const inspections = pgTable("inspections", {
   result: varchar("result"),
   signedAt: timestamp("signed_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  propertyIdx: index("idx_inspections_property").on(table.propertyId),
+  inspectorIdx: index("idx_inspections_inspector").on(table.inspectorId),
+}));
 
 // Contractor Jobs
 export const jobs = pgTable("jobs", {
@@ -398,7 +428,11 @@ export const serviceSessions = pgTable("service_sessions", {
   workerSignature: text("worker_signature"),
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => ({
+  propertyIdx: index("idx_service_sessions_property").on(table.propertyId),
+  homeownerIdx: index("idx_service_sessions_homeowner").on(table.homeownerId),
+  statusIdx: index("idx_service_sessions_status").on(table.status),
+}));
 
 // Subscriptions
 export const subscriptions = pgTable("subscriptions", {
@@ -431,7 +465,11 @@ export const subscriptions = pgTable("subscriptions", {
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  userIdx: index("idx_subscriptions_user").on(table.userId),
+  stripeCustomerIdx: index("idx_subscriptions_stripe_customer").on(table.stripeCustomerId),
+  stripeSubIdx: index("idx_subscriptions_stripe_sub").on(table.stripeSubId),
+}));
 
 // Property Management - Managed Properties
 export const managedProperties = pgTable("managed_properties", {

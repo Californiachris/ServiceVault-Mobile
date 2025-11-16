@@ -438,38 +438,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const subscription = await storage.getUserSubscription(userId);
       const now = new Date();
-      
-      // Get jobs statistics
-      const allJobs = await db.select().from(jobs).where(eq(jobs.contractorId, contractor.id));
-      const pendingJobs = allJobs.filter(j => j.status === 'PENDING').length;
-      const scheduledJobs = allJobs.filter(j => j.status === 'SCHEDULED').length;
-      const completedJobs = allJobs.filter(j => j.status === 'COMPLETED').length;
-      
-      // Calculate revenue trends (last 30 days vs previous 30 days)
       const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const previous60Days = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
       
-      const recentRevenue = allJobs
-        .filter(j => j.revenue && j.createdAt && j.createdAt >= last30Days)
-        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
+      // Get jobs statistics using SQL (OPTIMIZED FOR SCALE)
+      const [{ count: pendingJobs }] = await db
+        .select({ count: count() })
+        .from(jobs)
+        .where(and(eq(jobs.contractorId, contractor.id), eq(jobs.status, 'PENDING')));
       
-      const previousRevenue = allJobs
-        .filter(j => j.revenue && j.createdAt && j.createdAt >= previous60Days && j.createdAt < last30Days)
-        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
+      const [{ count: scheduledJobs }] = await db
+        .select({ count: count() })
+        .from(jobs)
+        .where(and(eq(jobs.contractorId, contractor.id), eq(jobs.status, 'SCHEDULED')));
+      
+      const [{ count: completedJobs }] = await db
+        .select({ count: count() })
+        .from(jobs)
+        .where(and(eq(jobs.contractorId, contractor.id), eq(jobs.status, 'COMPLETED')));
+      
+      // Calculate total revenue using SQL aggregation
+      const [{ total: totalRevenueResult }] = await db
+        .select({ total: sql<string>`COALESCE(SUM(CAST(${jobs.revenue} AS DECIMAL)), 0)` })
+        .from(jobs)
+        .where(eq(jobs.contractorId, contractor.id));
+      const totalRevenue = parseFloat(totalRevenueResult || '0');
+      
+      // Calculate revenue trends using SQL (last 30 days vs previous 30 days)
+      const [{ total: recentRevenueResult }] = await db
+        .select({ total: sql<string>`COALESCE(SUM(CAST(${jobs.revenue} AS DECIMAL)), 0)` })
+        .from(jobs)
+        .where(and(
+          eq(jobs.contractorId, contractor.id),
+          sql`${jobs.createdAt} >= ${last30Days}`
+        ));
+      const recentRevenue = parseFloat(recentRevenueResult || '0');
+      
+      const [{ total: previousRevenueResult }] = await db
+        .select({ total: sql<string>`COALESCE(SUM(CAST(${jobs.revenue} AS DECIMAL)), 0)` })
+        .from(jobs)
+        .where(and(
+          eq(jobs.contractorId, contractor.id),
+          sql`${jobs.createdAt} >= ${previous60Days}`,
+          sql`${jobs.createdAt} < ${last30Days}`
+        ));
+      const previousRevenue = parseFloat(previousRevenueResult || '0');
       
       const revenueDelta = recentRevenue - previousRevenue;
       const revenueDeltaPct = previousRevenue > 0 ? (revenueDelta / previousRevenue) * 100 : 0;
       const trend = revenueDelta > 0 ? 'UP' : revenueDelta < 0 ? 'DOWN' : 'FLAT';
-      
-      // Calculate total revenue
-      const totalRevenue = allJobs
-        .filter(j => j.revenue)
-        .reduce((sum, j) => sum + parseFloat(j.revenue || '0'), 0);
 
-      // Get recent jobs
-      const recentJobs = allJobs
-        .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
-        .slice(0, 10);
+      // Get recent jobs (only 10, not all)
+      const recentJobs = await db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.contractorId, contractor.id))
+        .orderBy(desc(jobs.createdAt))
+        .limit(10);
 
       // Get quota usage and check if low
       const quotaTotal = subscription?.quotaTotal || 0;
@@ -519,13 +544,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       serviceAlerts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 
+      // Get total job count
+      const [{ count: totalJobCount }] = await db
+        .select({ count: count() })
+        .from(jobs)
+        .where(eq(jobs.contractorId, contractor.id));
+
       res.json({
         contractor,
         jobs: {
           pending: pendingJobs,
           scheduled: scheduledJobs,
           completed: completedJobs,
-          total: allJobs.length,
+          total: totalJobCount,
           recent: recentJobs,
         },
         revenue: totalRevenue,
@@ -3246,6 +3277,167 @@ Instructions:
       });
     });
   }
+
+  // ===== PAGINATED API ENDPOINTS FOR SCALE =====
+  
+  // Paginated jobs endpoint for contractors
+  app.get('/api/jobs/paginated', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, status } = req.query;
+      
+      const contractor = await storage.getContractor(userId);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100); // Max 100 per request
+      const offsetNum = parseInt(offset as string) || 0;
+
+      let query = db
+        .select()
+        .from(jobs)
+        .where(eq(jobs.contractorId, contractor.id))
+        .orderBy(desc(jobs.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      if (status) {
+        query = db
+          .select()
+          .from(jobs)
+          .where(and(eq(jobs.contractorId, contractor.id), eq(jobs.status, status as string)))
+          .orderBy(desc(jobs.createdAt))
+          .limit(limitNum)
+          .offset(offsetNum);
+      }
+
+      const jobsList = await query;
+
+      // Get total count for pagination
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(jobs)
+        .where(eq(jobs.contractorId, contractor.id));
+
+      res.json({
+        jobs: jobsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated jobs:", error);
+      res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+  });
+
+  // Paginated events endpoint for assets
+  app.get('/api/events/paginated/:assetId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId } = req.params;
+      const { limit = 20, offset = 0 } = req.query;
+
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+
+      // Verify ownership
+      const property = await storage.getProperty(asset.propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      const eventsList = await db
+        .select()
+        .from(events)
+        .where(eq(events.assetId, assetId))
+        .orderBy(desc(events.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(events)
+        .where(eq(events.assetId, assetId));
+
+      res.json({
+        events: eventsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated events:", error);
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  // Paginated assets endpoint (enhanced existing route)
+  app.get('/api/assets/paginated/:propertyId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { propertyId } = req.params;
+      const { limit = 20, offset = 0, category } = req.query;
+
+      const property = await storage.getProperty(propertyId);
+      if (!property || property.ownerId !== userId) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      let query = db
+        .select()
+        .from(assets)
+        .where(eq(assets.propertyId, propertyId))
+        .orderBy(desc(assets.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      if (category) {
+        query = db
+          .select()
+          .from(assets)
+          .where(and(eq(assets.propertyId, propertyId), eq(assets.category, category as string)))
+          .orderBy(desc(assets.createdAt))
+          .limit(limitNum)
+          .offset(offsetNum);
+      }
+
+      const assetsList = await query;
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(assets)
+        .where(eq(assets.propertyId, propertyId));
+
+      res.json({
+        assets: assetsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
 
   // Task 9: Services status endpoint (public, no auth required)
   app.get('/api/services/status', (req, res) => {

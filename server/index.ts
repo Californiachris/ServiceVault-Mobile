@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { registerContractorRoutes } from "./contractorRoutes";
 import { registerLogoRoutes } from "./logoRoutes";
 import { setupVite, serveStatic, log } from "./vite";
+import { startReminderWorker } from "./reminderWorker";
 
 const app = express();
 
@@ -81,5 +82,10 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start background reminder worker (runs every hour)
+    const reminderInterval = 60 * 60 * 1000; // 1 hour
+    startReminderWorker(reminderInterval);
+    log(`Reminder worker started (interval: ${reminderInterval / 60000} minutes)`);
   });
 })();
