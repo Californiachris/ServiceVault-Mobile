@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -27,12 +27,29 @@ export default function RemindersPage() {
   const { isAuthenticated } = useAuth();
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allReminders, setAllReminders] = useState<any[]>([]);
 
-  const { data: reminders, isLoading: remindersLoading } = useQuery({
-    queryKey: ["/api/reminders/due"],
+  const { data: paginatedData, isLoading: remindersLoading } = useQuery({
+    queryKey: ["/api/reminders/paginated", limit, offset],
     enabled: isAuthenticated,
     retry: false,
   });
+
+  // Accumulate reminders as we load more
+  useEffect(() => {
+    if (paginatedData?.reminders) {
+      if (offset === 0) {
+        setAllReminders(paginatedData.reminders);
+      } else {
+        setAllReminders(prev => [...prev, ...paginatedData.reminders]);
+      }
+    }
+  }, [paginatedData, offset]);
+
+  const reminders = paginatedData;
+  const upcomingReminders = allReminders;
 
   const runRemindersMutation = useMutation({
     mutationFn: async () => {
@@ -44,7 +61,7 @@ export default function RemindersPage() {
         title: "Reminders Processed",
         description: `Processed ${data.processed || 0} due reminders`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/reminders/due"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reminders/paginated"], exact: false });
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -75,45 +92,11 @@ export default function RemindersPage() {
     }
   };
 
-  // Mock upcoming reminders for demonstration
-  const upcomingReminders = [
-    {
-      id: '1',
-      type: 'WARRANTY_EXPIRATION',
-      title: 'HVAC System Warranty Expiring',
-      description: 'Trane XR16 5-year warranty expires in 30 days',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      priority: 'high',
-      assetName: 'HVAC System',
-    },
-    {
-      id: '2',
-      type: 'MAINTENANCE_DUE',
-      title: 'Water Heater Maintenance',
-      description: 'Annual maintenance and inspection due',
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      priority: 'medium',
-      assetName: 'Water Heater',
-    },
-    {
-      id: '3',
-      type: 'INSPECTION_REQUIRED',
-      title: 'Electrical Panel Inspection',
-      description: 'Required safety inspection due',
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      priority: 'high',
-      assetName: 'Electrical Panel',
-    },
-    {
-      id: '4',
-      type: 'SERVICE_INTERVAL',
-      title: 'HVAC Filter Replacement',
-      description: 'Replace air filters for optimal performance',
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      priority: 'low',
-      assetName: 'HVAC System',
-    },
-  ];
+  const handleLoadMore = () => {
+    if (paginatedData?.pagination?.hasMore) {
+      setOffset(prev => prev + limit);
+    }
+  };
 
   const reminderTypeConfig = {
     WARRANTY_EXPIRATION: { 
@@ -235,69 +218,99 @@ export default function RemindersPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {upcomingReminders.map((reminder) => {
-                    const typeConfig = reminderTypeConfig[reminder.type as keyof typeof reminderTypeConfig];
-                    const Icon = typeConfig?.icon || Clock;
-                    const timeUntil = formatTimeUntil(reminder.dueDate);
-                    const isOverdue = timeUntil === 'Overdue';
-                    const isDueToday = timeUntil === 'Due today';
-                    
-                    return (
-                      <div 
-                        key={reminder.id}
-                        className={`p-4 border rounded-lg transition-colors hover:bg-muted/30 ${
-                          isOverdue ? 'border-red-500/50 bg-red-500/5' : 
-                          isDueToday ? 'border-orange-500/50 bg-orange-500/5' : 
-                          'border-border'
-                        }`}
-                        data-testid={`reminder-${reminder.id}`}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeConfig?.color || 'bg-muted'}`}>
-                              <Icon className="h-5 w-5" />
+                {remindersLoading && offset === 0 ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                  </div>
+                ) : upcomingReminders.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Bell className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No reminders scheduled</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {upcomingReminders.map((reminder) => {
+                      const reminderType = reminder.type || 'SERVICE_INTERVAL';
+                      const typeConfig = reminderTypeConfig[reminderType as keyof typeof reminderTypeConfig];
+                      const Icon = typeConfig?.icon || Clock;
+                      const dueDate = reminder.dueAt ? new Date(reminder.dueAt) : new Date();
+                      const timeUntil = formatTimeUntil(dueDate);
+                      const isOverdue = timeUntil === 'Overdue';
+                      const isDueToday = timeUntil === 'Due today';
+                      
+                      return (
+                        <div 
+                          key={reminder.id}
+                          className={`p-4 border rounded-lg transition-colors hover:bg-muted/30 ${
+                            isOverdue ? 'border-red-500/50 bg-red-500/5' : 
+                            isDueToday ? 'border-orange-500/50 bg-orange-500/5' : 
+                            'border-border'
+                          }`}
+                          data-testid={`reminder-${reminder.id}`}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeConfig?.color || 'bg-muted'}`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{reminder.title || 'Untitled Reminder'}</h3>
+                                <p className="text-sm text-muted-foreground">{reminder.assetId || 'No asset'}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-semibold">{reminder.title}</h3>
-                              <p className="text-sm text-muted-foreground">{reminder.assetName}</p>
+                            
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  isOverdue ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                  isDueToday ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                  'bg-green-500/10 text-green-400 border-green-500/20'
+                                }
+                              >
+                                {timeUntil}
+                              </Badge>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant="outline" 
-                              className={priorityConfig[reminder.priority as keyof typeof priorityConfig]}
-                            >
-                              {reminder.priority.toUpperCase()}
-                            </Badge>
-                            <Badge 
-                              variant="outline" 
-                              className={
-                                isOverdue ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                                isDueToday ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                'bg-green-500/10 text-green-400 border-green-500/20'
-                              }
-                            >
-                              {timeUntil}
+                          {reminder.message && (
+                            <p className="text-sm text-muted-foreground mb-3">
+                              {reminder.message}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Due: {dueDate.toLocaleDateString()}</span>
+                            <Badge variant="outline" className={typeConfig?.color}>
+                              {typeConfig?.label}
                             </Badge>
                           </div>
                         </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {reminder.description}
-                        </p>
-                        
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Due: {reminder.dueDate.toLocaleDateString()}</span>
-                          <Badge variant="outline" className={typeConfig?.color}>
-                            {typeConfig?.label}
-                          </Badge>
-                        </div>
+                      );
+                    })}
+                    
+                    {paginatedData?.pagination?.hasMore && (
+                      <div className="pt-4">
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={handleLoadMore}
+                          disabled={remindersLoading}
+                          data-testid="button-load-more-reminders"
+                        >
+                          {remindersLoading ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            `Load More (${paginatedData.pagination.total - allReminders.length} remaining)`
+                          )}
+                        </Button>
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

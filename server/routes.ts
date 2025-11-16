@@ -3439,6 +3439,304 @@ Instructions:
     }
   });
 
+  // Paginated reminders endpoint
+  app.get('/api/reminders/paginated', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, status } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      let whereConditions: any[] = [eq(reminders.userId, userId)];
+      if (status) {
+        whereConditions.push(eq(reminders.status, status as string));
+      }
+
+      const remindersList = await db
+        .select()
+        .from(reminders)
+        .where(and(...whereConditions))
+        .orderBy(asc(reminders.dueAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(reminders)
+        .where(and(...whereConditions));
+
+      res.json({
+        reminders: remindersList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated reminders:", error);
+      res.status(500).json({ error: "Failed to fetch reminders" });
+    }
+  });
+
+  // Paginated documents endpoint
+  app.get('/api/documents/paginated', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, assetId, propertyId } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      let whereConditions: any[] = [eq(documents.userId, userId)];
+      if (assetId) {
+        whereConditions.push(eq(documents.assetId, assetId as string));
+      }
+      if (propertyId) {
+        whereConditions.push(eq(documents.propertyId, propertyId as string));
+      }
+
+      const documentsList = await db
+        .select()
+        .from(documents)
+        .where(and(...whereConditions))
+        .orderBy(desc(documents.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(documents)
+        .where(and(...whereConditions));
+
+      res.json({
+        documents: documentsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated documents:", error);
+      res.status(500).json({ error: "Failed to fetch documents" });
+    }
+  });
+
+  // Paginated identifiers (claimed stickers) endpoint
+  app.get('/api/identifiers/paginated', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0 } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      const identifiersList = await db
+        .select()
+        .from(identifiers)
+        .where(eq(identifiers.userId, userId))
+        .orderBy(desc(identifiers.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(identifiers)
+        .where(eq(identifiers.userId, userId));
+
+      res.json({
+        identifiers: identifiersList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated identifiers:", error);
+      res.status(500).json({ error: "Failed to fetch identifiers" });
+    }
+  });
+
+  // Paginated property manager tasks endpoint
+  app.get('/api/property-manager/tasks/paginated', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, propertyId, status, workerId } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      const managedProps = await db
+        .select()
+        .from(managedProperties)
+        .where(eq(managedProperties.propertyManagerId, userId));
+
+      if (!managedProps || managedProps.length === 0) {
+        return res.json({ tasks: [], pagination: { total: 0, limit: limitNum, offset: offsetNum, hasMore: false } });
+      }
+
+      const managedPropertyIds = managedProps.map(p => p.id);
+      let whereConditions: any[] = [sql`${propertyTasks.managedPropertyId} IN ${managedPropertyIds}`];
+
+      if (propertyId) {
+        whereConditions.push(eq(propertyTasks.managedPropertyId, propertyId as string));
+      }
+      if (status) {
+        whereConditions.push(eq(propertyTasks.status, status as string));
+      }
+      if (workerId) {
+        whereConditions.push(eq(propertyTasks.assignedTo, workerId as string));
+      }
+
+      const tasksList = await db
+        .select()
+        .from(propertyTasks)
+        .where(and(...whereConditions))
+        .orderBy(desc(propertyTasks.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(propertyTasks)
+        .where(and(...whereConditions));
+
+      res.json({
+        tasks: tasksList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  // Paginated property manager visits endpoint
+  app.get('/api/property-manager/visits/paginated', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, propertyId, workerId, status } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      const managedProps = await db
+        .select()
+        .from(managedProperties)
+        .where(eq(managedProperties.propertyManagerId, userId));
+
+      if (!managedProps || managedProps.length === 0) {
+        return res.json({ visits: [], pagination: { total: 0, limit: limitNum, offset: offsetNum, hasMore: false } });
+      }
+
+      const managedPropertyIds = managedProps.map(p => p.id);
+      let whereConditions: any[] = [sql`${propertyVisits.managedPropertyId} IN ${managedPropertyIds}`];
+
+      if (propertyId) {
+        whereConditions.push(eq(propertyVisits.managedPropertyId, propertyId as string));
+      }
+      if (workerId) {
+        whereConditions.push(eq(propertyVisits.workerId, workerId as string));
+      }
+      if (status) {
+        whereConditions.push(eq(propertyVisits.status, status as string));
+      }
+
+      const visitsList = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(...whereConditions))
+        .orderBy(desc(propertyVisits.checkInTime))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(propertyVisits)
+        .where(and(...whereConditions));
+
+      res.json({
+        visits: visitsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated visits:", error);
+      res.status(500).json({ error: "Failed to fetch visits" });
+    }
+  });
+
+  // Paginated property manager tenant reports endpoint
+  app.get('/api/property-manager/tenant-reports/paginated', isAuthenticated, requireRole('PROPERTY_MANAGER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit = 20, offset = 0, propertyId, status } = req.query;
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 100);
+      const offsetNum = parseInt(offset as string) || 0;
+
+      const managedProps = await db
+        .select()
+        .from(managedProperties)
+        .where(eq(managedProperties.propertyManagerId, userId));
+
+      if (!managedProps || managedProps.length === 0) {
+        return res.json({ reports: [], pagination: { total: 0, limit: limitNum, offset: offsetNum, hasMore: false } });
+      }
+
+      const managedPropertyIds = managedProps.map(p => p.id);
+      let whereConditions: any[] = [sql`${tenantReports.managedPropertyId} IN ${managedPropertyIds}`];
+
+      if (propertyId) {
+        whereConditions.push(eq(tenantReports.managedPropertyId, propertyId as string));
+      }
+      if (status) {
+        whereConditions.push(eq(tenantReports.status, status as string));
+      }
+
+      const reportsList = await db
+        .select()
+        .from(tenantReports)
+        .where(and(...whereConditions))
+        .orderBy(desc(tenantReports.createdAt))
+        .limit(limitNum)
+        .offset(offsetNum);
+
+      const [{ count: totalCount }] = await db
+        .select({ count: count() })
+        .from(tenantReports)
+        .where(and(...whereConditions));
+
+      res.json({
+        reports: reportsList,
+        pagination: {
+          total: totalCount,
+          limit: limitNum,
+          offset: offsetNum,
+          hasMore: offsetNum + limitNum < totalCount,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching paginated tenant reports:", error);
+      res.status(500).json({ error: "Failed to fetch tenant reports" });
+    }
+  });
+
   // Task 9: Services status endpoint (public, no auth required)
   app.get('/api/services/status', (req, res) => {
     res.json({

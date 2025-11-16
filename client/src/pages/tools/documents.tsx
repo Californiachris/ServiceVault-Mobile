@@ -12,11 +12,28 @@ export default function DocumentsPage() {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   
-  // Fetch all user documents
-  const { data: documents, isLoading: documentsLoading } = useQuery<any[]>({
-    queryKey: ["/api/documents"],
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allDocuments, setAllDocuments] = useState<any[]>([]);
+  
+  // Fetch paginated documents
+  const { data: paginatedData, isLoading: documentsLoading } = useQuery({
+    queryKey: ["/api/documents/paginated", limit, offset],
     enabled: isAuthenticated,
   });
+  
+  // Accumulate documents as we load more
+  useEffect(() => {
+    if (paginatedData?.documents) {
+      if (offset === 0) {
+        setAllDocuments(paginatedData.documents);
+      } else {
+        setAllDocuments(prev => [...prev, ...paginatedData.documents]);
+      }
+    }
+  }, [paginatedData, offset]);
+  
+  const documents = allDocuments;
   
   // QR-scanned warranty data
   const [scannedWarrantyData, setScannedWarrantyData] = useState<{
@@ -189,109 +206,133 @@ export default function DocumentsPage() {
             )}
             
             {!documentsLoading && documents && documents.length > 0 && (
-              <div className="grid sm:grid-cols-2 gap-8">
-                {documents.map((doc: any) => {
-                  const isImage = doc.mimeType?.startsWith('image/');
-                  const isPDF = doc.mimeType === 'application/pdf';
-                  const hasValidUrl = doc.objectPath !== null;
-                  
-                  return (
-                    <div
-                      key={doc.id}
-                      className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:border-primary/50 transition-all duration-300"
-                      data-testid={`document-card-${doc.id}`}
-                    >
-                      {/* Document Preview - Click to Open */}
-                      <div 
-                        className="aspect-[16/10] bg-gradient-to-br from-muted/50 to-muted relative overflow-hidden cursor-pointer"
-                        onClick={() => hasValidUrl && window.open(doc.objectPath, '_blank')}
+              <div className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-8">
+                  {documents.map((doc: any) => {
+                    const isImage = doc.mimeType?.startsWith('image/');
+                    const isPDF = doc.mimeType === 'application/pdf';
+                    const hasValidUrl = doc.objectPath !== null;
+                    
+                    return (
+                      <div
+                        key={doc.id}
+                        className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:shadow-2xl hover:border-primary/50 transition-all duration-300"
+                        data-testid={`document-card-${doc.id}`}
                       >
-                        {!hasValidUrl ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
-                            <FileText className="h-20 w-20 text-destructive/50 mb-4" />
-                            <p className="text-sm text-destructive">Preview unavailable</p>
-                          </div>
-                        ) : isImage ? (
-                          <img
-                            src={doc.objectPath}
-                            alt={doc.title}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            data-testid={`document-image-${doc.id}`}
-                          />
-                        ) : isPDF ? (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/30">
-                            <FileText className="h-24 w-24 text-red-500" />
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <FileText className="h-24 w-24 text-muted-foreground/50" />
-                          </div>
-                        )}
-                        
-                        {/* Hover Overlay with Gradient */}
-                        {hasValidUrl && (
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end pb-8">
-                            <p className="text-white text-sm font-medium mb-3">Click to view full size</p>
-                            <div className="flex gap-3">
-                              <Button
-                                size="lg"
-                                variant="secondary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(doc.objectPath, '_blank');
-                                }}
-                                className="shadow-xl"
-                                data-testid={`button-view-${doc.id}`}
-                              >
-                                <ExternalLink className="h-5 w-5 mr-2" />
-                                Open
-                              </Button>
-                              <Button
-                                size="lg"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const link = document.createElement('a');
-                                  link.href = doc.objectPath;
-                                  link.download = doc.title || 'document';
-                                  link.click();
-                                }}
-                                className="shadow-xl bg-white/90 dark:bg-black/90"
-                                data-testid={`button-download-${doc.id}`}
-                              >
-                                <Download className="h-5 w-5 mr-2" />
-                                Download
-                              </Button>
+                        {/* Document Preview - Click to Open */}
+                        <div 
+                          className="aspect-[16/10] bg-gradient-to-br from-muted/50 to-muted relative overflow-hidden cursor-pointer"
+                          onClick={() => hasValidUrl && window.open(doc.objectPath, '_blank')}
+                        >
+                          {!hasValidUrl ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                              <FileText className="h-20 w-20 text-destructive/50 mb-4" />
+                              <p className="text-sm text-destructive">Preview unavailable</p>
                             </div>
+                          ) : isImage ? (
+                            <img
+                              src={doc.objectPath}
+                              alt={doc.title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              data-testid={`document-image-${doc.id}`}
+                            />
+                          ) : isPDF ? (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/30">
+                              <FileText className="h-24 w-24 text-red-500" />
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="h-24 w-24 text-muted-foreground/50" />
+                            </div>
+                          )}
+                          
+                          {/* Hover Overlay with Gradient */}
+                          {hasValidUrl && (
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end pb-8">
+                              <p className="text-white text-sm font-medium mb-3">Click to view full size</p>
+                              <div className="flex gap-3">
+                                <Button
+                                  size="lg"
+                                  variant="secondary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(doc.objectPath, '_blank');
+                                  }}
+                                  className="shadow-xl"
+                                  data-testid={`button-view-${doc.id}`}
+                                >
+                                  <ExternalLink className="h-5 w-5 mr-2" />
+                                  Open
+                                </Button>
+                                <Button
+                                  size="lg"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const link = document.createElement('a');
+                                    link.href = doc.objectPath;
+                                    link.download = doc.title || 'document';
+                                    link.click();
+                                  }}
+                                  className="shadow-xl bg-white/90 dark:bg-black/90"
+                                  data-testid={`button-download-${doc.id}`}
+                                >
+                                  <Download className="h-5 w-5 mr-2" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Document Info - Premium Design */}
+                        <div className="p-6">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <h3 className="font-semibold text-lg line-clamp-2 leading-tight" data-testid={`document-title-${doc.id}`}>
+                              {doc.title}
+                            </h3>
+                            <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 rounded-full whitespace-nowrap font-medium border border-blue-200/50 dark:border-blue-800/50">
+                              {doc.type}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Document Info - Premium Design */}
-                      <div className="p-6">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <h3 className="font-semibold text-lg line-clamp-2 leading-tight" data-testid={`document-title-${doc.id}`}>
-                            {doc.title}
-                          </h3>
-                          <span className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-600 dark:text-blue-400 rounded-full whitespace-nowrap font-medium border border-blue-200/50 dark:border-blue-800/50">
-                            {doc.type}
-                          </span>
-                        </div>
-                        
-                        {doc.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                            {doc.description}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <FileCheck className="h-3.5 w-3.5" />
-                          <span>Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          
+                          {doc.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                              {doc.description}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <FileCheck className="h-3.5 w-3.5" />
+                            <span>Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                
+                {paginatedData?.pagination?.hasMore && (
+                  <div className="flex justify-center">
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      className="w-full sm:w-auto"
+                      onClick={() => setOffset(prev => prev + limit)}
+                      disabled={documentsLoading}
+                      data-testid="button-load-more-documents"
+                    >
+                      {documentsLoading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                          Loading...
+                        </>
+                      ) : (
+                        `Load More (${paginatedData.pagination.total - allDocuments.length} remaining)`
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

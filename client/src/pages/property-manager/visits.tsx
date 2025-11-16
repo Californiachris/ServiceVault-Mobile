@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Clock, CheckCircle2, User, Calendar, Filter } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, User, Calendar, Filter, RefreshCw } from "lucide-react";
 import { format, formatDuration, intervalToDuration } from "date-fns";
 
 interface Visit {
@@ -36,9 +37,23 @@ export default function Visits() {
   const [propertyFilter, setPropertyFilter] = useState<string>("all");
   const [workerFilter, setWorkerFilter] = useState<string>("all");
 
-  const { data: visits, isLoading } = useQuery<Visit[]>({
-    queryKey: ["/api/property-manager/visits"],
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allVisits, setAllVisits] = useState<Visit[]>([]);
+
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ["/api/property-manager/visits/paginated", limit, offset],
   });
+
+  useEffect(() => {
+    if (paginatedData?.visits) {
+      if (offset === 0) {
+        setAllVisits(paginatedData.visits);
+      } else {
+        setAllVisits(prev => [...prev, ...paginatedData.visits]);
+      }
+    }
+  }, [paginatedData, offset]);
 
   const { data: properties } = useQuery<any[]>({
     queryKey: ["/api/property-manager/properties"],
@@ -48,7 +63,7 @@ export default function Visits() {
     queryKey: ["/api/property-manager/workers"],
   });
 
-  const filteredVisits = visits?.filter((v) => {
+  const filteredVisits = allVisits?.filter((v) => {
     if (propertyFilter !== "all" && v.property.id !== propertyFilter) return false;
     if (workerFilter !== "all" && v.worker.id !== workerFilter) return false;
     return true;
@@ -238,6 +253,29 @@ export default function Visits() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {paginatedData?.pagination?.hasMore && (
+        <div className="mt-6 text-center">
+          <Button 
+            onClick={() => setOffset(prev => prev + limit)} 
+            disabled={isLoading}
+            data-testid="button-load-more-visits"
+            variant="outline"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Load More ({paginatedData.pagination.total - allVisits.length} remaining)
+              </>
+            )}
+          </Button>
         </div>
       )}
     </div>

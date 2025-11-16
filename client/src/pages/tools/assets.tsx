@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wrench, Home, Plus, Search, Filter, QrCode } from "lucide-react";
+import { Wrench, Home, Plus, Search, Filter, QrCode, RefreshCw } from "lucide-react";
 
 interface ClaimAssetFormData {
   code: string;
@@ -44,6 +44,10 @@ export default function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allAssets, setAllAssets] = useState<any[]>([]);
+  
   const [claimForm, setClaimForm] = useState<ClaimAssetFormData>({
     code: '',
     assetName: '',
@@ -68,17 +72,34 @@ export default function AssetsPage() {
     }
   }, []);
 
+  // Reset offset when property changes
+  useEffect(() => {
+    setOffset(0);
+    setAllAssets([]);
+  }, [selectedProperty]);
+
   const { data: properties, isLoading: propertiesLoading } = useQuery({
     queryKey: ["/api/properties"],
     enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: assets, isLoading: assetsLoading } = useQuery({
-    queryKey: ["/api/assets", selectedProperty],
+  const { data: paginatedData, isLoading: assetsLoading } = useQuery({
+    queryKey: ["/api/assets/paginated", selectedProperty, limit, offset],
     enabled: isAuthenticated && !!selectedProperty,
     retry: false,
   });
+
+  // Accumulate assets as we load more
+  useEffect(() => {
+    if (paginatedData?.assets) {
+      if (offset === 0) {
+        setAllAssets(paginatedData.assets);
+      } else {
+        setAllAssets(prev => [...prev, ...paginatedData.assets]);
+      }
+    }
+  }, [paginatedData, offset]);
 
   const claimMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -112,7 +133,7 @@ export default function AssetsPage() {
         propertyName: '', propertyAddress: '', propertyCity: '', propertyState: '', propertyZip: '',
       });
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/assets/paginated"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
     },
     onError: (error) => {
@@ -148,7 +169,7 @@ export default function AssetsPage() {
     claimMutation.mutate(claimForm);
   };
 
-  const filteredAssets = (Array.isArray(assets) ? assets : []).filter((asset: any) => {
+  const filteredAssets = (Array.isArray(allAssets) ? allAssets : []).filter((asset: any) => {
     const matchesSearch = searchTerm === '' || 
       asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -323,26 +344,51 @@ export default function AssetsPage() {
                     <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
                   </div>
                 ) : filteredAssets.length > 0 ? (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredAssets.map((asset: any) => (
-                      <AssetCard
-                        key={asset.id}
-                        asset={asset}
-                        onEdit={() => {
-                          toast({
-                            title: "Edit Asset",
-                            description: "Asset editing functionality coming soon",
-                          });
-                        }}
-                        onViewHistory={() => {
-                          toast({
-                            title: "View History",
-                            description: "Asset history view coming soon",
-                          });
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredAssets.map((asset: any) => (
+                        <AssetCard
+                          key={asset.id}
+                          asset={asset}
+                          onEdit={() => {
+                            toast({
+                              title: "Edit Asset",
+                              description: "Asset editing functionality coming soon",
+                            });
+                          }}
+                          onViewHistory={() => {
+                            toast({
+                              title: "View History",
+                              description: "Asset history view coming soon",
+                            });
+                          }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Load More Button */}
+                    {paginatedData?.pagination?.hasMore && (
+                      <div className="mt-6 text-center">
+                        <Button 
+                          onClick={() => setOffset(prev => prev + limit)} 
+                          disabled={assetsLoading}
+                          data-testid="button-load-more-assets"
+                          variant="outline"
+                        >
+                          {assetsLoading ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              Load More ({paginatedData.pagination.total - allAssets.length} remaining)
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <Card>
                     <CardContent className="pt-6">

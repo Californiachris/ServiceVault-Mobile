@@ -1,16 +1,32 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Package, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { QrCode, Package, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function IdentifiersPage() {
   const { isAuthenticated, user } = useAuth();
   
-  const { data: identifiers, isLoading } = useQuery({
-    queryKey: ["/api/identifiers"],
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allIdentifiers, setAllIdentifiers] = useState<any[]>([]);
+  
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ["/api/identifiers/paginated", limit, offset],
     enabled: isAuthenticated,
   });
+
+  useEffect(() => {
+    if (paginatedData?.identifiers) {
+      if (offset === 0) {
+        setAllIdentifiers(paginatedData.identifiers);
+      } else {
+        setAllIdentifiers(prev => [...prev, ...paginatedData.identifiers]);
+      }
+    }
+  }, [paginatedData, offset]);
 
   const { data: quota } = useQuery({
     queryKey: ["/api/me/quota"],
@@ -74,13 +90,13 @@ export default function IdentifiersPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              Claimed Stickers {identifiers && `(${identifiers.length})`}
+              Claimed Stickers {paginatedData?.pagination?.total ? `(${paginatedData.pagination.total})` : allIdentifiers.length > 0 ? `(${allIdentifiers.length})` : ''}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {identifiers && identifiers.length > 0 ? (
+            {allIdentifiers && allIdentifiers.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {identifiers.map((identifier: any) => (
+                {allIdentifiers.map((identifier: any) => (
                   <Card key={identifier.id} className="p-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -122,6 +138,29 @@ export default function IdentifiersPage() {
                 <p className="text-sm text-muted-foreground">
                   Pre-printed stickers are shipped with your subscription. Check your order confirmation email for details.
                 </p>
+              </div>
+            )}
+            
+            {/* Load More Button */}
+            {paginatedData?.pagination?.hasMore && (
+              <div className="mt-6 text-center">
+                <Button 
+                  onClick={() => setOffset(prev => prev + limit)} 
+                  disabled={isLoading}
+                  data-testid="button-load-more-identifiers"
+                  variant="outline"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More ({paginatedData.pagination.total - allIdentifiers.length} remaining)
+                    </>
+                  )}
+                </Button>
               </div>
             )}
           </CardContent>

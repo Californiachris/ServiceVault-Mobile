@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { AlertTriangle, Filter, User, MapPin, Calendar, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Filter, User, MapPin, Calendar, CheckCircle2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface TenantReport {
@@ -59,9 +59,23 @@ export default function TenantReports() {
   const [selectedReport, setSelectedReport] = useState<TenantReport | null>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
 
-  const { data: reports, isLoading } = useQuery<TenantReport[]>({
-    queryKey: ["/api/property-manager/tenant-reports"],
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allReports, setAllReports] = useState<TenantReport[]>([]);
+
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ["/api/property-manager/tenant-reports/paginated", limit, offset],
   });
+
+  useEffect(() => {
+    if (paginatedData?.reports) {
+      if (offset === 0) {
+        setAllReports(paginatedData.reports);
+      } else {
+        setAllReports(prev => [...prev, ...paginatedData.reports]);
+      }
+    }
+  }, [paginatedData, offset]);
 
   const { data: workers } = useQuery<any[]>({
     queryKey: ["/api/property-manager/workers"],
@@ -72,7 +86,7 @@ export default function TenantReports() {
       return await apiRequest(`/api/property-manager/tenant-reports/${id}`, "PATCH", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tenant-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tenant-reports/paginated"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/property-manager"] });
       toast({
         title: "Success",
@@ -103,7 +117,7 @@ export default function TenantReports() {
     });
   };
 
-  const filteredReports = reports?.filter((r) => {
+  const filteredReports = allReports?.filter((r) => {
     if (severityFilter !== "all" && r.report.severity !== severityFilter) return false;
     if (statusFilter !== "all" && r.report.status !== statusFilter) return false;
     return true;
@@ -320,6 +334,29 @@ export default function TenantReports() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Load More Button */}
+      {paginatedData?.pagination?.hasMore && (
+        <div className="mt-6 text-center">
+          <Button 
+            onClick={() => setOffset(prev => prev + limit)} 
+            disabled={isLoading}
+            data-testid="button-load-more-tenant-reports"
+            variant="outline"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Load More ({paginatedData.pagination.total - allReports.length} remaining)
+              </>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* Assign Worker Dialog */}

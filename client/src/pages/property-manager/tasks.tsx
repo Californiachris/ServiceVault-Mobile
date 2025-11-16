@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ClipboardList, Plus, Filter, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { ClipboardList, Plus, Filter, CheckCircle2, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 interface Task {
@@ -57,9 +57,23 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
-    queryKey: ["/api/property-manager/tasks"],
+  const [limit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+
+  const { data: paginatedData, isLoading } = useQuery({
+    queryKey: ["/api/property-manager/tasks/paginated", limit, offset],
   });
+
+  useEffect(() => {
+    if (paginatedData?.tasks) {
+      if (offset === 0) {
+        setAllTasks(paginatedData.tasks);
+      } else {
+        setAllTasks(prev => [...prev, ...paginatedData.tasks]);
+      }
+    }
+  }, [paginatedData, offset]);
 
   const { data: properties } = useQuery<any[]>({
     queryKey: ["/api/property-manager/properties"],
@@ -74,7 +88,7 @@ export default function Tasks() {
       return await apiRequest("/api/property-manager/tasks", "POST", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tasks/paginated"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/property-manager"] });
       toast({
         title: "Success",
@@ -96,7 +110,7 @@ export default function Tasks() {
       return await apiRequest(`/api/property-manager/tasks/${id}`, "PATCH", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/property-manager/tasks/paginated"], exact: false });
       toast({
         title: "Success",
         description: "Task updated successfully",
@@ -119,7 +133,7 @@ export default function Tasks() {
     addTaskMutation.mutate(data);
   };
 
-  const filteredTasks = tasks?.filter((t) => {
+  const filteredTasks = allTasks?.filter((t) => {
     if (statusFilter !== "all" && t.task.status !== statusFilter) return false;
     if (priorityFilter !== "all" && t.task.priority !== priorityFilter) return false;
     return true;
@@ -325,6 +339,29 @@ export default function Tasks() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {/* Load More Button */}
+      {paginatedData?.pagination?.hasMore && (
+        <div className="mt-6 text-center">
+          <Button 
+            onClick={() => setOffset(prev => prev + limit)} 
+            disabled={isLoading}
+            data-testid="button-load-more-tasks"
+            variant="outline"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Load More ({paginatedData.pagination.total - allTasks.length} remaining)
+              </>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* Add Task Dialog */}
