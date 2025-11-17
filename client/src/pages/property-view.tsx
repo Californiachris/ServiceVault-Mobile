@@ -15,6 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useEffect } from "react";
 
 export default function PropertyViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +55,56 @@ export default function PropertyViewPage() {
     retry: false,
     enabled: !!id,
   });
+
+  // Set up Open Graph meta tags for social media sharing
+  useEffect(() => {
+    if (!property) return;
+
+    const propertyName = property.familyBranding?.familyName || property.name || "Property";
+    const assetCount = property.assets.length;
+    const title = `${propertyName} - ServiceVault Protected`;
+    const description = `Complete tamper-proof history for this property with ${assetCount} tracked asset${assetCount !== 1 ? 's' : ''}. View installations, service records, and maintenance history on ServiceVault.`;
+    const url = window.location.href;
+    const imageUrl = property.familyBranding?.familyLogoUrl || `${window.location.origin}/og-default.png`;
+
+    // Set page title
+    document.title = title;
+
+    // Set meta description
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute('content', description);
+
+    // Set Open Graph and Twitter Card tags
+    const socialTags = [
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: url },
+      { property: 'og:image', content: imageUrl },
+      { property: 'og:site_name', content: 'ServiceVault' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: imageUrl },
+    ];
+
+    socialTags.forEach(tag => {
+      const attr = tag.property ? 'property' : 'name';
+      const attrValue = (tag.property || tag.name)!;
+      let metaTag = document.querySelector(`meta[${attr}="${attrValue}"]`);
+      if (!metaTag) {
+        metaTag = document.createElement('meta');
+        metaTag.setAttribute(attr, attrValue);
+        document.head.appendChild(metaTag);
+      }
+      metaTag.setAttribute('content', tag.content);
+    });
+  }, [property]);
 
   if (isLoading) {
     return (
