@@ -25,62 +25,34 @@ export async function processReminders() {
     
     for (const reminder of dueReminders) {
       try {
-        // Get the property or asset owner to notify
-        let ownerId: string | null = null;
-        let recipientName = 'User';
+        console.log(`[ReminderWorker] Processing reminder ${reminder.id}`);
         
-        if (reminder.propertyId) {
-          const property = await storage.getProperty(reminder.propertyId);
-          if (property) {
-            ownerId = property.ownerId;
-          }
-        } else if (reminder.assetId) {
-          const asset = await storage.getAsset(reminder.assetId);
-          if (asset) {
-            const property = await storage.getProperty(asset.propertyId);
-            if (property) {
-              ownerId = property.ownerId;
-            }
-          }
-        }
+        // Use new dual notification method
+        const notificationResult = await notificationService.sendDualReminderNotification(reminder.id);
         
-        if (!ownerId) {
-          console.warn(`[ReminderWorker] Cannot find owner for reminder ${reminder.id}, skipping`);
-          failed++;
-          continue;
-        }
+        const { ownerNotified, contractorNotified, ownerContactMissing, errors } = notificationResult;
         
-        // Get user details
-        const user = await storage.getUser(ownerId);
-        if (!user) {
-          console.warn(`[ReminderWorker] User ${ownerId} not found for reminder ${reminder.id}, skipping`);
-          failed++;
-          continue;
-        }
-        
-        recipientName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'User';
-        
-        // Prepare notification message
-        const subject = `Reminder: ${reminder.title || 'Maintenance Due'}`;
-        const message = `Hi ${recipientName},\n\nThis is a reminder about: ${reminder.title || 'Maintenance'}\n\n${reminder.description || 'Please check your ServiceVault dashboard for details.'}\n\nBest regards,\nServiceVault Team`;
-        
-        // Send notification
-        console.log(`[ReminderWorker] Sending reminder ${reminder.id} to user ${ownerId}`);
-        const result = await notificationService.sendNotification({
-          userId: ownerId,
-          reminderId: reminder.id,
-          subject,
-          message,
-          channel: undefined, // Use user preference
+        // Log detailed results
+        console.log(`[ReminderWorker] Reminder ${reminder.id} notification results:`, {
+          ownerNotified,
+          contractorNotified,
+          ownerContactMissing,
+          errorCount: errors.length
         });
         
-        if (result.emailSent || result.smsSent) {
+        if (errors.length > 0) {
+          console.error(`[ReminderWorker] Errors for reminder ${reminder.id}:`, errors);
+        }
+        
+        // Update reminder with notification status tracking
+        const notificationSuccessful = ownerNotified || contractorNotified;
+        
+        if (notificationSuccessful) {
           sent++;
-          console.log(`[ReminderWorker] Reminder ${reminder.id} sent successfully (email: ${result.emailSent}, sms: ${result.smsSent})`);
           
-          // Handle recurring vs one-time reminders in a single atomic update (FIXED: no race condition)
+          // Handle recurring vs one-time reminders with status tracking
           if (reminder.frequency && reminder.frequency !== 'ONE_TIME' && reminder.intervalDays) {
-            // For recurring: advance dueAt to next occurrence (ensures it won't be picked up again immediately)
+            // For recurring: advance dueAt to next occurrence and update tracking
             const nextDueDate = new Date(reminder.dueAt);
             nextDueDate.setDate(nextDueDate.getDate() + reminder.intervalDays);
             
@@ -90,25 +62,43 @@ export async function processReminders() {
                 status: 'PENDING', // Keep as pending for next occurrence
                 dueAt: nextDueDate, // Advance to next due date
                 nextDueAt: nextDueDate,
+                lastNotifiedAt: new Date(),
+                ownerNotified,
+                contractorNotified,
               })
               .where(eq(reminders.id, reminder.id));
             
             console.log(`[ReminderWorker] Recurring reminder ${reminder.id} rescheduled to ${nextDueDate.toISOString()}`);
           } else {
-            // For one-time: mark as completed in single update
+            // For one-time: mark as completed with tracking
             await db
               .update(reminders)
               .set({ 
                 status: 'COMPLETED',
-                completedAt: new Date()
+                completedAt: new Date(),
+                lastNotifiedAt: new Date(),
+                ownerNotified,
+                contractorNotified,
               })
               .where(eq(reminders.id, reminder.id));
             
             console.log(`[ReminderWorker] One-time reminder ${reminder.id} marked as completed`);
           }
         } else {
+          // Notification completely failed
           failed++;
-          console.error(`[ReminderWorker] Failed to send reminder ${reminder.id}:`, result.errors);
+          
+          // Still update tracking fields to show attempt was made
+          await db
+            .update(reminders)
+            .set({
+              lastNotifiedAt: new Date(),
+              ownerNotified: false,
+              contractorNotified: false,
+            })
+            .where(eq(reminders.id, reminder.id));
+          
+          console.error(`[ReminderWorker] Failed to send reminder ${reminder.id}:`, errors);
         }
         
         processed++;

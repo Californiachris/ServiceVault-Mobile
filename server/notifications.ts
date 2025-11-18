@@ -314,6 +314,178 @@ Your customer needs this service scheduled. Contact them to book the job!
     }
   }
 
+  /**
+   * Send dual reminder notifications to both homeowner and contractor
+   * Implements fallback logic: if owner contact missing, notify contractor only
+   * Returns detailed status for tracking
+   */
+  async sendDualReminderNotification(reminderId: string): Promise<{
+    ownerNotified: boolean;
+    contractorNotified: boolean;
+    ownerContactMissing: boolean;
+    errors: string[];
+  }> {
+    const errors: string[] = [];
+    let ownerNotified = false;
+    let contractorNotified = false;
+    let ownerContactMissing = false;
+
+    try {
+      // Get reminder details
+      const reminder = await this.storage.getReminder(reminderId);
+      if (!reminder) {
+        errors.push(`Reminder ${reminderId} not found`);
+        return { ownerNotified, contractorNotified, ownerContactMissing, errors };
+      }
+
+      // Get asset details
+      const asset = reminder.assetId ? await this.storage.getAsset(reminder.assetId) : null;
+      const assetName = asset?.name || 'Asset';
+      
+      // Get property details to find owner
+      let ownerId: string | null = null;
+      let ownerUser = null;
+      let propertyAddress = '';
+      
+      if (reminder.propertyId) {
+        const property = await this.storage.getProperty(reminder.propertyId);
+        if (property) {
+          ownerId = property.ownerId;
+          ownerUser = await this.storage.getUser(ownerId);
+          const addressParts = [property.addressLine1, property.city, property.state, property.postalCode].filter(Boolean);
+          propertyAddress = addressParts.join(', ');
+        }
+      } else if (asset?.propertyId) {
+        const property = await this.storage.getProperty(asset.propertyId);
+        if (property) {
+          ownerId = property.ownerId;
+          ownerUser = await this.storage.getUser(ownerId);
+          const addressParts = [property.addressLine1, property.city, property.state, property.postalCode].filter(Boolean);
+          propertyAddress = addressParts.join(', ');
+        }
+      }
+
+      // Get contractor details
+      let contractorUserId: string | null = null;
+      let contractorUser = null;
+      let contractorBranding: ContractorBranding | null = null;
+      
+      if (asset?.installerId) {
+        const contractor = await this.storage.getContractor(asset.installerId);
+        if (contractor) {
+          contractorUser = await this.storage.getUser(contractor.userId);
+          contractorUserId = contractor.userId;
+          
+          if (contractorUser) {
+            contractorBranding = {
+              companyName: contractor.companyName || 'Contractor',
+              logoUrl: contractor.logoUrl,
+              email: contractor.email || contractorUser.email || null,
+              phone: contractor.phone || contractorUser.phone || null,
+            };
+          }
+        }
+      }
+
+      // Check if owner has contact info
+      const ownerHasEmail = !!(ownerUser?.email);
+      const ownerHasPhone = !!(ownerUser?.phone);
+      const ownerHasContact = ownerHasEmail || ownerHasPhone;
+      
+      if (!ownerHasContact) {
+        ownerContactMissing = true;
+      }
+
+      const ownerName = ownerUser ? [ownerUser.firstName, ownerUser.lastName].filter(Boolean).join(' ') || ownerUser.email : 'Homeowner';
+      
+      // OWNER NOTIFICATION (only if notifyHomeowner flag is true AND contact info exists)
+      if (reminder.notifyHomeowner && ownerHasContact && ownerId) {
+        const ownerSubject = `Reminder: ${reminder.title || 'Maintenance Due'}`;
+        const ownerMessage = `Hi ${ownerName},
+
+This is a friendly reminder: your ${assetName}${propertyAddress ? ` at ${propertyAddress}` : ''} is due for service on ${reminder.dueAt ? new Date(reminder.dueAt).toLocaleDateString() : 'soon'}.
+
+${reminder.description ? `Details: ${reminder.description}\n\n` : ''}Staying on schedule helps protect your warranty and avoid unexpected breakdowns.
+
+${contractorBranding ? `To schedule this service, contact ${contractorBranding.companyName}${contractorBranding.phone ? ` at ${contractorBranding.phone}` : ''}.` : 'Please schedule service at your earliest convenience.'}`.trim();
+
+        const ownerResult = await this.sendNotification({
+          userId: ownerId,
+          reminderId,
+          subject: ownerSubject,
+          message: ownerMessage,
+          contractorBranding,
+        });
+        
+        ownerNotified = ownerResult.emailSent || ownerResult.smsSent;
+        
+        if (!ownerNotified) {
+          errors.push(...ownerResult.errors);
+        }
+      }
+
+      // CONTRACTOR NOTIFICATION (only if notifyContractor flag is true AND contractor exists)
+      if (reminder.notifyContractor && contractorUserId) {
+        const contractorSubject = ownerContactMissing 
+          ? `⚠️ Reminder Due - Owner Contact Missing: ${assetName}`
+          : ownerNotified
+            ? `Customer Notified: ${reminder.title || 'Maintenance Due'}`
+            : `Reminder Due (Owner Not Notified): ${reminder.title || 'Maintenance Due'}`;
+        
+        let contractorMessage = '';
+        
+        if (ownerContactMissing) {
+          contractorMessage = `⚠️ OWNER CONTACT INFO MISSING
+
+Reminder is due for ${assetName}${propertyAddress ? ` at ${propertyAddress}` : ''}, but no owner contact information is on file.
+
+Type: ${reminder.title || 'Maintenance'}
+Due Date: ${reminder.dueAt ? new Date(reminder.dueAt).toLocaleDateString() : 'Not specified'}
+${reminder.description ? `Details: ${reminder.description}\n\n` : ''}Please update owner contact details and follow up manually.`;
+        } else if (ownerNotified) {
+          contractorMessage = `✅ Customer Notified
+
+Your customer ${ownerName} has been notified about upcoming maintenance for ${assetName}${propertyAddress ? ` at ${propertyAddress}` : ''}.
+
+Type: ${reminder.title || 'Maintenance'}
+Due Date: ${reminder.dueAt ? new Date(reminder.dueAt).toLocaleDateString() : 'Not specified'}
+${reminder.description ? `Details: ${reminder.description}\n\n` : ''}If the customer doesn't schedule within a few days, follow up by phone or email.`;
+        } else {
+          contractorMessage = `⚠️ Notification Failed
+
+Reminder is due for ${assetName}${propertyAddress ? ` at ${propertyAddress}` : ''}, but the owner notification failed to send.
+
+Type: ${reminder.title || 'Maintenance'}
+Due Date: ${reminder.dueAt ? new Date(reminder.dueAt).toLocaleDateString() : 'Not specified'}
+${reminder.description ? `Details: ${reminder.description}\n\n` : ''}Please contact ${ownerName} directly to schedule this service.`;
+        }
+
+        const contractorResult = await this.sendNotification({
+          userId: contractorUserId,
+          reminderId,
+          subject: contractorSubject,
+          message: contractorMessage.trim(),
+          contractorBranding: null, // Don't show branding to contractor
+        });
+        
+        contractorNotified = contractorResult.emailSent || contractorResult.smsSent;
+        
+        if (!contractorNotified) {
+          errors.push(...contractorResult.errors);
+        }
+      } else if (reminder.notifyContractor && !contractorUserId) {
+        // Contractor notification was requested but no contractor exists
+        errors.push('Contractor notification requested but no contractor found for this asset');
+      }
+
+      return { ownerNotified, contractorNotified, ownerContactMissing, errors };
+    } catch (error: any) {
+      console.error('[NotificationService] Error in sendDualReminderNotification:', error);
+      errors.push(error.message || 'Unknown error');
+      return { ownerNotified, contractorNotified, ownerContactMissing, errors };
+    }
+  }
+
   async sendAdminOrderNotification(orderDetails: {
     userId: string;
     userEmail: string;

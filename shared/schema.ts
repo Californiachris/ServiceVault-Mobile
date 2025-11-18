@@ -261,6 +261,11 @@ export const reminders = pgTable("reminders", {
   source: varchar("source").default("MANUAL"), // AI_GENERATED, MANUAL
   createdBy: varchar("created_by").references(() => users.id),
   
+  // Notification status tracking
+  lastNotifiedAt: timestamp("last_notified_at"),
+  ownerNotified: boolean("owner_notified").default(false),
+  contractorNotified: boolean("contractor_notified").default(false),
+  
   createdAt: timestamp("created_at").defaultNow(),
   completedAt: timestamp("completed_at"),
 }, (table) => ({
