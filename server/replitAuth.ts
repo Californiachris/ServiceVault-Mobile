@@ -1,5 +1,7 @@
 import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from "bcrypt";
 
 import passport from "passport";
 import session from "express-session";
@@ -7,6 +9,9 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import { db } from "./db";
+import { users, contractorWorkers } from "../shared/schema";
+import { eq } from "drizzle-orm";
 // Demo data seeding disabled
 // import { seedDemoData } from "./seedDemoData";
 
@@ -114,91 +119,129 @@ async function injectDemoUser(req: any, res: any, next: any) {
   next();
 }
 
-export async function setupAuth(app: Express) {
-  if (AUTH_MODE === 'public') {
-    // Public mode: Skip Replit Auth completely, just inject demo user
-    app.set("trust proxy", 1);
-    app.use(getSession());
-    app.use(injectDemoUser);
-    console.log('🔓 AUTH MODE: PUBLIC - Authentication disabled, using shared demo user');
-    return;
+// Configure Local Strategy for Worker Login
+passport.use('worker-local', new LocalStrategy(
+  { usernameField: 'username', passwordField: 'password' },
+  async (username, password, done) => {
+    try {
+      // Find user by username
+      const [user] = await db.select().from(users).where(eq(users.id, username)).limit(1);
+      
+      if (!user || user.role !== 'WORKER') {
+        return done(null, false, { message: 'Invalid credentials' });
+      }
+
+      if (!user.passwordHash) {
+        return done(null, false, { message: 'Invalid credentials' });
+      }
+
+      // Verify password
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return done(null, false, { message: 'Invalid credentials' });
+      }
+
+      // Create session object similar to Replit auth
+      const sessionUser = {
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
+        },
+        role: user.role,
+      };
+
+      return done(null, sessionUser);
+    } catch (error) {
+      return done(error);
+    }
   }
-  
-  // Protected mode: Normal Replit Auth flow
+));
+
+export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  if (AUTH_MODE === 'public') {
+    // Public mode: Still setup passport for worker login, but inject demo user for regular users
+    app.use(injectDemoUser);
+    console.log('🔓 AUTH MODE: PUBLIC - Authentication disabled for regular users, worker login enabled');
+  } else {
+    // Protected mode: Setup Replit OIDC Auth
+    const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
-  };
+    const verify: VerifyFunction = async (
+      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+      verified: passport.AuthenticateCallback
+    ) => {
+      const user = {};
+      updateUserSession(user, tokens);
+      await upsertUser(tokens.claims());
+      verified(null, user);
+    };
 
-  // Verify function with request access for tier-based provisioning
-  const verifyWithRequest = async (
-    req: any,
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    
-    // Read selected tier from session (set by /api/auth/selection)
-    const selectedTier = req.session?.selectedTier;
-    let role = "HOMEOWNER"; // default
-    
-    if (selectedTier) {
-      if (selectedTier.includes('contractor')) {
-        role = "CONTRACTOR";
-      } else if (selectedTier.includes('fleet')) {
-        role = "FLEET";
+    // Verify function with request access for tier-based provisioning
+    const verifyWithRequest = async (
+      req: any,
+      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+      verified: passport.AuthenticateCallback
+    ) => {
+      const user = {};
+      updateUserSession(user, tokens);
+      
+      // Read selected tier from session (set by /api/auth/selection)
+      const selectedTier = req.session?.selectedTier;
+      let role = "HOMEOWNER"; // default
+      
+      if (selectedTier) {
+        if (selectedTier.includes('contractor')) {
+          role = "CONTRACTOR";
+        } else if (selectedTier.includes('fleet')) {
+          role = "FLEET";
+        }
+        // Clear the tier from session after use
+        delete req.session.selectedTier;
       }
-      // Clear the tier from session after use
-      delete req.session.selectedTier;
-    }
-    
-    const claims = tokens.claims();
-    if (!claims) {
-      return verified(new Error("Failed to get claims from tokens"));
-    }
-    const userId = claims["sub"];
-    await upsertUser(claims, role);
-    
-    // Demo data seeding disabled - users should create their own properties
-    // if (process.env.NODE_ENV === 'development' && userId) {
-    //   try {
-    //     await seedDemoData(userId);
-    //   } catch (error) {
-    //     console.error("Error seeding demo data during auth:", error);
-    //   }
-    // }
-    
-    verified(null, user);
-  };
+        
+      const claims = tokens.claims();
+      if (!claims) {
+        return verified(new Error("Failed to get claims from tokens"));
+      }
+      const userId = claims["sub"];
+      await upsertUser(claims, role);
+      
+      // Demo data seeding disabled - users should create their own properties
+      // if (process.env.NODE_ENV === 'development' && userId) {
+      //   try {
+      //     await seedDemoData(userId);
+      //   } catch (error) {
+      //     console.error("Error seeding demo data during auth:", error);
+      //   }
+      // }
+      
+      verified(null, user);
+    };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
-    const strategy = new Strategy(
-      {
-        name: `replitauth:${domain}`,
-        config,
-        scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
-        passReqToCallback: true,
-      },
-      verifyWithRequest,
-    );
-    passport.use(strategy);
+    for (const domain of process.env
+      .REPLIT_DOMAINS!.split(",")) {
+      const strategy = new Strategy(
+        {
+          name: `replitauth:${domain}`,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${domain}/api/callback`,
+          passReqToCallback: true,
+        },
+        verifyWithRequest,
+      );
+      passport.use(strategy);
+    }
   }
 
+  // Serialize/deserialize for both strategies
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
@@ -234,14 +277,58 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  // Worker login endpoint
+  app.post("/api/auth/worker/login", (req, res, next) => {
+    passport.authenticate('worker-local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ error: "Authentication error" });
+      }
+      if (!user) {
+        return res.status(401).json({ error: info?.message || "Invalid credentials" });
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).json({ error: "Login failed" });
+        }
+        
+        // Return user data
+        res.json({
+          user: {
+            id: user.claims.sub,
+            email: user.claims.email,
+            firstName: user.claims.first_name,
+            lastName: user.claims.last_name,
+            role: 'WORKER',
+          }
+        });
+      });
+    })(req, res, next);
+  });
+
+  // Unified logout for both auth strategies
+  app.get("/api/logout", async (req, res) => {
+    const user = req.user as any;
+    
     req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+      // If worker (local auth), just redirect to home
+      if (user?.role === 'WORKER' || !user?.refresh_token) {
+        return res.redirect('/');
+      }
+      
+      // For OIDC users, redirect to OIDC logout
+      if (AUTH_MODE === 'protected') {
+        getOidcConfig().then(config => {
+          res.redirect(
+            client.buildEndSessionUrl(config, {
+              client_id: process.env.REPL_ID!,
+              post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+            }).href
+          );
+        }).catch(() => res.redirect('/'));
+      } else {
+        res.redirect('/');
+      }
     });
   });
 }

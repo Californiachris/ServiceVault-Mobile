@@ -81,7 +81,16 @@ export default function Landing() {
               ServiceVault™
             </span>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            <Button 
+              size="sm"
+              variant="ghost"
+              onClick={() => setLocation("/login/worker")}
+              data-testid="button-worker-login"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Worker Login
+            </Button>
             <Button 
               size="lg"
               variant="outline"

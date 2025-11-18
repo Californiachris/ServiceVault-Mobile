@@ -53,9 +53,11 @@ import PropertyManagerPricing from "@/pages/solutions/PropertyManagerPricing";
 import AILogoGenerator from "@/pages/AILogoGenerator";
 import LogosPage from "@/pages/LogosPage";
 import CheckoutPage from "@/pages/CheckoutPage";
+import WorkerLogin from "@/pages/worker-login";
+import WorkerDashboard from "@/pages/worker-dashboard";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [location] = useLocation();
 
   // Scroll to top on route change
@@ -83,7 +85,7 @@ function Router() {
   }
 
   // Public routes without AppShell (landing, pricing, welcome pages, asset/property views, tenant reports)
-  const publicRoutes = ["/", "/pricing"];
+  const publicRoutes = ["/", "/pricing", "/login/worker"];
   const publicContractorRoutes = [
     "/contractor/welcome",
     "/contractor/plans",
@@ -102,6 +104,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/login/worker" component={WorkerLogin} />
         <Route path="/contractor/welcome" component={ContractorWelcome} />
         <Route path="/contractor/plans" component={ContractorPlanSelection} />
         <Route path="/contractor/worker-checkin" component={WorkerCheckIn} />
@@ -122,16 +125,21 @@ function Router() {
   }
 
   // Worker routes (authenticated, use WorkerAppShell)
-  if (isAuthenticated && location.startsWith("/worker")) {
-    return (
-      <WorkerAppShell>
-        <Switch>
-          <Route path="/worker/check-in" component={CheckInLanding} />
-          <Route path="/worker/check-in/:masterQr" component={CheckInByCode} />
-          <Route path="/worker/visit/:visitId" component={ActiveVisit} />
-        </Switch>
-      </WorkerAppShell>
-    );
+  if (isAuthenticated && user?.role === 'WORKER') {
+    if (location === "/dashboard") {
+      return <WorkerDashboard />;
+    }
+    if (location.startsWith("/worker")) {
+      return (
+        <WorkerAppShell>
+          <Switch>
+            <Route path="/worker/check-in" component={CheckInLanding} />
+            <Route path="/worker/check-in/:masterQr" component={CheckInByCode} />
+            <Route path="/worker/visit/:visitId" component={ActiveVisit} />
+          </Switch>
+        </WorkerAppShell>
+      );
+    }
   }
 
   // Checkout route (authenticated, full-page without AppShell)

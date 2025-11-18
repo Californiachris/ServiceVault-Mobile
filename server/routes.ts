@@ -4578,6 +4578,151 @@ Instructions:
     }
   });
 
+  // Get worker profile
+  app.get('/api/worker/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [worker] = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: 'Worker profile not found' });
+      }
+      
+      res.json(worker);
+    } catch (error) {
+      console.error('Error getting worker profile:', error);
+      res.status(500).json({ error: 'Failed to get worker profile' });
+    }
+  });
+
+  // Get worker's contractor info
+  app.get('/api/worker/contractor', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [worker] = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: 'Worker not found' });
+      }
+
+      const [contractor] = await db
+        .select()
+        .from(contractors)
+        .where(eq(contractors.userId, worker.propertyManagerId))
+        .limit(1);
+      
+      res.json(contractor || null);
+    } catch (error) {
+      console.error('Error getting contractor info:', error);
+      res.status(500).json({ error: 'Failed to get contractor info' });
+    }
+  });
+
+  // Get worker stats
+  app.get('/api/worker/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [worker] = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.json({ totalVisits: 0, totalHours: 0, completedTasks: 0 });
+      }
+
+      // Total visits
+      const [totalVisitsResult] = await db
+        .select({ count: count() })
+        .from(propertyVisits)
+        .where(eq(propertyVisits.workerId, worker.id));
+
+      // Total hours this month
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const completedVisits = await db
+        .select()
+        .from(propertyVisits)
+        .where(and(
+          eq(propertyVisits.workerId, worker.id),
+          eq(propertyVisits.status, 'COMPLETED'),
+          sql`${propertyVisits.checkInTime} >= ${startOfMonth.toISOString()}`
+        ));
+
+      const totalHours = completedVisits.reduce((sum, visit) => {
+        if (visit.duration) {
+          return sum + (visit.duration / 60); // Convert minutes to hours
+        }
+        return sum;
+      }, 0);
+
+      // Completed tasks this week
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const [completedTasksResult] = await db
+        .select({ count: count() })
+        .from(propertyTaskCompletions)
+        .where(and(
+          eq(propertyTaskCompletions.workerId, worker.id),
+          sql`${propertyTaskCompletions.completedAt} >= ${startOfWeek.toISOString()}`
+        ));
+
+      res.json({
+        totalVisits: totalVisitsResult.count,
+        totalHours,
+        completedTasks: completedTasksResult.count,
+      });
+    } catch (error) {
+      console.error('Error getting worker stats:', error);
+      res.status(500).json({ error: 'Failed to get worker stats' });
+    }
+  });
+
+  // Get worker's recent visits
+  app.get('/api/worker/visits/recent', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [worker] = await db
+        .select()
+        .from(workers)
+        .where(eq(workers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.json([]);
+      }
+      
+      const recentVisits = await db
+        .select()
+        .from(propertyVisits)
+        .where(eq(propertyVisits.workerId, worker.id))
+        .orderBy(desc(propertyVisits.checkInTime))
+        .limit(10);
+      
+      res.json(recentVisits);
+    } catch (error) {
+      console.error('Error getting recent visits:', error);
+      res.status(500).json({ error: 'Failed to get recent visits' });
+    }
+  });
+
   // Get worker's active visits
   app.get('/api/worker/visits/active', isAuthenticated, async (req: any, res) => {
     try {
