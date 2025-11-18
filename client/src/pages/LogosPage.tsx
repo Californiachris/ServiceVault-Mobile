@@ -90,23 +90,23 @@ export default function LogosPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-6 max-w-6xl pb-24">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-10">
         <Link href="/dashboard">
-          <Button variant="ghost" size="sm" className="mb-4" data-testid="button-back">
+          <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
         </Link>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 p-3">
-              <ImageIcon className="h-8 w-8 text-primary" />
+          <div className="flex items-center gap-4">
+            <div className="p-4 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+              <ImageIcon className="h-10 w-10 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Logo Management</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-5xl font-bold mb-2 tracking-tight">Logo Management</h1>
+              <p className="text-lg text-muted-foreground">
                 Manage all your custom branding assets
               </p>
             </div>
@@ -114,7 +114,7 @@ export default function LogosPage() {
           <div className="flex gap-2">
             <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" data-testid="button-upload-new">
+                <Button variant="outline" className="border-2" data-testid="button-upload-new">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Logo
                 </Button>
@@ -132,7 +132,7 @@ export default function LogosPage() {
                 />
               </DialogContent>
             </Dialog>
-            <Button asChild data-testid="button-ai-generator">
+            <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" asChild data-testid="button-ai-generator">
               <Link href="/logos/ai-generator">
                 <Wand2 className="h-4 w-4 mr-2" />
                 AI Generator
@@ -152,23 +152,23 @@ export default function LogosPage() {
 
       {/* Empty State */}
       {!isLoading && (!logos || logos.length === 0) && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <div className="rounded-full bg-muted p-6">
-                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+          <CardContent className="text-center py-16">
+            <div className="flex justify-center mb-6">
+              <div className="p-6 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+                <ImageIcon className="h-16 w-16 text-white" />
               </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">No Logos Yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            <h3 className="text-2xl font-bold mb-3 tracking-tight">No Logos Yet</h3>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
               Upload your existing logo or generate a new one with AI to get started with custom-branded QR stickers
             </p>
-            <div className="flex gap-2 justify-center">
-              <Button onClick={() => setShowUploadDialog(true)} variant="outline" data-testid="button-upload-first">
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => setShowUploadDialog(true)} variant="outline" className="border-2" data-testid="button-upload-first">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Logo
               </Button>
-              <Button asChild data-testid="button-generate-first">
+              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" asChild data-testid="button-generate-first">
                 <Link href="/logos/ai-generator">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Generate with AI
@@ -185,7 +185,7 @@ export default function LogosPage() {
           {Object.entries(groupedLogos).map(([source, sourceLogos]) => (
             <div key={source}>
               <div className="mb-4">
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-2xl font-bold tracking-tight">
                   {source === 'CONTRACTOR' ? 'Contractor' :
                    source === 'HOMEOWNER' ? 'Homeowner' :
                    source === 'FLEET' ? 'Fleet' :
@@ -200,8 +200,8 @@ export default function LogosPage() {
                 {sourceLogos.map((logo) => (
                   <Card 
                     key={logo.id}
-                    className={`overflow-hidden transition-all duration-200 hover:shadow-lg ${
-                      logo.isActive ? 'border-2 border-primary/50' : ''
+                    className={`overflow-hidden transition-all duration-200 hover:shadow-xl hover:scale-[1.02] backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg ${
+                      logo.isActive ? 'border-2 border-primary ring-2 ring-primary/20' : ''
                     }`}
                     data-testid={`card-logo-${logo.id}`}
                   >

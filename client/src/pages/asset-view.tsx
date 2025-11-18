@@ -49,7 +49,7 @@ export default function AssetView() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
+      <div className="min-h-screen bg-background pb-24">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Skeleton className="h-48 w-full mb-6" />
           <Skeleton className="h-96 w-full" />
@@ -60,13 +60,13 @@ export default function AssetView() {
 
   if (!asset) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
+      <div className="min-h-screen bg-background pb-24">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <Card className="border-red-500/20 bg-slate-900/50">
+          <Card className="border-red-500/20 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
             <CardContent className="py-12 text-center">
               <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Asset Not Found</h2>
-              <p className="text-slate-400">This asset doesn't exist or has been removed.</p>
+              <h2 className="text-xl font-semibold mb-2">Asset Not Found</h2>
+              <p className="text-muted-foreground">This asset doesn't exist or has been removed.</p>
             </CardContent>
           </Card>
         </div>
@@ -75,71 +75,73 @@ export default function AssetView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background pb-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="h-6 w-6 text-cyan-400" />
-            <span className="text-sm font-medium text-cyan-400">ServiceVault Verified Asset</span>
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-base font-semibold text-primary">ServiceVault Verified Asset</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2" data-testid="text-asset-name">
+          <h1 className="text-5xl font-bold mb-3 tracking-tight" data-testid="text-asset-name">
             {asset.name}
           </h1>
-          <p className="text-slate-400">Complete installation and service history</p>
+          <p className="text-lg text-muted-foreground">Complete installation and service history</p>
         </div>
 
         {/* Asset Details Card */}
-        <Card className="mb-6 border-slate-800 bg-slate-900/50 backdrop-blur">
+        <Card className="mb-6 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Package className="h-5 w-5 text-cyan-400" />
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Package className="h-6 w-6 text-primary" />
               Asset Details
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <span className="text-sm text-slate-400">Category</span>
-                <p className="text-white font-medium" data-testid="text-category">
+                <span className="text-sm text-muted-foreground font-semibold">Category</span>
+                <p className="font-medium" data-testid="text-category">
                   {asset.category}
                 </p>
               </div>
               {asset.brand && (
                 <div>
-                  <span className="text-sm text-slate-400">Brand</span>
-                  <p className="text-white font-medium" data-testid="text-brand">
+                  <span className="text-sm text-muted-foreground font-semibold">Brand</span>
+                  <p className="font-medium" data-testid="text-brand">
                     {asset.brand}
                   </p>
                 </div>
               )}
               {asset.model && (
                 <div>
-                  <span className="text-sm text-slate-400">Model</span>
-                  <p className="text-white font-medium" data-testid="text-model">
+                  <span className="text-sm text-muted-foreground font-semibold">Model</span>
+                  <p className="font-medium" data-testid="text-model">
                     {asset.model}
                   </p>
                 </div>
               )}
               {asset.serial && (
                 <div>
-                  <span className="text-sm text-slate-400">Serial Number</span>
-                  <p className="text-white font-mono text-sm" data-testid="text-serial">
+                  <span className="text-sm text-muted-foreground font-semibold">Serial Number</span>
+                  <p className="font-mono text-sm" data-testid="text-serial">
                     {asset.serial}
                   </p>
                 </div>
               )}
               {asset.installedAt && (
                 <div>
-                  <span className="text-sm text-slate-400">Installed On</span>
-                  <p className="text-white font-medium flex items-center gap-2" data-testid="text-install-date">
-                    <Calendar className="h-4 w-4 text-cyan-400" />
+                  <span className="text-sm text-muted-foreground font-semibold">Installed On</span>
+                  <p className="font-medium flex items-center gap-2" data-testid="text-install-date">
+                    <Calendar className="h-4 w-4 text-primary" />
                     {format(new Date(asset.installedAt), "MMMM d, yyyy")}
                   </p>
                 </div>
               )}
               <div>
-                <span className="text-sm text-slate-400">Status</span>
+                <span className="text-sm text-muted-foreground font-semibold">Status</span>
                 <div data-testid="badge-status">
                   <Badge 
                     variant={asset.status === "ACTIVE" ? "default" : "secondary"}
@@ -153,9 +155,9 @@ export default function AssetView() {
             </div>
 
             {asset.notes && (
-              <div className="mt-6 pt-6 border-t border-slate-800">
-                <span className="text-sm text-slate-400">Installer Notes</span>
-                <p className="text-white mt-2" data-testid="text-installer-notes">
+              <div className="mt-6 pt-6 border-t">
+                <span className="text-sm text-muted-foreground font-semibold">Installer Notes</span>
+                <p className="mt-2" data-testid="text-installer-notes">
                   {asset.notes}
                 </p>
               </div>
@@ -164,10 +166,10 @@ export default function AssetView() {
         </Card>
 
         {/* Service History Timeline */}
-        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur">
+        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <History className="h-5 w-5 text-cyan-400" />
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <History className="h-6 w-6 text-primary" />
               Service History
             </CardTitle>
           </CardHeader>
@@ -182,55 +184,55 @@ export default function AssetView() {
                   >
                     {/* Timeline line */}
                     {index < asset.events.length - 1 && (
-                      <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-slate-800" />
+                      <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-border" />
                     )}
 
                     {/* Event icon */}
                     <div className="absolute left-0 top-1">
-                      <div className="h-8 w-8 rounded-full bg-cyan-500/20 border-2 border-cyan-500 flex items-center justify-center">
-                        {event.type === "INSTALL" && <Wrench className="h-4 w-4 text-cyan-400" />}
-                        {event.type === "SERVICE" && <Wrench className="h-4 w-4 text-cyan-400" />}
-                        {event.type === "REPAIR" && <Wrench className="h-4 w-4 text-cyan-400" />}
-                        {event.type === "INSPECTION" && <FileText className="h-4 w-4 text-cyan-400" />}
-                        {event.type === "WARRANTY" && <Shield className="h-4 w-4 text-cyan-400" />}
-                        {event.type === "NOTE" && <Tag className="h-4 w-4 text-cyan-400" />}
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 border-2 border-primary flex items-center justify-center shadow-md">
+                        {event.type === "INSTALL" && <Wrench className="h-4 w-4 text-white" />}
+                        {event.type === "SERVICE" && <Wrench className="h-4 w-4 text-white" />}
+                        {event.type === "REPAIR" && <Wrench className="h-4 w-4 text-white" />}
+                        {event.type === "INSPECTION" && <FileText className="h-4 w-4 text-white" />}
+                        {event.type === "WARRANTY" && <Shield className="h-4 w-4 text-white" />}
+                        {event.type === "NOTE" && <Tag className="h-4 w-4 text-white" />}
                       </div>
                     </div>
 
                     {/* Event content */}
-                    <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                    <div className="backdrop-blur-sm bg-muted/30 rounded-lg p-4 border hover:border-primary/50 transition-all duration-200 hover:shadow-md">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-white" data-testid={`text-event-type-${index}`}>
+                        <h3 className="font-bold" data-testid={`text-event-type-${index}`}>
                           {event.type}
                         </h3>
-                        <span className="text-xs text-slate-400" data-testid={`text-event-date-${index}`}>
+                        <span className="text-xs text-muted-foreground" data-testid={`text-event-date-${index}`}>
                           {event.createdAt ? format(new Date(event.createdAt), "MMM d, yyyy h:mm a") : "Unknown date"}
                         </span>
                       </div>
 
                       {/* Event data */}
                       {event.data && (
-                        <div className="text-sm text-slate-300 space-y-1">
+                        <div className="text-sm space-y-1">
                           {event.data.note && (
                             <p data-testid={`text-event-note-${index}`}>{event.data.note}</p>
                           )}
                           {event.data.installDate && event.type === "INSTALL" && (
-                            <p className="text-slate-400">
+                            <p className="text-muted-foreground">
                               Install Date: {format(new Date(event.data.installDate), "MMMM d, yyyy")}
                             </p>
                           )}
                           {event.data.installerName && event.type === "INSTALL" && (
-                            <div className="mt-2 p-2 bg-slate-700/50 rounded border border-slate-600">
-                              <p className="font-medium text-cyan-400" data-testid={`text-installer-name-${index}`}>
+                            <div className="mt-2 p-3 bg-primary/5 rounded-lg border">
+                              <p className="font-semibold text-primary" data-testid={`text-installer-name-${index}`}>
                                 Installed by: {event.data.installerName}
                               </p>
                               {event.data.installerCompany && (
-                                <p className="text-xs text-slate-400" data-testid={`text-installer-company-${index}`}>
+                                <p className="text-xs text-muted-foreground" data-testid={`text-installer-company-${index}`}>
                                   {event.data.installerCompany}
                                 </p>
                               )}
                               {event.data.installerPhone && (
-                                <p className="text-xs text-slate-400" data-testid={`text-installer-phone-${index}`}>
+                                <p className="text-xs text-muted-foreground" data-testid={`text-installer-phone-${index}`}>
                                   📞 {event.data.installerPhone}
                                 </p>
                               )}
@@ -243,8 +245,8 @@ export default function AssetView() {
                       {event.photoUrls && event.photoUrls.length > 0 && (
                         <div className="mt-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <ImageIcon className="h-4 w-4 text-cyan-400" />
-                            <span className="text-xs font-medium text-slate-400">
+                            <ImageIcon className="h-4 w-4 text-primary" />
+                            <span className="text-xs font-medium text-muted-foreground">
                               {event.photoUrls.length} Photo{event.photoUrls.length > 1 ? "s" : ""}
                             </span>
                           </div>
@@ -255,7 +257,7 @@ export default function AssetView() {
                                 href={url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group relative aspect-square rounded overflow-hidden border border-slate-700 hover:border-cyan-500 transition-colors"
+                                className="group relative aspect-square rounded-lg overflow-hidden border hover:border-primary transition-all duration-200 hover:shadow-md"
                                 data-testid={`img-event-photo-${index}-${photoIndex}`}
                               >
                                 <img
@@ -273,7 +275,7 @@ export default function AssetView() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-400">
+              <div className="text-center py-8 text-muted-foreground">
                 <History className="mx-auto h-12 w-12 mb-2 opacity-50" />
                 <p>No service history available</p>
               </div>
@@ -283,9 +285,11 @@ export default function AssetView() {
 
         {/* Tamper-proof badge */}
         <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800">
-            <Shield className="h-4 w-4 text-green-400" />
-            <span className="text-sm text-slate-300">
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 border shadow-lg">
+            <div className="p-1 rounded-full bg-green-500/10">
+              <Shield className="h-5 w-5 text-green-500" />
+            </div>
+            <span className="text-sm font-semibold">
               Tamper-Proof Hash Chain Verified
             </span>
           </div>
