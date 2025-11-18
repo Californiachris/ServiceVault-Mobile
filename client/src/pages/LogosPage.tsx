@@ -201,8 +201,8 @@ export default function LogosPage() {
                 {sourceLogos.map((logo) => (
                   <Card 
                     key={logo.id}
-                    className={`overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] bg-slate-900/80 border-slate-700/50 shadow-xl rounded-2xl transform ${
-                      logo.isActive ? 'border-2 border-cyan-500 ring-4 ring-cyan-500/30 shadow-cyan-500/30' : ''
+                    className={`overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/50 hover:scale-[1.03] bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl transform ${
+                      logo.isActive ? 'border-2 border-cyan-500 ring-4 ring-cyan-500/30' : ''
                     }`}
                     data-testid={`card-logo-${logo.id}`}
                   >

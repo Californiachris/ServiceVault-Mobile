@@ -593,7 +593,7 @@ export default function Scan() {
             </Card>
 
             {/* Recent Scans */}
-            <Card className="mt-6 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+            <Card className="mt-6 bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl rounded-3xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   <History className="h-6 w-6" />
@@ -638,7 +638,7 @@ export default function Scan() {
           {/* Results Section */}
           <div>
             {scannedCode && (
-              <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+              <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl rounded-3xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-2xl">
                     <QrCode className="h-6 w-6" />
@@ -1277,7 +1277,7 @@ export default function Scan() {
             )}
 
             {!scannedCode && (
-              <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+              <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl rounded-3xl">
                 <CardContent className="pt-6">
                   <div className="text-center py-8">
                     <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">

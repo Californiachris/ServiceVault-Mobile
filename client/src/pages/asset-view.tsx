@@ -204,7 +204,7 @@ export default function AssetView() {
                     </div>
 
                     {/* Event content */}
-                    <div className="bg-slate-800/50 border-slate-600/50 rounded-2xl p-5 border hover:border-cyan-500/50 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] transform shadow-lg">
+                    <div className="bg-slate-800/50 border-slate-600/50 rounded-2xl p-5 border hover:border-cyan-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/50 hover:scale-[1.02] transform shadow-2xl shadow-cyan-500/20">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-bold text-white text-lg" data-testid={`text-event-type-${index}`}>
                           {event.type}
