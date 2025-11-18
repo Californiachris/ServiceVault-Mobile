@@ -484,9 +484,9 @@ export default function Scan() {
     <div className="bg-background pb-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">QR Code Scanner</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold mb-3 tracking-tight">QR Code Scanner</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Scan QR codes to access asset information, claim unclaimed assets, or view complete property histories.
           </p>
         </div>
@@ -494,10 +494,10 @@ export default function Scan() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Scanner Section */}
           <div>
-            <Card>
+            <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <QrCode className="h-6 w-6" />
                   Camera Scanner
                 </CardTitle>
               </CardHeader>
@@ -591,10 +591,10 @@ export default function Scan() {
             </Card>
 
             {/* Recent Scans */}
-            <Card className="mt-6">
+            <Card className="mt-6 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <History className="h-6 w-6" />
                   Recent Scans
                 </CardTitle>
               </CardHeader>
@@ -603,7 +603,7 @@ export default function Scan() {
                   {recentScans.map((scan, index) => (
                     <div 
                       key={index}
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-[1.01] cursor-pointer backdrop-blur-sm shadow-sm hover:shadow-md"
                       onClick={() => setScannedCode(scan.code)}
                       data-testid={`recent-scan-${index}`}
                     >
@@ -636,10 +636,10 @@ export default function Scan() {
           {/* Results Section */}
           <div>
             {scannedCode && (
-              <Card>
+              <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <QrCode className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <QrCode className="h-6 w-6" />
                     Scan Result
                   </CardTitle>
                 </CardHeader>
@@ -1083,13 +1083,13 @@ export default function Scan() {
                               </Button>
                               <Button
                                 type="submit"
-                                className="flex-1"
+                                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
                                 disabled={claimMutation.isPending}
                                 data-testid="button-submit-install"
                               >
                                 {claimMutation.isPending ? (
                                   <>
-                                    <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
+                                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                                     Submitting...
                                   </>
                                 ) : (
@@ -1109,7 +1109,7 @@ export default function Scan() {
                             <>
                               {isAuthenticated ? (
                                 <Button 
-                                  className="w-full" 
+                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" 
                                   onClick={handleClaimAsset}
                                   data-testid="button-claim-asset"
                                 >
@@ -1118,7 +1118,7 @@ export default function Scan() {
                                 </Button>
                               ) : (
                                 <Button 
-                                  className="w-full" 
+                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" 
                                   onClick={() => setLocation('/pricing')}
                                   data-testid="button-sign-up"
                                 >
@@ -1245,7 +1245,7 @@ export default function Scan() {
                               Scan Another
                             </Button>
                             <Button 
-                              className="flex-1"
+                              className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
                               onClick={() => {
                                 if (claimSuccess?.asset?.id) {
                                   setLocation(`/tools/assets?id=${claimSuccess.asset.id}`);
@@ -1275,11 +1275,13 @@ export default function Scan() {
             )}
 
             {!scannedCode && (
-              <Card>
+              <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
                 <CardContent className="pt-6">
                   <div className="text-center py-8">
-                    <QrCode className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Ready to Scan</h3>
+                    <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">
+                      <QrCode className="h-12 w-12 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 tracking-tight">Ready to Scan</h3>
                     <p className="text-muted-foreground">
                       Scan a QR code using the camera or enter a code manually to get started.
                     </p>
@@ -1410,7 +1412,7 @@ export default function Scan() {
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1"
+                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
                   disabled={serviceEventMutation.isPending}
                   data-testid="button-submit-service-event"
                 >
