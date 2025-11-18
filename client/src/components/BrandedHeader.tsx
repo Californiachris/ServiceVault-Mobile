@@ -88,11 +88,15 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
             <Icon className={`h-8 w-8 ${config.iconColor}`} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight" data-testid="text-company-name">
+            <h2 
+              className="text-2xl md:text-4xl font-extrabold tracking-tight leading-none"
+              style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}
+              data-testid="text-company-name"
+            >
               {displayName}
             </h2>
             {subtitle && (
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-sm md:text-base text-muted-foreground mt-1 font-medium">
                 {subtitle}
               </p>
             )}
@@ -124,7 +128,8 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
         {/* Company Name & Subtitle */}
         <div className="flex-1 min-w-0">
           <h1 
-            className="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 mb-1"
+            className="text-3xl md:text-5xl font-extrabold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-50 to-cyan-100 dark:from-white dark:via-cyan-50 dark:to-cyan-100 mb-2"
+            style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}
             data-testid="text-company-name"
           >
             {displayName}
