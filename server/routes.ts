@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, desc, count, and, lte, asc, isNull, inArray, sql } from "drizzle-orm";
+import { eq, desc, count, and, lte, asc, isNull, inArray, sql, or } from "drizzle-orm";
 import { users, subscriptions, assets, documents, inspections, events, reminders, jobs, fleetIndustries, fleetAssetCategories, fleetOperators, properties, identifiers, contractors, transfers, serviceSessions, notificationLogs, stickerOrders, fleetOperatorAssets, managedProperties, workers, propertyTasks, propertyVisits, tenantReports, propertyTaskCompletions, logoPayments } from "@shared/schema";
 import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
 import { attachEntitlements, requireEntitlement } from './entitlements/middleware';
@@ -5212,20 +5212,24 @@ Instructions:
       .from(assets)
       .where(
         workerIds.length > 0 
-          ? or(eq(assets.installerId, userId), sql`${assets.installerId} IN ${workerIds}`)
+          ? or(eq(assets.installerId, userId), inArray(assets.installerId, workerIds))
           : eq(assets.installerId, userId)
       )
       .orderBy(desc(assets.installedAt));
       
       // Enrich with property names
       const propertyIds = [...new Set(contractorAssets.map(a => a.propertyId))];
-      const propertiesData = await db.select({
-        id: properties.id,
-        name: properties.name,
-        address: properties.address,
-      })
-      .from(properties)
-      .where(sql`${properties.id} IN ${propertyIds}`);
+      
+      let propertiesData: any[] = [];
+      if (propertyIds.length > 0) {
+        propertiesData = await db.select({
+          id: properties.id,
+          name: properties.name,
+          address: properties.address,
+        })
+        .from(properties)
+        .where(inArray(properties.id, propertyIds));
+      }
       
       const propertyMap = new Map(propertiesData.map(p => [p.id, p]));
       
