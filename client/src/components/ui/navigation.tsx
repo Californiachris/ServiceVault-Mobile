@@ -49,7 +49,7 @@ export default function Navigation() {
     if (userRole === "CONTRACTOR") {
       return [
         ...baseLinks,
-        { href: "/tools/assets", label: "My Jobs", icon: Building2 },
+        { href: "/tools/assets", label: "Assets", icon: Building2 },
         { href: "/tools/reminders", label: "Reminders", icon: Bell },
         { href: "/pricing", label: "Quota & Billing", icon: Zap },
       ];

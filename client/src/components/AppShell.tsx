@@ -62,7 +62,7 @@ export default function AppShell({ children }: AppShellProps) {
     if (role === "CONTRACTOR") {
       return [
         ...baseLinks,
-        { href: "/tools/assets", label: "Jobs", icon: Building2 },
+        { href: "/tools/assets", label: "Assets", icon: Building2 },
         { href: "/tools/reminders", label: "Reminders", icon: Bell },
         { href: "/pricing", label: "Quota & Billing", icon: Zap },
         { href: "/settings", label: "Settings", icon: Settings },
