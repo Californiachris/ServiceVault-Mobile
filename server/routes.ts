@@ -5398,9 +5398,40 @@ Instructions:
         return res.status(404).json({ error: "Contractor profile not found" });
       }
       
+      // Generate username from name (e.g., "Johnny King" -> "johnny.king")
+      const nameParts = name.trim().toLowerCase().split(/\s+/);
+      let baseUsername = nameParts.join('.');
+      
+      // Ensure unique username by appending number if needed
+      let username = baseUsername;
+      let counter = 1;
+      while (true) {
+        const existingUser = await db.select().from(users).where(eq(users.id, username)).limit(1);
+        if (existingUser.length === 0) break;
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+      
+      // Generate secure random password
+      const { nanoid } = await import('nanoid');
+      const password = `SV${nanoid(8)}!`;
+      
+      // Hash password
+      const bcrypt = await import('bcrypt');
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      // Create user account
+      const [newUser] = await db.insert(users).values({
+        id: username,
+        email: email || `${username}@worker.local`,
+        role: 'WORKER',
+        passwordHash,
+      }).returning();
+      
       const { contractorWorkers } = await import('@shared/schema');
       const [worker] = await db.insert(contractorWorkers).values({
         contractorId: contractor.id,
+        userId: username,
         name,
         phone,
         email,
@@ -5408,7 +5439,14 @@ Instructions:
         status: 'ACTIVE',
       }).returning();
       
-      res.json({ worker });
+      res.json({ 
+        worker,
+        credentials: {
+          username,
+          password,
+          loginUrl: `${req.protocol}://${req.get('host')}/login`
+        }
+      });
     } catch (error) {
       console.error("Error creating worker:", error);
       res.status(500).json({ error: "Failed to create worker" });

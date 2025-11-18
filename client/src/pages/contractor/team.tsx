@@ -27,6 +27,8 @@ import {
   Package,
   Calendar as CalendarIcon,
   Download,
+  Copy,
+  Check,
 } from "lucide-react";
 
 const addWorkerSchema = z.object({
@@ -47,9 +49,17 @@ const assignTaskSchema = z.object({
 type AddWorkerData = z.infer<typeof addWorkerSchema>;
 type AssignTaskData = z.infer<typeof assignTaskSchema>;
 
+interface WorkerCredentials {
+  username: string;
+  password: string;
+  loginUrl: string;
+}
+
 export default function ContractorTeam() {
   const [showAddWorker, setShowAddWorker] = useState(false);
   const [showAssignTask, setShowAssignTask] = useState(false);
+  const [workerCredentials, setWorkerCredentials] = useState<WorkerCredentials | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Real-time updates
@@ -99,16 +109,28 @@ export default function ContractorTeam() {
 
   const addWorkerMutation = useMutation({
     mutationFn: (data: AddWorkerData) => apiRequest("/api/contractor/workers", "POST", data),
-    onSuccess: () => {
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractor/workers"] });
       toast({ title: "Worker added successfully" });
       setShowAddWorker(false);
       addWorkerForm.reset();
+      
+      // Show credentials modal
+      if (response.credentials) {
+        setWorkerCredentials(response.credentials);
+      }
     },
     onError: () => {
       toast({ title: "Failed to add worker", variant: "destructive" });
     },
   });
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    toast({ title: "Copied to clipboard" });
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const assignTaskMutation = useMutation({
     mutationFn: (data: AssignTaskData) => apiRequest("/api/contractor/tasks", "POST", data),
@@ -198,16 +220,16 @@ export default function ContractorTeam() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Role</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-worker-role">
-                              <SelectValue />
+                              <SelectValue placeholder="Select role" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="INSTALLER">Installer</SelectItem>
-                            <SelectItem value="FOREMAN">Foreman</SelectItem>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
+                          <SelectContent position="popper">
+                            <SelectItem value="INSTALLER" data-testid="option-installer">Installer</SelectItem>
+                            <SelectItem value="FOREMAN" data-testid="option-foreman">Foreman</SelectItem>
+                            <SelectItem value="ADMIN" data-testid="option-admin">Admin</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -409,6 +431,93 @@ export default function ContractorTeam() {
           ))
         )}
       </div>
+
+      {/* Worker Credentials Modal */}
+      <Dialog open={!!workerCredentials} onOpenChange={() => setWorkerCredentials(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Worker Account Created!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Share these login credentials with your worker. They can use these to access their portal.
+            </p>
+            
+            {workerCredentials && (
+              <div className="space-y-3">
+                <div className="rounded-lg border p-4 bg-muted/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Username</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(workerCredentials.username, 'username')}
+                      data-testid="button-copy-username"
+                    >
+                      {copiedField === 'username' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-lg font-mono font-semibold" data-testid="text-username">
+                    {workerCredentials.username}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-muted/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Password</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(workerCredentials.password, 'password')}
+                      data-testid="button-copy-password"
+                    >
+                      {copiedField === 'password' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-lg font-mono font-semibold" data-testid="text-password">
+                    {workerCredentials.password}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-primary/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Login URL</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(workerCredentials.loginUrl, 'url')}
+                      data-testid="button-copy-url"
+                    >
+                      {copiedField === 'url' ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm font-mono break-all" data-testid="text-login-url">
+                    {workerCredentials.loginUrl}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button onClick={() => setWorkerCredentials(null)} data-testid="button-close-credentials">
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
