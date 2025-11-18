@@ -5179,6 +5179,69 @@ Instructions:
   // CONTRACTOR MANAGEMENT ROUTES
   // ============================================
   
+  // Get all assets installed by contractor and their workers
+  app.get('/api/contractor/assets', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get contractor record
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      // Get all worker IDs for this contractor
+      const { contractorWorkers } = await import('@shared/schema');
+      const workers = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.contractorId, contractor.id));
+      const workerIds = workers.map(w => w.id);
+      
+      // Get all assets installed by contractor or their workers
+      const contractorAssets = await db.select({
+        id: assets.id,
+        name: assets.name,
+        category: assets.category,
+        brand: assets.brand,
+        model: assets.model,
+        serialNumber: assets.serialNumber,
+        status: assets.status,
+        installedAt: assets.installedAt,
+        installerId: assets.installerId,
+        propertyId: assets.propertyId,
+      })
+      .from(assets)
+      .where(
+        workerIds.length > 0 
+          ? or(eq(assets.installerId, userId), sql`${assets.installerId} IN ${workerIds}`)
+          : eq(assets.installerId, userId)
+      )
+      .orderBy(desc(assets.installedAt));
+      
+      // Enrich with property names
+      const propertyIds = [...new Set(contractorAssets.map(a => a.propertyId))];
+      const propertiesData = await db.select({
+        id: properties.id,
+        name: properties.name,
+        address: properties.address,
+      })
+      .from(properties)
+      .where(sql`${properties.id} IN ${propertyIds}`);
+      
+      const propertyMap = new Map(propertiesData.map(p => [p.id, p]));
+      
+      const enrichedAssets = contractorAssets.map(asset => ({
+        ...asset,
+        propertyName: propertyMap.get(asset.propertyId)?.name || null,
+        propertyAddress: propertyMap.get(asset.propertyId)?.address || null,
+      }));
+      
+      res.json({ assets: enrichedAssets });
+    } catch (error) {
+      console.error("Error fetching contractor assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+  
   // Get contractor workers
   app.get('/api/contractor/workers', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {

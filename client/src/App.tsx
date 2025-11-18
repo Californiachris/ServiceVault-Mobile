@@ -39,6 +39,8 @@ import ContractorWelcome from "@/pages/contractor/ContractorWelcome";
 import ContractorPlanSelection from "@/pages/contractor/ContractorPlanSelection";
 import WorkerCheckIn from "@/pages/contractor/WorkerCheckIn";
 import ContractorDashboard from "@/pages/contractor/ContractorDashboard";
+import ContractorAssets from "@/pages/contractor/assets";
+import ContractorTeam from "@/pages/contractor/team";
 import HomeownerWelcome from "@/pages/HomeownerWelcome";
 import FleetWelcome from "@/pages/FleetWelcome";
 import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
@@ -80,11 +82,17 @@ function Router() {
 
   // Public routes without AppShell (landing, pricing, welcome pages, asset/property views, tenant reports)
   const publicRoutes = ["/", "/pricing"];
+  const publicContractorRoutes = [
+    "/contractor/welcome",
+    "/contractor/plans",
+    "/contractor/worker-checkin",
+    "/contractor/dashboard"
+  ];
   const isPublicRoute = publicRoutes.includes(location) || 
+                        publicContractorRoutes.some(route => location === route || location.startsWith(route + "/")) ||
                         location.startsWith("/asset/") || 
                         location.startsWith("/property/public/") ||
                         location.startsWith("/property/report/") ||
-                        location.startsWith("/contractor/") ||
                         location.startsWith("/solutions/");
 
   if (isPublicRoute) {
@@ -136,6 +144,8 @@ function Router() {
         <Switch>
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/scan" component={Scan} />
+          <Route path="/contractor/assets" component={ContractorAssets} />
+          <Route path="/contractor/team" component={ContractorTeam} />
           <Route path="/settings" component={Settings} />
           <Route path="/settings/branding" component={FamilyBrandingSettings} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />
