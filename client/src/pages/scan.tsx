@@ -481,12 +481,12 @@ export default function Scan() {
   ];
 
   return (
-    <div className="bg-background pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-bold mb-3 tracking-tight">QR Code Scanner</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl font-bold mb-4 tracking-tight text-white">QR Code Scanner</h1>
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
             Scan QR codes to access asset information, claim unclaimed assets, or view complete property histories.
           </p>
         </div>
@@ -494,20 +494,22 @@ export default function Scan() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Scanner Section */}
           <div>
-            <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+            <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl backdrop-blur-xl rounded-3xl overflow-hidden transform transition-all duration-300 hover:shadow-cyan-500/20 hover:shadow-2xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <QrCode className="h-6 w-6" />
+                <CardTitle className="flex items-center gap-3 text-2xl text-white">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
+                    <QrCode className="h-6 w-6 text-white" />
+                  </div>
                   Camera Scanner
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {!isScanning ? (
-                  <div className="text-center space-y-6">
-                    <div className="w-full aspect-square bg-muted/20 border-2 border-dashed border-border rounded-lg flex items-center justify-center">
+                  <div className="text-center space-y-8">
+                    <div className="w-full aspect-square bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-2xl flex items-center justify-center">
                       <div className="text-center">
-                        <Camera className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground mb-4">
+                        <Camera className="h-20 w-20 text-slate-400 mx-auto mb-4" />
+                        <p className="text-slate-300 mb-4 text-lg">
                           Choose an action below to scan
                         </p>
                       </div>
@@ -515,17 +517,17 @@ export default function Scan() {
                     
                     {/* Premium Action Buttons */}
                     {user?.role === 'CONTRACTOR' && (
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-5">
                         <Button 
                           onClick={() => {
                             setScanMode('asset');
                             setIsScanning(true);
                           }}
                           size="lg"
-                          className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-semibold h-14"
+                          className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-16 text-lg rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
                           data-testid="button-log-asset"
                         >
-                          <Plus className="mr-2 h-5 w-5" />
+                          <Plus className="mr-3 h-6 w-6" />
                           Log New Asset
                         </Button>
                         <Button 
@@ -535,10 +537,10 @@ export default function Scan() {
                           }}
                           size="lg"
                           variant="outline"
-                          className="border-2 border-gradient bg-transparent hover:bg-primary/5 font-semibold h-14"
+                          className="border-2 border-slate-600 bg-slate-800/50 hover:bg-slate-700/50 text-white font-bold h-16 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] transform hover:border-cyan-500/50"
                           data-testid="button-check-in-out"
                         >
-                          <QrCode className="mr-2 h-5 w-5" />
+                          <QrCode className="mr-3 h-6 w-6" />
                           Check In / Check Out
                         </Button>
                       </div>

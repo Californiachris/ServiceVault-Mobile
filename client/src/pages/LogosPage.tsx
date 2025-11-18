@@ -90,35 +90,36 @@ export default function LogosPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl pb-24">
-      {/* Header */}
-      <div className="mb-10">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-4 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
-              <ImageIcon className="h-10 w-10 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
+      <div className="container mx-auto p-6 max-w-6xl">
+        {/* Header */}
+        <div className="mb-12">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="mb-6 text-slate-300 hover:text-white hover:bg-slate-800" data-testid="button-back">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-2xl shadow-cyan-500/30">
+                <ImageIcon className="h-12 w-12 text-white" />
+              </div>
+              <div>
+                <h1 className="text-6xl font-bold mb-2 tracking-tight text-white">Logo Management</h1>
+                <p className="text-xl text-slate-300">
+                  Manage all your custom branding assets
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-5xl font-bold mb-2 tracking-tight">Logo Management</h1>
-              <p className="text-lg text-muted-foreground">
-                Manage all your custom branding assets
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-upload-new">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Logo
-                </Button>
-              </DialogTrigger>
+            <div className="flex gap-3">
+              <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 px-6 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" data-testid="button-upload-new">
+                    <Upload className="h-5 w-5 mr-2" />
+                    Upload Logo
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Upload New Logo</DialogTitle>
@@ -132,9 +133,9 @@ export default function LogosPage() {
                 />
               </DialogContent>
             </Dialog>
-            <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" asChild data-testid="button-ai-generator">
+            <Button className="border-2 border-slate-600 bg-slate-800/50 hover:bg-slate-700/50 text-white font-bold h-12 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] transform hover:border-cyan-500/50" asChild data-testid="button-ai-generator">
               <Link href="/logos/ai-generator">
-                <Wand2 className="h-4 w-4 mr-2" />
+                <Wand2 className="h-5 w-5 mr-2" />
                 AI Generator
               </Link>
             </Button>
@@ -152,25 +153,25 @@ export default function LogosPage() {
 
       {/* Empty State */}
       {!isLoading && (!logos || logos.length === 0) && (
-        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
-          <CardContent className="text-center py-16">
-            <div className="flex justify-center mb-6">
-              <div className="p-6 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
-                <ImageIcon className="h-16 w-16 text-white" />
+        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl rounded-3xl backdrop-blur-xl">
+          <CardContent className="text-center py-20">
+            <div className="flex justify-center mb-8">
+              <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-2xl shadow-cyan-500/30">
+                <ImageIcon className="h-20 w-20 text-white" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold mb-3 tracking-tight">No Logos Yet</h3>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+            <h3 className="text-3xl font-bold mb-4 tracking-tight text-white">No Logos Yet</h3>
+            <p className="text-slate-300 text-xl mb-10 max-w-md mx-auto">
               Upload your existing logo or generate a new one with AI to get started with custom-branded QR stickers
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => setShowUploadDialog(true)} className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-upload-first">
-                <Upload className="h-4 w-4 mr-2" />
+            <div className="flex gap-4 justify-center">
+              <Button onClick={() => setShowUploadDialog(true)} className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-14 px-8 text-lg rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" data-testid="button-upload-first">
+                <Upload className="h-5 w-5 mr-2" />
                 Upload Logo
               </Button>
-              <Button variant="outline" className="border-2" asChild data-testid="button-generate-first">
+              <Button variant="outline" className="border-2 border-slate-600 bg-slate-800/50 hover:bg-slate-700/50 text-white font-bold h-14 px-8 text-lg rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] transform hover:border-cyan-500/50" asChild data-testid="button-generate-first">
                 <Link href="/logos/ai-generator">
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Sparkles className="h-5 w-5 mr-2" />
                   Generate with AI
                 </Link>
               </Button>
@@ -184,24 +185,24 @@ export default function LogosPage() {
         <div className="space-y-6">
           {Object.entries(groupedLogos).map(([source, sourceLogos]) => (
             <div key={source}>
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold tracking-tight">
+              <div className="mb-6">
+                <h2 className="text-3xl font-bold tracking-tight text-white">
                   {source === 'CONTRACTOR' ? 'Contractor' :
                    source === 'HOMEOWNER' ? 'Homeowner' :
                    source === 'FLEET' ? 'Fleet' :
                    source === 'PROPERTY_MANAGER' ? 'Property Manager' :
                    'Other'} Logos
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-slate-400">
                   {sourceLogos.length} logo{sourceLogos.length !== 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sourceLogos.map((logo) => (
                   <Card 
                     key={logo.id}
-                    className={`overflow-hidden transition-all duration-200 hover:shadow-xl hover:scale-[1.02] backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg ${
-                      logo.isActive ? 'border-2 border-primary ring-2 ring-primary/20' : ''
+                    className={`overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] bg-slate-900/80 border-slate-700/50 shadow-xl rounded-2xl transform ${
+                      logo.isActive ? 'border-2 border-cyan-500 ring-4 ring-cyan-500/30 shadow-cyan-500/30' : ''
                     }`}
                     data-testid={`card-logo-${logo.id}`}
                   >
@@ -283,6 +284,7 @@ export default function LogosPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
