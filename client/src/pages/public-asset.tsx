@@ -305,6 +305,23 @@ export default function PublicAsset() {
                       {event.data?.note && (
                         <p className="text-sm text-muted-foreground">{event.data.note}</p>
                       )}
+                      {event.data?.installerName && event.type === "INSTALL" && (
+                        <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/20">
+                          <p className="text-sm font-medium" data-testid={`text-installer-name-${index}`}>
+                            Installed by: {event.data.installerName}
+                          </p>
+                          {event.data.installerCompany && (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-installer-company-${index}`}>
+                              {event.data.installerCompany}
+                            </p>
+                          )}
+                          {event.data.installerPhone && (
+                            <p className="text-xs text-muted-foreground" data-testid={`text-installer-phone-${index}`}>
+                              📞 {event.data.installerPhone}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

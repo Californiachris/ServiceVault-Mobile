@@ -219,6 +219,23 @@ export default function AssetView() {
                               Install Date: {format(new Date(event.data.installDate), "MMMM d, yyyy")}
                             </p>
                           )}
+                          {event.data.installerName && event.type === "INSTALL" && (
+                            <div className="mt-2 p-2 bg-slate-700/50 rounded border border-slate-600">
+                              <p className="font-medium text-cyan-400" data-testid={`text-installer-name-${index}`}>
+                                Installed by: {event.data.installerName}
+                              </p>
+                              {event.data.installerCompany && (
+                                <p className="text-xs text-slate-400" data-testid={`text-installer-company-${index}`}>
+                                  {event.data.installerCompany}
+                                </p>
+                              )}
+                              {event.data.installerPhone && (
+                                <p className="text-xs text-slate-400" data-testid={`text-installer-phone-${index}`}>
+                                  📞 {event.data.installerPhone}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 

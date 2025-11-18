@@ -1203,14 +1203,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Prepare event data with installer info if user is a worker
+      const eventData: any = { 
+        note: asset?.notes || "Initial asset registration",
+        installDate: asset?.installedAt || new Date().toISOString(),
+      };
+
+      // If user is a worker, add installer name and contractor phone
+      if (user?.role === 'WORKER') {
+        try {
+          const { contractorWorkers } = await import('@shared/schema');
+          const [workerRecord] = await db.select()
+            .from(contractorWorkers)
+            .where(eq(contractorWorkers.userId, userId))
+            .limit(1);
+
+          if (workerRecord) {
+            const [contractor] = await db.select()
+              .from(contractors)
+              .where(eq(contractors.id, workerRecord.contractorId))
+              .limit(1);
+
+            eventData.installerName = workerRecord.name;
+            if (contractor) {
+              eventData.installerCompany = contractor.companyName;
+              eventData.installerPhone = contractor.phone;
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching worker info:", err);
+          // Continue without installer info if there's an error
+        }
+      }
+
       // Create installation event with photos
       await storage.createEvent({
         assetId: assetRecord.id,
         type: "INSTALL",
-        data: { 
-          note: asset?.notes || "Initial asset registration",
-          installDate: asset?.installedAt || new Date().toISOString(),
-        },
+        data: eventData,
         photoUrls: photos && photos.length > 0 ? photos : null,
         createdBy: userId,
       });
