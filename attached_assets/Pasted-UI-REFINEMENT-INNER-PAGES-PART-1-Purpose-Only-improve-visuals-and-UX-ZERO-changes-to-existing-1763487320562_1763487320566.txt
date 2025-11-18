@@ -1,0 +1,87 @@
+UI REFINEMENT – INNER PAGES (PART 1)
+Purpose: Only improve visuals and UX – ZERO changes to existing logic.
+
+=========================================================
+PAGE 1 — SCAN QR PAGE (opened from big Scan card or bottom Scan button)
+=========================================================
+Layout:
+• Full-screen premium scan interface (camera preview centered)
+• Subtle frosted blur overlay around edges (premium feel)
+• Header text centered: “Scan QR”
+• Description under header: “Select your action.”
+
+Two large pill-style radio buttons ABOVE the scanner camera:
+1) “Install New Asset”
+2) “Clock In / Clock Out”
+
+• User selects one BEFORE scanning.
+• When one is selected, button highlights (soft glow + checkmark).
+
+After scanning:
+• If “Install New Asset” was chosen → go to existing asset entry workflow (nothing changes except visuals).
+• If “Clock In / Clock Out” was chosen → go to existing check-in/out workflow (nothing changes except visuals).
+
+Button hierarchy:
+• Keep “Cancel / Back to Dashboard” at bottom of screen (small, non-dominant).
+• All functional logic MUST remain exactly as it is now.
+
+Main goal:
+Make the Scan page look expensive and instantly understandable without changing functionality.
+
+=========================================================
+PAGE 2 — ASSETS INSTALLED PAGE
+=========================================================
+Layout:
+• Page title: “All Installed Assets”
+• Sub-title: “Search everything you’ve tagged.”
+
+Search + filters:
+• Search bar at top (sticky, no scrolling needed)
+• Three radio buttons directly under search:
+  ▪ All Assets
+  ▪ Installed by Me
+  ▪ Installed by Team
+
+Below the filters:
+• Asset list loads as premium radio cards
+Each card displays:
+  • Asset type (Water Heater, HVAC, Panel, etc.)
+  • Install date
+  • Address
+  • Installer name (only if team)
+  • Status: “Active / Warranty Expiring / Maintenance Due”
+
+Card tap opens the full existing Asset Details page.
+No change to fields, AI triggers, or logic.
+
+Asset Details page (visual polish only):
+• Keep all current data, but format cleanly in a vertical stack
+• Each row = label bold left, value right (Apple/Stripe style)
+• At bottom keep:
+  ▪ Call Owner button
+  ▪ Email Owner button
+  ▪ “Download PDF” button
+
+Nothing on the Assets page or Asset Details page should change how data is saved or retrieved — purely UX/UI improvements.
+
+=========================================================
+PERFORMANCE NOTE
+=========================================================
+• Pages must load instantly
+• No full-screen page transitions that slow performance
+• All animations <200ms for premium responsiveness
+
+=========================================================
+DO NOT CHANGE
+=========================================================
+• All backend logic
+• All AI predictive reminder logic
+• All bottom navigation
+• All asset saving flows
+• All worker tracking flows
+This is ONLY visual polish and UX organization.
+
+=========================================================
+After Scan + Assets pages are complete, tell me “PART 2”
+and I will deliver the Reminders + Team & Assignments UI spec.
+=========================================================

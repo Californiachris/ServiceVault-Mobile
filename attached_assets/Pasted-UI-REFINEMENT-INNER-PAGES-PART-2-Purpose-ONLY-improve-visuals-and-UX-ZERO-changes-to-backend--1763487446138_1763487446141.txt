@@ -1,0 +1,127 @@
+UI REFINEMENT – INNER PAGES (PART 2)
+Purpose: ONLY improve visuals and UX — ZERO changes to backend or working flows.
+
+=========================================================
+PAGE 3 — REMINDERS PAGE
+=========================================================
+Layout:
+• Page title: “Maintenance & Warranty Reminders”
+• Sub-title: “All automated reminders generated from installed assets.”
+
+Filters at top:
+• 3 radio buttons (horizontal layout)
+  ▪ All
+  ▪ Maintenance Due
+  ▪ Warranty Expiring
+
+Below filters:
+• List items styled as premium radio cards — each card shows:
+  • Asset name / type
+  • Address
+  • Due type (Maintenance or Warranty)
+  • Due date
+  • “Priority” tag if overdue
+
+Reminder card tap opens existing Asset Details page.
+(No changes to fields or AI logic — visual upgrade only.)
+
+From the reminder card footer:
+• Buttons:
+  ▪ “Contact Owner”
+  ▪ “View Asset”
+• **This does NOT change logic — it just gives faster access.**
+
+=========================================================
+PAGE 4 — TEAM & ASSIGNMENTS (for Contractor accounts only)
+=========================================================
+When user clicks “Team” button on dashboard:
+
+Layout:
+• Page title: “Team”
+• Sub-title: “Manage workers & performance.”
+
+Below title:
+• Large card button: “Add New Worker” (opens existing worker-add flow unchanged)
+
+Then list of workers (radio cards)
+Each worker card shows:
+  • Worker name
+  • Role (Installer / Tech / Helper etc.)
+  • Hours worked this week
+  • Total jobs completed
+
+Tapping a worker opens WORKER PROFILE page.
+
+---------------------------------------------------------
+WORKER PROFILE PAGE (visual polish only)
+---------------------------------------------------------
+Keep all existing logic — just organize visually:
+
+• Top section: Worker name + role
+• Three radio buttons:
+  1) Hours & Timesheets
+  2) Jobs Completed
+  3) Assigned Tasks
+
+-------------------------
+1) Hours & Timesheets
+-------------------------
+• Show clock-in/out events chronologically
+• Weekly total displayed at top
+• “Download Timesheet PDF” button at bottom
+
+-------------------------
+2) Jobs Completed
+-------------------------
+• List each completed asset install as radio cards
+• Tap opens the asset details page (existing page — no logic change)
+
+-------------------------
+3) Assigned Tasks
+-------------------------
+• List of all assigned tasks
+• Each task shows:
+  ▪ Status (Pending / In Progress / Completed)
+  ▪ Timestamp
+• **No changes to task or scanning logic — just UX polish**
+
+---------------------------------------------------------
+SCHEDULE ASSIGNMENTS (from Team page)
+---------------------------------------------------------
+Button label on Team page:
+• “Schedule Assignments”
+
+Schedule Assignments page layout:
+• Page title: “Assign Work”
+• Sub-title: “Send tomorrow’s task list instantly.”
+
+Two button workflow:
+1) Select Worker → opens worker picker (radio button list of all workers)
+2) Select Tasks → opens existing task entry / checklist system (NO changes to backend)
+
+When saved:
+• Confirmation modal:
+  ▪ “Tasks Assigned Successfully”
+  ▪ Buttons: “Close” and “Assign Another Worker”
+
+**Workers receive tasks upon next clock-in exactly as they do now.  
+No workflow changes — visual clarity upgrade only.**
+
+=========================================================
+IMPORTANT — DO NOT CHANGE
+=========================================================
+• Keep bottom navigation exactly as it is now  
+• Keep scan logic 100% untouched  
+• Keep AI reminders 100% untouched  
+• Keep login / logo pipeline 100% untouched  
+• Keep worker dashboard logic 100% untouched  
+
+The ONLY objective here is:
+• Cleaner layout
+• Faster usability
+• Ultra-premium Fortune-500 UI polish
+
+=========================================================
+After Reminders + Team pages are done,
+we will move to part 3: Worker dashboard UX (very small upgrade).
+=========================================================

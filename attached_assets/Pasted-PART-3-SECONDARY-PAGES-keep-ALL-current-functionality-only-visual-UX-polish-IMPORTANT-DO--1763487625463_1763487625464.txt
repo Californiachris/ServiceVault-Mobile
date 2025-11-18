@@ -1,0 +1,141 @@
+PART 3 — SECONDARY PAGES (keep ALL current functionality, only visual + UX polish)
+
+IMPORTANT:
+• DO NOT alter any working backend logic
+• DO NOT change header or bottom nav
+• Only polish the UI and layout so every page looks Fortune-500 SaaS level
+• Every page must feel like the same premium design system
+
+─────────────────────────────────────────
+A) “Scan QR” secondary screen
+─────────────────────────────────────────
+When user taps the big “Scan QR” card on dashboard OR bottom scan tab:
+→ open ONE premium screen (no immediate scanner)
+→ two large radio-style buttons:
+
+1) “Scan New Asset”
+2) “Check-In / Check-Out”
+
+Below them, smaller text:  
+“When scanning, camera opens instantly. After scan, follow auto-guided prompts.”
+
+Do NOT add extra text. Keep it clean.
+
+After selecting a mode:
+
+● If “Scan New Asset”
+    → open scanner immediately
+    → after scan, auto-load the “Asset Entry” screen with fields required
+    → on top of page: “New Asset Install”
+    → required fields: Model / Serial / Install Date / Warranty Expiration (optional if user doesn’t know)
+    → photo upload button (for optional warranty photo)
+    → Installer = auto-populated from logged-in account
+    → Save button
+    → After Save → 2-button modal:
+           [Scan Another Asset]     [Return to Dashboard]
+
+● If “Check-In / Check-Out”
+    → open scanner immediately
+    → after scan:
+           If user is not clocked in → “Clock-In Confirmed – Time + Location”
+           If user is clocked in → ask:
+                 [Start Break] / [End Break] / [Clock-Out for Shift]
+    → after Clock-Out → shift hours summary screen with:
+           Start time, breaks, end time, total hours (auto-calculated)
+           [Return to Dashboard]
+
+─────────────────────────────────────────
+B) “Assets Installed” secondary screen
+─────────────────────────────────────────
+When user taps “Assets Installed”:
+→ open a premium list view — NOT a clutter table
+→ always include a search bar at the top
+
+Radio-button filters (3 buttons):
+1) All Assets Installed
+2) My Installs
+3) By Team Member
+
+Each opens a clean list of assets with:
+• Asset Type (HVAC / Water Heater / Electrical / etc)
+• Address or Location Label
+• Install Date
+• Installer Name
+
+When tapping any asset:
+→ open Asset Detail Page (see section D below)
+
+─────────────────────────────────────────
+C) “Reminders” secondary screen
+─────────────────────────────────────────
+Top of page: search + 3 filters
+• Upcoming • Past Due • Completed
+
+Each reminder card shows:
+• Asset type + location
+• Reminder category (Maintenance / Warranty Expiration / Recall)
+• Due Date
+• Quick Actions:
+      [Call Customer]  [Email Customer]  [View Asset]
+
+When opening “View Asset” → goes to Asset Detail Page.
+
+─────────────────────────────────────────
+D) “Team” secondary screen
+─────────────────────────────────────────
+When user taps “Team”:
+→ top right: +Add Worker button
+→ list of radio-style cards with each worker’s name
+
+When user taps a worker:
+→ open Worker Profile Page with buttons:
+
+1) Hours Worked
+2) Assets Installed
+3) Completed Tasks
+4) Assigned Tasks
+
+Each button opens its own clean, filtered list. No clutter.
+
+─────────────────────────────────────────
+E) “Schedule Assignments” secondary screen
+─────────────────────────────────────────
+User taps “Schedule Assignments”:
+→ screen with 1 large button:
+
+[Assign Task To Worker]
+
+When tapped:
+→ list of workers appears (radio buttons)
+→ after selecting worker → assignment form with:
+    • Job Address
+    • Task List (multi-line)
+    • Due Date
+    • Technician Notes
+→ Save button
+
+Saved tasks appear on worker dashboard when they clock in.
+
+─────────────────────────────────────────
+F) “Asset Detail Page” (universal layout)
+─────────────────────────────────────────
+Every asset page should display the SAME UX structure:
+
+Top:
+● Asset Type + Asset Photo (if uploaded)
+● Installed by (Installer Name)
+● Install Date
+
+Middle:
+● Model / Serial
+● Warranty Expiration
+● Last Service (AUTO displayed if past reminders were marked completed)
+● Next Maintenance Due (AUTO from predictive engine)
+
+Bottom:
+● Customer Name / Address
+● [Call Customer] [Email Customer]
+
+Footer:
+● [Download Full Asset Report PDF]
+● [Return to Assets]

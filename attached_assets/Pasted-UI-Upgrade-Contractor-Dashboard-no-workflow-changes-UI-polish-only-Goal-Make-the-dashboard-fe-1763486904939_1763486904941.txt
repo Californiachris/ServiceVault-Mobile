@@ -1,0 +1,58 @@
+UI Upgrade – Contractor Dashboard (no workflow changes, UI polish only)
+
+Goal:
+Make the dashboard feel ultra-premium (Fortune-500 SaaS look) while keeping the existing layout, navigation, and logic 100% intact.
+
+What stays exactly the same:
+• Header layout (ServiceVault logo left + name)
+• Bottom navigation (Dashboard / Scan QR / Assets / Reminders)
+• Actions and workflow remain identical
+This is ONLY a visual refinement.
+
+🔹 Change #1 — Make “Scan QR” dominant
+• Increase the size of the Scan QR card so it is the most visually important element on the dashboard.
+• Recommended: ~30–40% taller than the other cards.
+• Purpose: It should be unmissable as the primary action contractors use throughout the day.
+
+🔹 Change #2 — Visual polish for all dashboard cards
+Apply these styling upgrades to ALL dashboard cards (including Scan QR, Assets Installed, Reminders, Team & Assignments):
+• Softer frosted-glass / blur background feel (premium / Apple-style)
+• Slight depth shadow to feel tactile
+• Subtle hover/press animation (scale 102% or brightness) for premium touch feedback
+• Rounded corners stay the same
+• Icons should glow slightly on card focus/press
+
+🔹 Change #3 — Updated micro-text descriptions
+Replace the small sub-text under each card with cleaner, high-clarity copy:
+
+Scan QR:
+“Install assets or clock in with one tap.”
+
+Assets Installed:
+“Search and export every asset you’ve ever tagged.”
+
+Reminders:
+“Maintenance, warranty and follow-up jobs in one place.”
+
+Team & Assignments:
+“Add workers, review hours and assign tomorrow’s jobs.”
+
+🔹 Change #4 — Reminder system clarity
+Make sure the Reminders card ONLY shows reminders generated from:
+• Real installed assets
+• AI predictive maintenance dates
+• Warranty expirations
+(No generic reminders — only based on actual asset data.)
+
+🔹 Change #5 — Keep performance fast
+Cards must load instantly and not trigger scrolling on most phones.
+The dashboard should open fast, read fast, and act fast — zero friction.
+
+Summary:
+• Scan QR = biggest card
+• Other cards uniform + premium UI polish
+• All function stays the same
+• No changes to header or bottom nav
+• Goal: ultra-premium, modern, billion-dollar-SaaS feel
+
+After this UI pass is done, I will provide the next set of refinements for inner pages.
