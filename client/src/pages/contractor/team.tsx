@@ -148,8 +148,8 @@ export default function ContractorTeam() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -159,12 +159,12 @@ export default function ContractorTeam() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-1" data-testid="heading-team">Team</h1>
-            <p className="text-muted-foreground">See who's on your crew, hours, and installs.</p>
+            <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-team">Team</h1>
+            <p className="text-lg text-muted-foreground">See who's on your crew, hours, and installs.</p>
           </div>
           <Dialog open={showAddWorker} onOpenChange={setShowAddWorker}>
             <DialogTrigger asChild>
-              <Button data-testid="button-add-worker">
+              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-add-worker">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Team Member
               </Button>
@@ -251,16 +251,18 @@ export default function ContractorTeam() {
         </div>
       </div>
 
-      {/* Schedule Assignments Button */}
+      {/* Schedule Assignments Button - Premium Design */}
       <div className="mb-6">
         <Dialog open={showAssignTask} onOpenChange={setShowAssignTask}>
           <DialogTrigger asChild>
-            <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 transition-colors cursor-pointer" data-testid="card-schedule-assignments">
+            <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 backdrop-blur-lg bg-gradient-to-br from-teal-500/5 to-cyan-600/5 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer" data-testid="card-schedule-assignments">
               <CardContent className="p-8">
                 <div className="text-center">
-                  <CalendarIcon className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold mb-2">Assign Job to Team Member</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">
+                    <CalendarIcon className="h-10 w-10 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2 tracking-tight">Assign Job to Team Member</h2>
+                  <p className="text-base text-muted-foreground">
                     Schedule tomorrow's tasks and job assignments
                   </p>
                 </div>
@@ -375,18 +377,18 @@ export default function ContractorTeam() {
 
       {/* Workers List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Team Members</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Team Members</h2>
         {isLoading ? (
           <>
             <Skeleton className="h-24 w-full" />
             <Skeleton className="h-24 w-full" />
           </>
         ) : workers.length === 0 ? (
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
             <CardContent className="py-12 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">No team members yet</p>
-              <Button onClick={() => setShowAddWorker(true)} data-testid="button-add-first-worker">
+              <Button onClick={() => setShowAddWorker(true)} data-testid="button-add-first-worker" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Team Member
               </Button>
@@ -395,14 +397,14 @@ export default function ContractorTeam() {
         ) : (
           workers.map((worker: any) => (
             <Link key={worker.id} href={`/contractor/workers/${worker.id}`}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer" data-testid={`worker-card-${worker.id}`}>
+              <Card className="hover:border-primary/50 transition-all duration-200 cursor-pointer backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl hover:scale-[1.01] group" data-testid={`worker-card-${worker.id}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{worker.name}</h3>
-                        <Badge variant="outline">{worker.role}</Badge>
-                        <Badge variant={worker.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                        <h3 className="font-bold text-xl tracking-tight">{worker.name}</h3>
+                        <Badge variant="outline" className="backdrop-blur-sm">{worker.role}</Badge>
+                        <Badge variant={worker.status === 'ACTIVE' ? 'default' : 'secondary'} className="backdrop-blur-sm">
                           {worker.status}
                         </Badge>
                       </div>
@@ -421,7 +423,7 @@ export default function ContractorTeam() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" data-testid={`button-view-worker-${worker.id}`}>
+                    <Button variant="outline" size="sm" data-testid={`button-view-worker-${worker.id}`} className="group-hover:bg-gradient-to-r group-hover:from-teal-500 group-hover:to-cyan-600 group-hover:text-white group-hover:border-transparent transition-all">
                       View Profile
                     </Button>
                   </div>

@@ -32,17 +32,17 @@ export default function ContractorDashboard() {
 
       {/* Main Action Cards */}
       <div className="space-y-4 mt-8">
-        {/* Primary: Scan QR */}
+        {/* Primary: Scan QR - TALL with Premium Styling */}
         <Link href="/scan">
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/30 hover:border-cyan-500/50 transition-all cursor-pointer" data-testid="card-scan-qr">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-cyan-500/20 rounded-full">
-                  <Camera className="h-8 w-8 text-cyan-500" />
+          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/30 hover:border-cyan-500/50 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer" data-testid="card-scan-qr">
+            <CardContent className="p-12">
+              <div className="flex items-center gap-6">
+                <div className="p-6 bg-cyan-500/20 rounded-full shadow-lg group-hover:shadow-cyan-500/50 transition-all">
+                  <Camera className="h-12 w-12 text-cyan-500 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] transition-all" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold mb-1">Scan QR</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <h2 className="text-3xl font-bold mb-2 tracking-tight">Scan QR</h2>
+                  <p className="text-base text-muted-foreground">
                     Install assets or clock in with one tap.
                   </p>
                 </div>
@@ -53,11 +53,11 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Assets Installed */}
         <Link href="/contractor/assets">
-          <Card className="border-border hover:border-primary/50 transition-all cursor-pointer" data-testid="card-assets-installed">
+          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-assets-installed">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <Package className="h-6 w-6 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
+                  <Package className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-1">Assets Installed</h3>
@@ -72,11 +72,11 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Reminders */}
         <Link href="/contractor/reminders">
-          <Card className="border-border hover:border-primary/50 transition-all cursor-pointer" data-testid="card-reminders">
+          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-reminders">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <Bell className="h-6 w-6 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
+                  <Bell className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-1">Reminders</h3>
@@ -91,11 +91,11 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Team & Assignments */}
         <Link href="/contractor/team">
-          <Card className="border-border hover:border-primary/50 transition-all cursor-pointer" data-testid="card-team">
+          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-team">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full">
-                  <Users className="h-6 w-6 text-primary" />
+                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
+                  <Users className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold mb-1">Team & Assignments</h3>

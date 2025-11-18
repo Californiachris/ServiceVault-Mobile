@@ -72,8 +72,8 @@ export default function ContractorAssets() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -83,8 +83,8 @@ export default function ContractorAssets() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-1" data-testid="heading-assets">Assets</h1>
-            <p className="text-muted-foreground">Every asset you or your team has ever tagged.</p>
+            <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-assets">Assets</h1>
+            <p className="text-lg text-muted-foreground">Every asset you or your team has ever tagged.</p>
           </div>
         </div>
       </div>
@@ -103,12 +103,12 @@ export default function ContractorAssets() {
           />
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Premium Filter Design */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
-            <TabsTrigger value="all" data-testid="tab-all-assets">All Assets</TabsTrigger>
-            <TabsTrigger value="mine" data-testid="tab-my-installs">My Installs</TabsTrigger>
-            <TabsTrigger value="team" data-testid="tab-by-team">By Team Member</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 max-w-md backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-md">
+            <TabsTrigger value="all" data-testid="tab-all-assets" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">All Assets</TabsTrigger>
+            <TabsTrigger value="mine" data-testid="tab-my-installs" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">My Installs</TabsTrigger>
+            <TabsTrigger value="team" data-testid="tab-by-team" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">By Team Member</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -138,7 +138,7 @@ export default function ContractorAssets() {
             <Skeleton className="h-24 w-full" />
           </>
         ) : filteredAssets.length === 0 ? (
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground mb-4">
@@ -146,7 +146,7 @@ export default function ContractorAssets() {
                   ? "No assets match your filters" 
                   : "No assets found"}
               </p>
-              <Button asChild data-testid="button-scan-first-asset">
+              <Button asChild data-testid="button-scan-first-asset" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white">
                 <Link href="/scan">Scan First Asset</Link>
               </Button>
             </CardContent>
@@ -154,13 +154,13 @@ export default function ContractorAssets() {
         ) : (
           filteredAssets.map((asset: any) => (
             <Link key={asset.id} href={`/asset/${asset.id}`}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer" data-testid={`asset-card-${asset.id}`}>
+              <Card className="hover:border-primary/50 transition-all duration-200 cursor-pointer backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl hover:scale-[1.01] group" data-testid={`asset-card-${asset.id}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{asset.name}</h3>
-                        <Badge variant="outline">{asset.category}</Badge>
+                        <h3 className="font-bold text-xl tracking-tight">{asset.name}</h3>
+                        <Badge variant="outline" className="backdrop-blur-sm">{asset.category}</Badge>
                         {asset.status === 'WARRANTY_ACTIVE' && (
                           <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
                             Under Warranty
@@ -175,7 +175,7 @@ export default function ContractorAssets() {
                         {asset.brand && <p>Brand: {asset.brand} {asset.model && `- ${asset.model}`}</p>}
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" data-testid={`button-view-${asset.id}`}>
+                    <Button variant="outline" size="sm" data-testid={`button-view-${asset.id}`} className="group-hover:bg-gradient-to-r group-hover:from-teal-500 group-hover:to-cyan-600 group-hover:text-white group-hover:border-transparent transition-all">
                       View Details
                     </Button>
                   </div>

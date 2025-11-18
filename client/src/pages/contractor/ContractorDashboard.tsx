@@ -261,7 +261,7 @@ export default function ContractorDashboard() {
         
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Workers</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -272,7 +272,7 @@ export default function ContractorDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Workers</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -283,7 +283,7 @@ export default function ContractorDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
               <ClipboardList className="h-4 w-4 text-muted-foreground" />
@@ -294,7 +294,7 @@ export default function ContractorDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
@@ -312,7 +312,7 @@ export default function ContractorDashboard() {
         </div>
         
         {/* Worker Status Cards */}
-        <Card>
+        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -324,7 +324,7 @@ export default function ContractorDashboard() {
               {workerStatuses.map((status) => (
                 <div 
                   key={status.workerId}
-                  className="p-4 border rounded-lg space-y-2"
+                  className="p-4 border rounded-lg space-y-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
                   data-testid={`worker-card-${status.workerId}`}
                 >
                   <div className="flex items-center justify-between">
@@ -350,7 +350,7 @@ export default function ContractorDashboard() {
         </Card>
         
         {/* Tasks List */}
-        <Card>
+        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
@@ -367,7 +367,7 @@ export default function ContractorDashboard() {
                 tasks.map((task) => (
                   <div 
                     key={task.id}
-                    className="p-4 border rounded-lg space-y-2"
+                    className="p-4 border rounded-lg space-y-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
                     data-testid={`task-card-${task.id}`}
                   >
                     <div className="flex items-start justify-between">

@@ -41,6 +41,10 @@ export default function NotificationSettings() {
     updateMutation.mutate({ [field]: value });
   };
 
+  const handleMethodChange = (method: string) => {
+    updateMutation.mutate({ notificationMethod: method });
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -53,8 +57,8 @@ export default function NotificationSettings() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -62,23 +66,23 @@ export default function NotificationSettings() {
             </Button>
           </Link>
         </div>
-        <h1 className="text-3xl font-bold mb-1" data-testid="heading-notifications">Notification Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-notifications">Notification Settings</h1>
+        <p className="text-lg text-muted-foreground">
           Control how and when you receive updates about your team.
         </p>
       </div>
 
-      <Card data-testid="card-worker-notifications">
+      <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="card-worker-notifications">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Bell className="h-6 w-6" />
             Worker Activity
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
-              <Label htmlFor="check-in" className="text-base">Check-In Notifications</Label>
+              <Label htmlFor="check-in" className="text-base font-semibold">Check-In Notifications</Label>
               <p className="text-sm text-muted-foreground">
                 Get notified when workers clock in for their shifts
               </p>
@@ -92,9 +96,9 @@ export default function NotificationSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
-              <Label htmlFor="check-out" className="text-base">Check-Out Notifications</Label>
+              <Label htmlFor="check-out" className="text-base font-semibold">Check-Out Notifications</Label>
               <p className="text-sm text-muted-foreground">
                 Get notified when workers complete their shifts
               </p>
@@ -108,9 +112,9 @@ export default function NotificationSettings() {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
-              <Label htmlFor="task-complete" className="text-base">Task Completion</Label>
+              <Label htmlFor="task-complete" className="text-base font-semibold">Task Completion</Label>
               <p className="text-sm text-muted-foreground">
                 Get notified when workers mark tasks as complete
               </p>
@@ -126,48 +130,58 @@ export default function NotificationSettings() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6" data-testid="card-notification-method">
+      <Card className="mt-6 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="card-notification-method">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <MessageSquare className="h-6 w-6" />
             Notification Method
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
+          <label className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all cursor-pointer backdrop-blur-sm hover:bg-primary/5 data-[checked=true]:border-primary data-[checked=true]:bg-primary/10" data-checked={preferences?.notificationMethod === "EMAIL"}>
             <input
               type="radio"
               id="email"
               name="method"
               value="EMAIL"
               checked={preferences?.notificationMethod === "EMAIL"}
-              onChange={() => handleToggle("notificationMethod", "EMAIL")}
+              onChange={() => handleMethodChange("EMAIL")}
               disabled={updateMutation.isPending}
-              className="h-4 w-4"
+              className="h-5 w-5 text-primary"
               data-testid="radio-email"
             />
-            <Label htmlFor="email" className="flex items-center gap-2 cursor-pointer">
-              <Mail className="h-4 w-4" />
-              Email
-            </Label>
-          </div>
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="font-semibold">Email</div>
+                <div className="text-sm text-muted-foreground">Receive notifications via email</div>
+              </div>
+            </div>
+          </label>
+          <label className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all cursor-pointer backdrop-blur-sm hover:bg-primary/5 data-[checked=true]:border-primary data-[checked=true]:bg-primary/10" data-checked={preferences?.notificationMethod === "SMS"}>
             <input
               type="radio"
               id="sms"
               name="method"
               value="SMS"
               checked={preferences?.notificationMethod === "SMS"}
-              onChange={() => handleToggle("notificationMethod", "SMS")}
+              onChange={() => handleMethodChange("SMS")}
               disabled={updateMutation.isPending}
-              className="h-4 w-4"
+              className="h-5 w-5 text-primary"
               data-testid="radio-sms"
             />
-            <Label htmlFor="sms" className="flex items-center gap-2 cursor-pointer">
-              <MessageSquare className="h-4 w-4" />
-              SMS
-            </Label>
-          </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <MessageSquare className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="font-semibold">SMS</div>
+                <div className="text-sm text-muted-foreground">Receive notifications via text message</div>
+              </div>
+            </div>
+          </label>
         </CardContent>
       </Card>
     </div>

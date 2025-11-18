@@ -126,8 +126,8 @@ export default function ContractorReminders() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -135,23 +135,31 @@ export default function ContractorReminders() {
             </Button>
           </Link>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-1" data-testid="heading-reminders">Reminders</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-reminders">Reminders</h1>
+            <p className="text-lg text-muted-foreground">
               Stay on top of maintenance for your installed assets.
             </p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/scan">
+              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-scan-asset">
+                <Package className="h-4 w-4 mr-2" />
+                Scan Asset
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Premium Design */}
       <Tabs defaultValue="all" className="mb-6" onValueChange={setActiveFilter}>
-        <TabsList className="grid w-full grid-cols-4" data-testid="tabs-filter">
-          <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-          <TabsTrigger value="warranty" data-testid="tab-warranty">Warranty</TabsTrigger>
-          <TabsTrigger value="maintenance" data-testid="tab-maintenance">Maintenance</TabsTrigger>
-          <TabsTrigger value="service" data-testid="tab-service">Service</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-md" data-testid="tabs-filter">
+          <TabsTrigger value="all" data-testid="tab-all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">All</TabsTrigger>
+          <TabsTrigger value="warranty" data-testid="tab-warranty" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all">Warranty</TabsTrigger>
+          <TabsTrigger value="maintenance" data-testid="tab-maintenance" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all">Maintenance</TabsTrigger>
+          <TabsTrigger value="service" data-testid="tab-service" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white transition-all">Service</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -165,7 +173,7 @@ export default function ContractorReminders() {
 
       {/* Empty State */}
       {!isLoading && filteredReminders.length === 0 && (
-        <Card className="border-dashed" data-testid="empty-state">
+        <Card className="border-dashed backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="empty-state">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="p-4 bg-muted rounded-full mb-4">
               <BellOff className="h-12 w-12 text-muted-foreground" />
@@ -175,7 +183,7 @@ export default function ContractorReminders() {
               Install assets with warranties or maintenance schedules to receive reminders.
             </p>
             <Link href="/scan">
-              <Button data-testid="button-scan-first-asset">Scan First Asset</Button>
+              <Button data-testid="button-scan-first-asset" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white">Scan First Asset</Button>
             </Link>
           </CardContent>
         </Card>
@@ -193,7 +201,7 @@ export default function ContractorReminders() {
               </h2>
               <div className="space-y-3">
                 {overdueReminders.map((reminder: Reminder) => (
-                  <Card key={reminder.id} className="border-red-500/50" data-testid={`card-reminder-${reminder.id}`}>
+                  <Card key={reminder.id} className="border-red-500/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
@@ -262,7 +270,7 @@ export default function ContractorReminders() {
               </h2>
               <div className="space-y-3">
                 {upcomingReminders.map((reminder: Reminder) => (
-                  <Card key={reminder.id} data-testid={`card-reminder-${reminder.id}`}>
+                  <Card key={reminder.id} className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
