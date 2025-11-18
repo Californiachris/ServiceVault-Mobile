@@ -114,7 +114,7 @@ export default function LogosPage() {
           <div className="flex gap-2">
             <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="border-2" data-testid="button-upload-new">
+                <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-upload-new">
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Logo
                 </Button>
@@ -164,11 +164,11 @@ export default function LogosPage() {
               Upload your existing logo or generate a new one with AI to get started with custom-branded QR stickers
             </p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => setShowUploadDialog(true)} variant="outline" className="border-2" data-testid="button-upload-first">
+              <Button onClick={() => setShowUploadDialog(true)} className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-upload-first">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Logo
               </Button>
-              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" asChild data-testid="button-generate-first">
+              <Button variant="outline" className="border-2" asChild data-testid="button-generate-first">
                 <Link href="/logos/ai-generator">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Generate with AI
