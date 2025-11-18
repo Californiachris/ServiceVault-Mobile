@@ -42,6 +42,7 @@ import ContractorDashboard from "@/pages/contractor/ContractorDashboard";
 import ContractorAssets from "@/pages/contractor/assets";
 import ContractorTeam from "@/pages/contractor/team";
 import ContractorReminders from "@/pages/contractor/reminders";
+import NotificationSettings from "@/pages/contractor/notification-settings";
 import HomeownerWelcome from "@/pages/HomeownerWelcome";
 import FleetWelcome from "@/pages/FleetWelcome";
 import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
@@ -148,6 +149,7 @@ function Router() {
           <Route path="/contractor/assets" component={ContractorAssets} />
           <Route path="/contractor/team" component={ContractorTeam} />
           <Route path="/contractor/reminders" component={ContractorReminders} />
+          <Route path="/contractor/notifications" component={NotificationSettings} />
           <Route path="/settings" component={Settings} />
           <Route path="/settings/branding" component={FamilyBrandingSettings} />
           <Route path="/tools/identifiers" component={IdentifiersPage} />

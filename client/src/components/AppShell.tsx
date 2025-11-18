@@ -171,6 +171,14 @@ export default function AppShell({ children }: AppShellProps) {
 
           {/* User Profile */}
           <div className="p-4 border-t border-border">
+            {userRole === "CONTRACTOR" && (
+              <Link href="/contractor/notifications">
+                <Button variant="outline" className="w-full mb-3" size="sm" data-testid="button-notifications">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Notifications
+                </Button>
+              </Link>
+            )}
             <div className="flex items-center gap-3 mb-3 px-2">
               <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
                 <User className="h-5 w-5 text-primary" />

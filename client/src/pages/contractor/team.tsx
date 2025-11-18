@@ -18,6 +18,7 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useWebSocket } from "@/lib/websocket";
 import {
   Users,
   ArrowLeft,
@@ -51,7 +52,25 @@ export default function ContractorTeam() {
   const [showAssignTask, setShowAssignTask] = useState(false);
   const { toast } = useToast();
 
-  const { data: workersData, isLoading } = useQuery({
+  // Real-time updates
+  useWebSocket("/ws", (message) => {
+    if (message.type === "worker_check_in" || message.type === "worker_check_out") {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractor/workers"] });
+      toast({
+        title: message.type === "worker_check_in" ? "Worker Checked In" : "Worker Checked Out",
+        description: message.data.workerName || "A worker has updated their status",
+      });
+    }
+    if (message.type === "task_completed") {
+      queryClient.invalidateQueries({ queryKey: ["/api/contractor/tasks"] });
+      toast({
+        title: "Task Completed",
+        description: message.data.taskTitle || "A task has been completed",
+      });
+    }
+  });
+
+  const { data: workersData, isLoading } = useQuery<{ workers: any[] }>({
     queryKey: ["/api/contractor/workers"],
   });
 

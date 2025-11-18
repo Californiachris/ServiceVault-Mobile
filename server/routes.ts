@@ -5669,7 +5669,8 @@ Instructions:
       res.status(500).json({ error: "Failed to fetch notification preferences" });
     }
   });
-  
+
+  // Update contractor notification preferences
   app.patch('/api/contractor/notification-preferences', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -5681,29 +5682,32 @@ Instructions:
       }
       
       const { contractorWorkerNotifications } = await import('@shared/schema');
-      const [existing] = await db.select().from(contractorWorkerNotifications)
+      
+      // Get or create preferences
+      let [prefs] = await db.select().from(contractorWorkerNotifications)
         .where(and(
           eq(contractorWorkerNotifications.contractorId, contractor.id),
           isNull(contractorWorkerNotifications.workerId)
         ))
         .limit(1);
       
-      if (existing) {
-        const [updated] = await db.update(contractorWorkerNotifications)
-          .set({ ...updates, updatedAt: new Date() })
-          .where(eq(contractorWorkerNotifications.id, existing.id))
-          .returning();
-        res.json({ preferences: updated });
+      if (!prefs) {
+        [prefs] = await db.insert(contractorWorkerNotifications).values({
+          contractorId: contractor.id,
+          workerId: null,
+          notifyCheckIn: updates.notifyCheckIn ?? true,
+          notifyCheckOut: updates.notifyCheckOut ?? true,
+          notifyTaskComplete: updates.notifyTaskComplete ?? false,
+          notificationMethod: updates.notificationMethod || 'EMAIL',
+        }).returning();
       } else {
-        const [created] = await db.insert(contractorWorkerNotifications)
-          .values({
-            contractorId: contractor.id,
-            workerId: null,
-            ...updates,
-          })
+        [prefs] = await db.update(contractorWorkerNotifications)
+          .set(updates)
+          .where(eq(contractorWorkerNotifications.id, prefs.id))
           .returning();
-        res.json({ preferences: created });
       }
+      
+      res.json({ preferences: prefs });
     } catch (error) {
       console.error("Error updating notification preferences:", error);
       res.status(500).json({ error: "Failed to update notification preferences" });
