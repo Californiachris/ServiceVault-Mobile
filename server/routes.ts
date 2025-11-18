@@ -248,6 +248,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get contractor profile data
+  app.get('/api/contractors/me', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get contractor profile
+      const contractor = await storage.getContractor(userId);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+
+      res.json({ contractor });
+    } catch (error) {
+      console.error("Error fetching contractor profile:", error);
+      res.status(500).json({ error: "Failed to fetch contractor profile" });
+    }
+  });
+
   // Update contractor branding
   app.patch('/api/contractors/me', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
