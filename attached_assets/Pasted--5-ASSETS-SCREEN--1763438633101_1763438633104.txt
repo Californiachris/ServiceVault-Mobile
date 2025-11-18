@@ -1,0 +1,220 @@
+==================================================
+5. ASSETS SCREEN
+==================================================
+
+SCREEN: Assets (from bottom nav or “Assets Installed” card)
+
+Goal: Make it stupid-easy to find any install, with pagination to scale.
+
+LAYOUT:
+
+Header: “Assets”
+Subtext: “Every asset you or your team has ever tagged.”
+
+Controls at top:
+- Search bar: search by address, customer name, model, serial
+- Filter pills:
+    • All / Water Heaters / HVAC / Electrical / Other
+    • Date range (Last 30 days, 90 days, All time)
+- Tabs or segmented control:
+    [ All Assets ]  [ My Installs ]  [ By Team Member ]
+
+TAB BEHAVIOR:
+
+1) All Assets
+   - Paginated list, 20 per page.
+   - Each row/card:
+        • Asset type + icon
+        • Property name/address
+        • Installed by [name]
+        • Install date
+        • Status badge (e.g. “Under warranty” / “Warranty expired” / “Maintenance due soon”)
+   - CTA: “View details”
+
+2) My Installs
+   - Same layout, filtered by current user as installer.
+
+3) By Team Member
+   - Dropdown: “Select team member”
+   - Once selected, same layout but filtered to that worker.
+
+ASSET DETAIL SCREEN:
+
+Header: “Asset details”
+
+Sections:
+
+1) Summary
+   - Asset type + icon
+   - Property name + address
+   - Installed by: [user]
+   - Install date & time
+   - QR ID (short ID if needed)
+
+2) Owner / Contact
+   - Owner name
+   - Phone (tap to call)
+   - Email (tap to email)
+   - Buttons:
+        • “Call owner”
+        • “Email owner”
+        • “Open in Maps”
+
+3) Warranty & Maintenance
+   - Warranty until: [date]
+   - Maintenance interval(s)
+   - Next scheduled maintenance date
+   - Status badge: “Good”, “Due soon”, “Overdue”
+
+4) Activity
+   - Log entries: created, edits, completed maintenance, etc.
+
+5) Actions
+   - Primary: “Download as PDF”
+       → Generates client-ready PDF with all asset details for sharing/banking/records.
+   - Secondary: “Edit asset”
+   - Tertiary: “Add note”
+
+==================================================
+6. REMINDERS SCREEN
+==================================================
+
+SCREEN: Reminders (from bottom nav or card)
+
+Header: “Reminders”
+Subtext: “All upcoming maintenance, warranty and follow-up events.”
+
+Top controls:
+- Tabs:
+    [ All ] [ Maintenance ] [ Warranty ] [ Follow-ups ]
+- Filter pill: “Next 30 days / 90 days / All”
+
+Each reminder card:
+- Type badge: Maintenance / Warranty / Follow-up
+- Asset: “50-gal Water Heater · Model XXX”
+- Property: short address
+- Due date: e.g. “Due in 7 days”
+- Small status chip: “Not scheduled / Scheduled / Completed”
+- Quick actions:
+    • “Call owner”
+    • “Mark scheduled”
+    • “Snooze 7 days”
+
+On tap → Reminder Detail:
+- Full asset + property info (reuse asset detail component)
+- Reminder type, due date, history
+- Buttons:
+    • “Mark completed”
+    • “Reschedule”
+    • “Download reminder details (PDF)” (optional, lower priority)
+
+==================================================
+7. TEAM & ASSIGNMENTS
+==================================================
+
+SCREEN: Team & Assignments (from dashboard card OR hamburger > Team Management quick shortcut)
+
+Header: “Team”
+Subtext: “See who’s on your crew, hours, and installs.”
+
+Top:
+- Button: “Add team member” (shortcut into hamburger’s Team Management add flow)
+
+List of team members (cards):
+- Name
+- Role badge: Installer / Foreman / Admin
+- Today’s hours: e.g. “Today: 6.5h”
+- Installs this week: e.g. “Installs: 14”
+- CTA: “View profile”
+
+ON TAP → Worker Profile screen:
+
+WORKER PROFILE
+
+Sections:
+
+1) Summary
+   - Name, role, active status
+   - Email/phone
+
+2) Time & Attendance
+   - “Hours this week: X”
+   - “Hours last week: Y”
+   - Button: “View timesheet”
+        → Timesheet screen with daily segments:
+           • Each row: date, total hours, break time, first check-in, last check-out
+           • Export button: “Download timesheet PDF”
+
+3) Installs
+   - “Total installs: N”
+   - Button: “View installs”
+        → Assets screen filtered to this worker (reuse Assets layout).
+
+4) Scheduled Assignments
+   - “Assignments for next 7 days”
+   - List of jobs with date, property, notes.
+
+BUTTON on Team screen: “Schedule assignments”
+---------------------------------------------
+On tap → “Schedule Assignments” screen:
+
+- Step 1: Select worker (list of team members)
+- Step 2: Select date
+- Step 3: Add tasks:
+    • Each task = text + optional address + link to existing asset if needed.
+- Save button: “Assign jobs”
+
+On save:
+- Assignment is saved to worker’s profile.
+- Next time worker clocks in for that day:
+    • After successful clock-in, show a screen:
+        “Good morning, [Name]. Here are today’s assignments:”
+        • List tasks with checkboxes.
+        • Worker can tap to mark each task complete.
+- Contractor can see completion in worker profile → Scheduled Assignments.
+
+==================================================
+8. WORKER EXPERIENCE (HIGH LEVEL)
+==================================================
+
+When a worker logs in:
+- Sees a simplified version of dashboard:
+    • Big “Scan QR” card
+    • “My hours” card
+    • “My installs” card
+- Same Scan screen as contractor BUT default mode = “Clock In / Out”.
+- When clocking in and assignments exist:
+    • Immediately show today’s task list.
+
+Everything worker does (installs, time, tasks) is automatically visible to contractor in Team, Assets and Timesheets.
+
+==================================================
+9. PERFORMANCE & POLISH
+==================================================
+
+Please preserve / extend all scalability work already in place:
+
+- Use existing paginated endpoints for:
+    • Jobs/assets
+    • Events
+    • Properties
+- Any new lists (Assets, Team, Reminders) should:
+    • Default to 20 items per page
+    • Use “Load more” (not infinite scroll)
+- All DB queries should use existing indexes on:
+    • contractorId, userId, propertyId, assetId, createdAt, status
+
+Polish:
+- Add smooth but subtle transitions between main screens (fade/slide, nothing heavy).
+- Keep everything visually consistent with current ServiceVault dark theme and typography.
+- No new visual style systems; reuse existing card/button components.
+
+Billion-dollar test:
+- A contractor lands on the dashboard and knows in 2 seconds:
+    1) “Tap Scan to install or clock in.”
+    2) “Tap Assets to find anything I’ve ever installed.”
+    3) “Tap Reminders to see what needs attention.”
+    4) “Tap Team to see who’s working and what they did.”
+- Everything else (billing, logo, sticker orders) lives in the hamburger and stays out of their daily way.
+
+END OF SPEC

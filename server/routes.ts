@@ -5175,6 +5175,483 @@ Instructions:
     res.redirect(301, `/api/public/scan/${req.params.code}`);
   });
 
+  // ============================================
+  // CONTRACTOR MANAGEMENT ROUTES
+  // ============================================
+  
+  // Get contractor workers
+  app.get('/api/contractor/workers', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get contractor record
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers } = await import('@shared/schema');
+      const workers = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.contractorId, contractor.id))
+        .orderBy(desc(contractorWorkers.createdAt));
+      
+      res.json({ workers });
+    } catch (error) {
+      console.error("Error fetching workers:", error);
+      res.status(500).json({ error: "Failed to fetch workers" });
+    }
+  });
+  
+  // Create contractor worker
+  app.post('/api/contractor/workers', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name, phone, email, role } = req.body;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers } = await import('@shared/schema');
+      const [worker] = await db.insert(contractorWorkers).values({
+        contractorId: contractor.id,
+        name,
+        phone,
+        email,
+        role: role || 'INSTALLER',
+        status: 'ACTIVE',
+      }).returning();
+      
+      res.json({ worker });
+    } catch (error) {
+      console.error("Error creating worker:", error);
+      res.status(500).json({ error: "Failed to create worker" });
+    }
+  });
+  
+  // Update contractor worker
+  app.patch('/api/contractor/workers/:workerId', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId } = req.params;
+      const updates = req.body;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers } = await import('@shared/schema');
+      const [worker] = await db.update(contractorWorkers)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(and(eq(contractorWorkers.id, workerId), eq(contractorWorkers.contractorId, contractor.id)))
+        .returning();
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      res.json({ worker });
+    } catch (error) {
+      console.error("Error updating worker:", error);
+      res.status(500).json({ error: "Failed to update worker" });
+    }
+  });
+  
+  // Get contractor tasks/assignments
+  app.get('/api/contractor/tasks', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { status, workerId } = req.query;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorTasks } = await import('@shared/schema');
+      let query = db.select().from(contractorTasks)
+        .where(eq(contractorTasks.contractorId, contractor.id));
+      
+      if (status) {
+        query = query.where(and(eq(contractorTasks.contractorId, contractor.id), eq(contractorTasks.status, status as string)));
+      }
+      if (workerId) {
+        query = query.where(and(eq(contractorTasks.contractorId, contractor.id), eq(contractorTasks.assignedTo, workerId as string)));
+      }
+      
+      const tasks = await query.orderBy(desc(contractorTasks.scheduledFor));
+      res.json({ tasks });
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+  
+  // Create contractor task/assignment
+  app.post('/api/contractor/tasks', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, description, address, assignedTo, scheduledFor, taskType, priority } = req.body;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorTasks } = await import('@shared/schema');
+      const [task] = await db.insert(contractorTasks).values({
+        contractorId: contractor.id,
+        title,
+        description,
+        address,
+        assignedTo,
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        taskType: taskType || 'GENERAL',
+        priority: priority || 'MEDIUM',
+        status: 'PENDING',
+        createdBy: userId,
+      }).returning();
+      
+      // TODO: Send notification to worker about new assignment
+      
+      res.json({ task });
+    } catch (error) {
+      console.error("Error creating task:", error);
+      res.status(500).json({ error: "Failed to create task" });
+    }
+  });
+  
+  // Update task status
+  app.patch('/api/contractor/tasks/:taskId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { taskId } = req.params;
+      const updates = req.body;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorTasks } = await import('@shared/schema');
+      const [task] = await db.update(contractorTasks)
+        .set(updates)
+        .where(and(eq(contractorTasks.id, taskId), eq(contractorTasks.contractorId, contractor.id)))
+        .returning();
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      
+      res.json({ task });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ error: "Failed to update task" });
+    }
+  });
+  
+  // Clock in/out (create or complete visit)
+  app.post('/api/contractor/visits/clock', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId, location, method, identifierCode, action } = req.body;
+      
+      // Verify worker belongs to this contractor
+      const { contractorWorkers, contractorVisits } = await import('@shared/schema');
+      const [worker] = await db.select().from(contractorWorkers).where(eq(contractorWorkers.id, workerId)).limit(1);
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      if (action === 'clock_in') {
+        // Create new visit
+        const [visit] = await db.insert(contractorVisits).values({
+          contractorId: worker.contractorId,
+          workerId,
+          checkInAt: new Date(),
+          checkInLocation: location,
+          checkInMethod: method || 'QR',
+          checkInIdentifierCode: identifierCode,
+          status: 'IN_PROGRESS',
+        }).returning();
+        
+        // TODO: WebSocket event to notify contractor
+        
+        res.json({ visit, action: 'clocked_in' });
+      } else {
+        // Clock out - find active visit
+        const [activeVisit] = await db.select().from(contractorVisits)
+          .where(and(
+            eq(contractorVisits.workerId, workerId),
+            eq(contractorVisits.status, 'IN_PROGRESS')
+          ))
+          .orderBy(desc(contractorVisits.checkInAt))
+          .limit(1);
+        
+        if (!activeVisit) {
+          return res.status(404).json({ error: "No active clock-in session found" });
+        }
+        
+        const [visit] = await db.update(contractorVisits)
+          .set({
+            checkOutAt: new Date(),
+            checkOutLocation: location,
+            checkOutMethod: method || 'QR',
+            status: 'COMPLETED',
+            completedAt: new Date(),
+          })
+          .where(eq(contractorVisits.id, activeVisit.id))
+          .returning();
+        
+        // Calculate hours worked
+        const hoursWorked = (new Date().getTime() - new Date(activeVisit.checkInAt).getTime()) / (1000 * 60 * 60);
+        
+        // TODO: WebSocket event to notify contractor
+        
+        res.json({ visit, action: 'clocked_out', hoursWorked: hoursWorked.toFixed(2) });
+      }
+    } catch (error) {
+      console.error("Error processing clock in/out:", error);
+      res.status(500).json({ error: "Failed to process clock in/out" });
+    }
+  });
+  
+  // Get worker visits/timesheet
+  app.get('/api/contractor/visits', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId, startDate, endDate } = req.query;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorVisits } = await import('@shared/schema');
+      let query = db.select().from(contractorVisits)
+        .where(eq(contractorVisits.contractorId, contractor.id));
+      
+      if (workerId) {
+        query = query.where(and(eq(contractorVisits.contractorId, contractor.id), eq(contractorVisits.workerId, workerId as string)));
+      }
+      
+      const visits = await query.orderBy(desc(contractorVisits.checkInAt));
+      res.json({ visits });
+    } catch (error) {
+      console.error("Error fetching visits:", error);
+      res.status(500).json({ error: "Failed to fetch visits" });
+    }
+  });
+  
+  // Get/update notification preferences
+  app.get('/api/contractor/notification-preferences', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkerNotifications } = await import('@shared/schema');
+      let [prefs] = await db.select().from(contractorWorkerNotifications)
+        .where(and(
+          eq(contractorWorkerNotifications.contractorId, contractor.id),
+          isNull(contractorWorkerNotifications.workerId)
+        ))
+        .limit(1);
+      
+      if (!prefs) {
+        // Create default preferences
+        [prefs] = await db.insert(contractorWorkerNotifications).values({
+          contractorId: contractor.id,
+          workerId: null,
+          notifyCheckIn: true,
+          notifyCheckOut: true,
+          notifyTaskComplete: false,
+          notificationMethod: 'EMAIL',
+        }).returning();
+      }
+      
+      res.json({ preferences: prefs });
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ error: "Failed to fetch notification preferences" });
+    }
+  });
+  
+  app.patch('/api/contractor/notification-preferences', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updates = req.body;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkerNotifications } = await import('@shared/schema');
+      const [existing] = await db.select().from(contractorWorkerNotifications)
+        .where(and(
+          eq(contractorWorkerNotifications.contractorId, contractor.id),
+          isNull(contractorWorkerNotifications.workerId)
+        ))
+        .limit(1);
+      
+      if (existing) {
+        const [updated] = await db.update(contractorWorkerNotifications)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(eq(contractorWorkerNotifications.id, existing.id))
+          .returning();
+        res.json({ preferences: updated });
+      } else {
+        const [created] = await db.insert(contractorWorkerNotifications)
+          .values({
+            contractorId: contractor.id,
+            workerId: null,
+            ...updates,
+          })
+          .returning();
+        res.json({ preferences: created });
+      }
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ error: "Failed to update notification preferences" });
+    }
+  });
+  
+  // PDF: Asset details
+  app.get('/api/contractor/assets/:assetId/pdf', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { assetId } = req.params;
+      
+      const asset = await storage.getAsset(assetId);
+      if (!asset) {
+        return res.status(404).json({ error: "Asset not found" });
+      }
+      
+      const property = await storage.getProperty(asset.propertyId);
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+      
+      // Verify access
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor && property.ownerId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Generate PDF
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename = `asset_${asset.id}_${Date.now()}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+      });
+      
+      doc.fontSize(18).text('ServiceVault — Asset Details', { align: 'center' });
+      doc.moveDown();
+      
+      doc.fontSize(12)
+        .text(`Asset: ${asset.name}`)
+        .text(`Category: ${asset.category}`)
+        .text(`Brand: ${asset.brand || 'N/A'}`)
+        .text(`Model: ${asset.model || 'N/A'}`)
+        .text(`Serial: ${asset.serialNumber || 'N/A'}`)
+        .text(`Installed: ${asset.installedAt?.toLocaleDateString() || 'N/A'}`);
+      
+      doc.moveDown();
+      doc.text(`Property: ${property.name || 'Unnamed Property'}`)
+        .text(`Address: ${property.addressLine1 || 'N/A'}, ${property.city || ''} ${property.state || ''}`);
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating asset PDF:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+  
+  // PDF: Worker timesheet
+  app.get('/api/contractor/workers/:workerId/timesheet/pdf', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId } = req.params;
+      const { startDate, endDate } = req.query;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers, contractorVisits } = await import('@shared/schema');
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(and(eq(contractorWorkers.id, workerId), eq(contractorWorkers.contractorId, contractor.id)))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      const visits = await db.select().from(contractorVisits)
+        .where(eq(contractorVisits.workerId, workerId))
+        .orderBy(desc(contractorVisits.checkInAt));
+      
+      // Generate PDF
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename = `timesheet_${worker.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+      });
+      
+      doc.fontSize(18).text('ServiceVault — Timesheet', { align: 'center' });
+      doc.moveDown();
+      
+      doc.fontSize(12)
+        .text(`Worker: ${worker.name}`)
+        .text(`Company: ${contractor.companyName}`)
+        .text(`Generated: ${new Date().toLocaleDateString()}`);
+      
+      doc.moveDown().text('Time Records:', { underline: true });
+      
+      let totalHours = 0;
+      for (const visit of visits) {
+        if (visit.checkOutAt) {
+          const hours = (new Date(visit.checkOutAt).getTime() - new Date(visit.checkInAt).getTime()) / (1000 * 60 * 60);
+          totalHours += hours;
+          
+          doc.moveDown(0.5)
+            .text(`Date: ${new Date(visit.checkInAt).toLocaleDateString()}`)
+            .text(`In: ${new Date(visit.checkInAt).toLocaleTimeString()} | Out: ${new Date(visit.checkOutAt).toLocaleTimeString()}`)
+            .text(`Hours: ${hours.toFixed(2)}`);
+        }
+      }
+      
+      doc.moveDown();
+      doc.fontSize(14).text(`Total Hours: ${totalHours.toFixed(2)}`, { bold: true });
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating timesheet PDF:", error);
+      res.status(500).json({ error: "Failed to generate timesheet" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

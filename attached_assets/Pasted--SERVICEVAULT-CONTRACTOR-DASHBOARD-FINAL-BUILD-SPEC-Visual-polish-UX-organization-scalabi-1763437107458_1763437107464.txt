@@ -1,0 +1,174 @@
+🚀 SERVICEVAULT — CONTRACTOR DASHBOARD FINAL BUILD SPEC  
+(Visual polish + UX organization + scalability)  
+⚠️ DO NOT MODIFY THE HEADER BAR
+
+HEADER MUST REMAIN EXACTLY AS IS:
+• Logo on the top left
+• “ServiceVault™” text immediately to the right of the logo
+• Hamburger icon on the far right
+No movement, spacing change, alignment change, or redesign of these elements.
+
+All development below applies ONLY to the content under the header and inside the hamburger menu.
+
+────────────────────────────────────────
+📌 SECTION 1 — CONTENT UNDER THE HEADER (DASHBOARD)
+────────────────────────────────────────
+
+Directly beneath the header, display:
+
+1) Contractor–uploaded logo in a premium rounded container
+   • Auto–resize to fit container cleanly
+   • Soft shadow for depth (no harsh borders)
+   • Centered horizontally
+
+2) Company name below the logo
+   • Bold, centered, professional typography only
+   • No clickable elements
+
+3) Subtitle under company name:
+   “Contractor Dashboard”
+   • Small, centered, luxury SaaS tone
+
+(Do not change the upload logic — these are visual upgrades only.)
+
+────────────────────────────────────────
+📌 SECTION 2 — MAIN DASHBOARD BUTTONS
+────────────────────────────────────────
+
+Under the section above, display the four functional dashboard buttons in this exact layout:
+
+PRIMARY ACTION — BIG FULL–WIDTH BUTTON
+[ SCAN QR ]
+→ Opens Scan Page
+
+Then three smaller full–width radio-style buttons stacked in this order:
+
+1) Assets Installed
+2) Reminders
+3) Team
+
+No other tiles or buttons on the dashboard.
+
+────────────────────────────────────────
+📌 SECTION 3 — SCAN PAGE (BOTH ENTRY POINTS)
+────────────────────────────────────────
+
+Whether the user clicks the BIG “Scan QR” button or the bottom nav Scan icon,
+take them to the same screen:
+
+SCAN PAGE
+• Two large radio buttons:
+
+   • Scan New Asset
+   • Check In / Check Out
+
+SCAN NEW ASSET FLOW:
+• QR scan → asset details form opens
+• Installer auto–assigned based on logged-in account
+• After submission: asset saved to All Assets + My Assets + employee history if applicable
+• AI automatically extracts:
+  – warranty length
+  – model/serial
+  – maintenance cycle
+  – recall monitoring
+• Reminders automatically queued (no manual input)
+
+CHECK IN / CHECK OUT FLOW:
+• First scan of the day = clock-in + timestamp + GPS
+• Second scan = lunch clock-out
+• Third scan = returning from lunch
+• Final scan = end of day clock-out
+• All events logged to worker profile for the contractor to view
+
+────────────────────────────────────────
+📌 SECTION 4 — SECONDARY BUTTONS BEHAVIOR
+────────────────────────────────────────
+
+ASSETS INSTALLED
+• Opens to three radio buttons:
+  – All Assets Installed
+  – My Assets
+  – Employees’ Assets
+• Tapping any asset opens asset detail screen:
+  – All asset fields + history
+  – Installer name
+  – Warranty info
+  – Upcoming reminders
+  – CALL + EMAIL buttons at the bottom
+
+REMINDERS
+• Displays:
+  – Upcoming maintenance
+  – Warranty expirations
+  – Recalls
+  – Overdue reminders
+• Sort by soonest → latest
+• Tapping reminder opens linked asset detail screen
+  – CALL + EMAIL buttons included
+
+TEAM
+• Opens a Team Hub screen with two buttons:
+  – Employees
+  – Schedule Assignments
+
+Employees:
+• Radio list of all workers
+• Tapping worker opens worker profile with:
+  – Hours Worked
+  – Assets Installed
+  – Assignments Completed
+  – Check-in / Check-out history
+
+Schedule Assignments:
+• One large CTA card: “Assign Job to Team Member”
+• Tapping:
+  – Select worker (radio list)
+  – Select date (today / tomorrow / pick date)
+  – Enter assignment notes (job address + tasks)
+  – Save
+Assignments appear automatically for the employee at their next clock-in on that date.
+
+────────────────────────────────────────
+📌 SECTION 5 — BOTTOM NAVIGATION
+────────────────────────────────────────
+
+Bottom nav must contain these tabs only:
+
+🏠 Dashboard — returns to dashboard home
+📷 Scan — opens the same Scan Page as the big “Scan QR” button
+📦 Assets — opens Assets Installed screen
+🔔 Reminders — opens Reminders screen
+
+NO Team tab.  
+NO Jobs tab.  
+NO Billing tab.  
+
+────────────────────────────────────────
+📌 SECTION 6 — HAMBURGER MENU (ADMIN ONLY)
+────────────────────────────────────────
+
+The hamburger menu must include ONLY non-daily admin functions:
+
+• Profile / Company Information
+• Manage Workers
+• Billing & Subscription
+• Order Sticker Packs
+• Upload / Change Logo
+• Help Center / Support
+• Logout
+
+NO workflow tiles in hamburger, EVER.
+
+────────────────────────────────────────
+📌 SECTION 7 — PERFORMANCE & UX EXPECTATIONS
+────────────────────────────────────────
+
+• All pages must load instantly without lag for at least 100,000 users
+• All button actions must feel responsive and premium — no dead clicks or double taps
+• Consistent visual style across all tiles (glow/highlight on press)
+• Keep current backend logic intact — this is a UX / layout polish, not a logic rewrite
+• Avoid adding friction — fewer taps, zero clutter, no confusing text
+
+────────────────────────────────────────
+END OF SPEC — THIS IS THE FINAL UX AND FUNCTIONAL DESIGN FOR THE CONTRACTOR DASHBOARD
+────────────────────────────────────────
