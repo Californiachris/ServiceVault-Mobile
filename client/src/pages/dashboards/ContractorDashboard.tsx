@@ -71,7 +71,7 @@ export default function ContractorDashboard() {
         </Link>
 
         {/* Secondary: Reminders */}
-        <Link href="/tools/reminders">
+        <Link href="/contractor/reminders">
           <Card className="border-border hover:border-primary/50 transition-all cursor-pointer" data-testid="card-reminders">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">

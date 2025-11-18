@@ -14,6 +14,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { WebSocketServer, WebSocket } from "ws";
 
 // Initialize Stripe
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -5246,6 +5247,105 @@ Instructions:
     }
   });
   
+  // Get contractor reminders for their installed assets
+  app.get('/api/contractor/reminders', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type } = req.query;
+      
+      // Get contractor record
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      // Get all worker IDs for this contractor
+      const { contractorWorkers } = await import('@shared/schema');
+      const workers = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.contractorId, contractor.id));
+      const workerIds = workers.map(w => w.id);
+      
+      // Get all assets installed by contractor or their workers
+      const contractorAssets = await db.select({
+        id: assets.id,
+      })
+      .from(assets)
+      .where(
+        workerIds.length > 0 
+          ? or(eq(assets.installerId, userId), inArray(assets.installerId, workerIds))
+          : eq(assets.installerId, userId)
+      );
+      
+      const assetIds = contractorAssets.map(a => a.id);
+      
+      if (assetIds.length === 0) {
+        return res.json({ reminders: [] });
+      }
+      
+      // Get reminders for those assets where contractor should be notified
+      let reminderQuery = db.select({
+        id: reminders.id,
+        assetId: reminders.assetId,
+        propertyId: reminders.propertyId,
+        dueAt: reminders.dueAt,
+        type: reminders.type,
+        title: reminders.title,
+        description: reminders.description,
+        status: reminders.status,
+        frequency: reminders.frequency,
+        nextDueAt: reminders.nextDueAt,
+        createdAt: reminders.createdAt,
+      })
+      .from(reminders)
+      .where(and(
+        inArray(reminders.assetId, assetIds),
+        eq(reminders.notifyContractor, true),
+        eq(reminders.status, 'PENDING')
+      ));
+      
+      if (type) {
+        reminderQuery = reminderQuery.where(and(
+          inArray(reminders.assetId, assetIds),
+          eq(reminders.notifyContractor, true),
+          eq(reminders.status, 'PENDING'),
+          eq(reminders.type, type as string)
+        ));
+      }
+      
+      const contractorReminders = await reminderQuery.orderBy(asc(reminders.dueAt));
+      
+      // Enrich with asset and property names
+      const enrichedReminders = await Promise.all(contractorReminders.map(async (reminder) => {
+        const [asset] = await db.select({
+          name: assets.name,
+          category: assets.category,
+        }).from(assets).where(eq(assets.id, reminder.assetId!)).limit(1);
+        
+        let property = null;
+        if (reminder.propertyId) {
+          const [prop] = await db.select({
+            name: properties.name,
+            address: properties.address,
+          }).from(properties).where(eq(properties.id, reminder.propertyId)).limit(1);
+          property = prop;
+        }
+        
+        return {
+          ...reminder,
+          assetName: asset?.name || null,
+          assetCategory: asset?.category || null,
+          propertyName: property?.name || null,
+          propertyAddress: property?.address || null,
+        };
+      }));
+      
+      res.json({ reminders: enrichedReminders });
+    } catch (error) {
+      console.error("Error fetching contractor reminders:", error);
+      res.status(500).json({ error: "Failed to fetch reminders" });
+    }
+  });
+  
   // Get contractor workers
   app.get('/api/contractor/workers', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
@@ -5444,7 +5544,17 @@ Instructions:
           status: 'IN_PROGRESS',
         }).returning();
         
-        // TODO: WebSocket event to notify contractor
+        // Get contractor user ID for WebSocket broadcast
+        const [contractor] = await db.select().from(contractors).where(eq(contractors.id, worker.contractorId)).limit(1);
+        if (contractor && (app as any).broadcastToContractor) {
+          (app as any).broadcastToContractor(contractor.userId, {
+            type: 'worker_checkin',
+            workerId: worker.id,
+            workerName: worker.name,
+            location: location,
+            timestamp: new Date().toISOString(),
+          });
+        }
         
         res.json({ visit, action: 'clocked_in' });
       } else {
@@ -5475,7 +5585,18 @@ Instructions:
         // Calculate hours worked
         const hoursWorked = (new Date().getTime() - new Date(activeVisit.checkInAt).getTime()) / (1000 * 60 * 60);
         
-        // TODO: WebSocket event to notify contractor
+        // Get contractor user ID for WebSocket broadcast
+        const [contractor] = await db.select().from(contractors).where(eq(contractors.id, worker.contractorId)).limit(1);
+        if (contractor && (app as any).broadcastToContractor) {
+          (app as any).broadcastToContractor(contractor.userId, {
+            type: 'worker_checkout',
+            workerId: worker.id,
+            workerName: worker.name,
+            location: location,
+            timestamp: new Date().toISOString(),
+            hoursWorked: hoursWorked.toFixed(2),
+          });
+        }
         
         res.json({ visit, action: 'clocked_out', hoursWorked: hoursWorked.toFixed(2) });
       }
@@ -5720,5 +5841,61 @@ Instructions:
   });
 
   const httpServer = createServer(app);
+  
+  // WebSocket server for real-time contractor updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const contractorConnections = new Map<string, Set<WebSocket>>();
+  
+  wss.on('connection', (ws: WebSocket, req) => {
+    let contractorUserId: string | null = null;
+    
+    // Extract session/auth from cookie or query param
+    ws.on('message', (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        if (data.type === 'auth' && data.userId) {
+          contractorUserId = data.userId;
+          
+          if (!contractorConnections.has(contractorUserId)) {
+            contractorConnections.set(contractorUserId, new Set());
+          }
+          contractorConnections.get(contractorUserId)!.add(ws);
+          
+          console.log(`WebSocket connected for contractor: ${contractorUserId}`);
+          ws.send(JSON.stringify({ type: 'auth_success' }));
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      if (contractorUserId) {
+        const connections = contractorConnections.get(contractorUserId);
+        if (connections) {
+          connections.delete(ws);
+          if (connections.size === 0) {
+            contractorConnections.delete(contractorUserId);
+          }
+        }
+        console.log(`WebSocket disconnected for contractor: ${contractorUserId}`);
+      }
+    });
+  });
+  
+  // Broadcast function for contractor events
+  (app as any).broadcastToContractor = (contractorUserId: string, event: any) => {
+    const connections = contractorConnections.get(contractorUserId);
+    if (connections) {
+      const message = JSON.stringify(event);
+      connections.forEach((ws) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(message);
+        }
+      });
+    }
+  };
+  
   return httpServer;
 }

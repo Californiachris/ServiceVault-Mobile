@@ -3,6 +3,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Home,
   QrCode,
@@ -11,6 +23,7 @@ import {
   Truck,
   FileText,
   Bell,
+  BellRing,
   Settings,
   Zap,
   Menu,
@@ -28,6 +41,8 @@ export default function AppShell({ children }: AppShellProps) {
   const { user } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
+  const { toast } = useToast();
 
   const isActive = (path: string) => {
     if (path === '/' && location === '/') return true;
@@ -74,6 +89,45 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   const navLinks = getNavLinks(userRole);
+
+  // Notification preferences (contractor only)
+  const { data: notificationPrefs, isLoading: prefsLoading } = useQuery<{
+    notifyCheckIn: boolean;
+    notifyCheckOut: boolean;
+    notifyTaskComplete: boolean;
+    notificationMethod: string;
+  }>({
+    queryKey: ['/api/contractor/notification-preferences'],
+    enabled: userRole === 'CONTRACTOR',
+  });
+
+  const updatePrefsMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      return await apiRequest('PATCH', '/api/contractor/notification-preferences', updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contractor/notification-preferences'] });
+      toast({
+        title: "Settings saved",
+        description: "Your notification preferences have been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleNotificationToggle = (field: string, value: boolean) => {
+    updatePrefsMutation.mutate({ [field]: value });
+  };
+
+  const handleMethodToggle = (method: string) => {
+    updatePrefsMutation.mutate({ notificationMethod: method });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,6 +184,21 @@ export default function AppShell({ children }: AppShellProps) {
                 </p>
               </div>
             </div>
+            
+            {/* Notifications button (contractor only) */}
+            {userRole === 'CONTRACTOR' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start mb-2"
+                onClick={() => setNotificationSettingsOpen(true)}
+                data-testid="button-sidebar-notifications"
+              >
+                <BellRing className="h-4 w-4 mr-2" />
+                Notifications
+              </Button>
+            )}
+            
             <Button
               variant="outline"
               size="sm"
@@ -246,6 +315,24 @@ export default function AppShell({ children }: AppShellProps) {
                     </p>
                   </div>
                 </div>
+                
+                {/* Notifications button (contractor only) */}
+                {userRole === 'CONTRACTOR' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start mb-2"
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      setNotificationSettingsOpen(true);
+                    }}
+                    data-testid="button-mobile-sidebar-notifications"
+                  >
+                    <BellRing className="h-4 w-4 mr-2" />
+                    Notifications
+                  </Button>
+                )}
+                
                 <Button
                   variant="outline"
                   size="sm"
@@ -350,6 +437,159 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Bottom spacing for mobile nav */}
       <div className="lg:hidden h-16" />
+
+      {/* Notification Settings Sheet */}
+      <Sheet open={notificationSettingsOpen} onOpenChange={setNotificationSettingsOpen}>
+        <SheetContent className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-primary" />
+              Notification Settings
+            </SheetTitle>
+            <SheetDescription>
+              Configure how you receive notifications about worker activity and tasks.
+            </SheetDescription>
+          </SheetHeader>
+
+          {prefsLoading ? (
+            <div className="space-y-4 mt-6">
+              <div className="h-12 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-12 bg-muted/50 rounded-lg animate-pulse" />
+              <div className="h-12 bg-muted/50 rounded-lg animate-pulse" />
+            </div>
+          ) : notificationPrefs ? (
+            <div className="space-y-6 mt-6">
+              {/* Notification Method */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Notification Method</Label>
+                <div className="space-y-2">
+                  <div
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                      notificationPrefs.notificationMethod === 'EMAIL'
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-muted/50 border-border hover:bg-muted'
+                    }`}
+                    onClick={() => handleMethodToggle('EMAIL')}
+                    data-testid="toggle-method-email"
+                  >
+                    <span className="text-sm font-medium">Email Only</span>
+                    <div className={`h-4 w-4 rounded-full border-2 ${
+                      notificationPrefs.notificationMethod === 'EMAIL'
+                        ? 'bg-primary border-primary'
+                        : 'border-muted-foreground'
+                    }`} />
+                  </div>
+                  <div
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                      notificationPrefs.notificationMethod === 'SMS'
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-muted/50 border-border hover:bg-muted'
+                    }`}
+                    onClick={() => handleMethodToggle('SMS')}
+                    data-testid="toggle-method-sms"
+                  >
+                    <span className="text-sm font-medium">SMS Only</span>
+                    <div className={`h-4 w-4 rounded-full border-2 ${
+                      notificationPrefs.notificationMethod === 'SMS'
+                        ? 'bg-primary border-primary'
+                        : 'border-muted-foreground'
+                    }`} />
+                  </div>
+                  <div
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
+                      notificationPrefs.notificationMethod === 'BOTH'
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-muted/50 border-border hover:bg-muted'
+                    }`}
+                    onClick={() => handleMethodToggle('BOTH')}
+                    data-testid="toggle-method-both"
+                  >
+                    <span className="text-sm font-medium">Email & SMS</span>
+                    <div className={`h-4 w-4 rounded-full border-2 ${
+                      notificationPrefs.notificationMethod === 'BOTH'
+                        ? 'bg-primary border-primary'
+                        : 'border-muted-foreground'
+                    }`} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Worker Activity */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <Label className="text-base font-semibold">Worker Activity</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex-1">
+                      <Label htmlFor="notify-checkin" className="text-sm font-medium cursor-pointer">
+                        Worker Check-In
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Get notified when workers arrive at job sites
+                      </p>
+                    </div>
+                    <Switch
+                      id="notify-checkin"
+                      checked={notificationPrefs.notifyCheckIn}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyCheckIn', checked)}
+                      disabled={updatePrefsMutation.isPending}
+                      data-testid="toggle-notify-checkin"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex-1">
+                      <Label htmlFor="notify-checkout" className="text-sm font-medium cursor-pointer">
+                        Worker Check-Out
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Get notified when workers leave job sites
+                      </p>
+                    </div>
+                    <Switch
+                      id="notify-checkout"
+                      checked={notificationPrefs.notifyCheckOut}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyCheckOut', checked)}
+                      disabled={updatePrefsMutation.isPending}
+                      data-testid="toggle-notify-checkout"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tasks */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <Label className="text-base font-semibold">Tasks</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex-1">
+                      <Label htmlFor="notify-task-complete" className="text-sm font-medium cursor-pointer">
+                        Task Completion
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Get notified when tasks are marked as complete
+                      </p>
+                    </div>
+                    <Switch
+                      id="notify-task-complete"
+                      checked={notificationPrefs.notifyTaskComplete}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyTaskComplete', checked)}
+                      disabled={updatePrefsMutation.isPending}
+                      data-testid="toggle-notify-task-complete"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {updatePrefsMutation.isPending && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
+                  <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  Saving preferences...
+                </div>
+              )}
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
