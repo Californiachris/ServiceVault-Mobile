@@ -62,7 +62,7 @@ export default function AssetView() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <Card className="bg-slate-900/80 border-red-500/20 shadow-2xl rounded-3xl">
+          <Card className="bg-slate-900/80 border-red-500/20 shadow-2xl shadow-cyan-500/20 rounded-3xl">
             <CardContent className="py-12 text-center">
               <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
               <h2 className="text-xl font-semibold text-white mb-2">Asset Not Found</h2>
@@ -92,7 +92,7 @@ export default function AssetView() {
         </div>
 
         {/* Asset Details Card */}
-        <Card className="mb-8 bg-slate-900/80 border-slate-700/50 shadow-2xl rounded-3xl backdrop-blur-xl transform transition-all duration-300 hover:shadow-cyan-500/10 hover:shadow-2xl">
+        <Card className="mb-8 bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl transform transition-all duration-300 hover:shadow-cyan-500/50 hover:shadow-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl text-white">
               <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
@@ -168,7 +168,7 @@ export default function AssetView() {
         </Card>
 
         {/* Service History Timeline */}
-        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl rounded-3xl backdrop-blur-xl">
+        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl text-white">
               <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">

@@ -153,7 +153,7 @@ export default function LogosPage() {
 
       {/* Empty State */}
       {!isLoading && (!logos || logos.length === 0) && (
-        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl rounded-3xl backdrop-blur-xl">
+        <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
           <CardContent className="text-center py-20">
             <div className="flex justify-center mb-8">
               <div className="p-8 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-2xl shadow-cyan-500/30">
