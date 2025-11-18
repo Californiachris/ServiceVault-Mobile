@@ -412,19 +412,32 @@ export function registerLogoRoutes(app: Express) {
       } catch (logoError: any) {
         console.error("Error generating logos:", logoError);
         
+        // Check if this is a content moderation error (OpenAI nests error details under .error)
+        const isModerationError = logoError?.error?.code === 'moderation_blocked' || 
+                                   logoError?.error?.type === 'image_generation_user_error' ||
+                                   logoError.status === 400;
+        
+        let userMessage = logoError?.error?.message || logoError.message || "Failed to generate logos with AI";
+        let errorStatus = 500;
+        
+        if (isModerationError) {
+          userMessage = "Content filter blocked your request. Please use professional language without profanity or inappropriate terms in your logo description. Try describing your business professionally.";
+          errorStatus = 400; // Bad request, not server error
+        }
+        
         // Update generation record with error
         await db
           .update(logoGenerations)
           .set({
             status: "FAILED",
-            errorMessage: logoError.message || "Failed to generate logos",
+            errorMessage: userMessage,
             completedAt: new Date(),
           })
           .where(eq(logoGenerations.id, generation.id));
 
-        return res.status(500).json({ 
+        return res.status(errorStatus).json({ 
           error: "Logo generation failed", 
-          message: logoError.message || "Failed to generate logos with AI" 
+          message: userMessage
         });
       }
     } catch (error) {
