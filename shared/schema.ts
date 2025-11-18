@@ -39,6 +39,9 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   
+  // Worker authentication
+  passwordHash: varchar("password_hash"), // For worker username/password login
+  
   // Family branding for homeowners
   familyName: varchar("family_name"),
   familyLogoUrl: varchar("family_logo_url"),
