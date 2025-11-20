@@ -188,7 +188,7 @@ export default function InspectionsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Property Inspections</h1>
-          <p className="text-muted-foreground">
+          <p className="text-slate-300">
             Record inspection results with digital checklists and inspector signatures for compliance tracking.
           </p>
         </div>
@@ -224,7 +224,7 @@ export default function InspectionsPage() {
                               <div className="flex items-center justify-between w-full">
                                 <span>{property.name || 'Unnamed Property'}</span>
                                 {property.addressLine1 && (
-                                  <span className="text-xs text-muted-foreground ml-2">
+                                  <span className="text-xs text-slate-400 ml-2">
                                     {property.city || property.addressLine1}
                                   </span>
                                 )}
@@ -245,7 +245,7 @@ export default function InspectionsPage() {
                       onChange={(e) => setFormData(prev => ({ ...prev, jurisdiction: e.target.value }))}
                       data-testid="input-jurisdiction"
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-slate-400">
                       Inspecting authority or organization
                     </p>
                   </div>
@@ -287,7 +287,7 @@ export default function InspectionsPage() {
                           >
                             {item.label}
                           </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-slate-400 mt-1">
                             {item.description}
                           </p>
                         </div>
@@ -409,7 +409,7 @@ export default function InspectionsPage() {
                           >
                             {inspection.result}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-slate-400">
                             {new Date(inspection.createdAt).toLocaleDateString()}
                           </span>
                         </div>
@@ -421,7 +421,7 @@ export default function InspectionsPage() {
                         )}
                         
                         {inspection.checklist?.notes && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
+                          <p className="text-xs text-slate-400 line-clamp-2">
                             {inspection.checklist.notes}
                           </p>
                         )}
@@ -430,8 +430,8 @@ export default function InspectionsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                    <ClipboardCheck className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                    <p className="text-sm text-slate-300">
                       {formData.propertyId 
                         ? 'No inspections recorded for this property yet' 
                         : 'Select a property to view inspections'
@@ -451,28 +451,28 @@ export default function InspectionsPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-400">
                       Check all applicable systems and components thoroughly
                     </p>
                   </div>
                   
                   <div className="flex items-start gap-2">
                     <FileText className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-400">
                       Document all findings and recommendations clearly
                     </p>
                   </div>
                   
                   <div className="flex items-start gap-2">
                     <User className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-400">
                       Include jurisdiction for official compliance tracking
                     </p>
                   </div>
                   
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-400">
                       Results are linked to property for transfer documentation
                     </p>
                   </div>

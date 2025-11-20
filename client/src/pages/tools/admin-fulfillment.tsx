@@ -66,14 +66,14 @@ export default function AdminFulfillment() {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="heading-admin-fulfillment">Admin Fulfillment Console</h1>
-        <p className="text-muted-foreground">Manage subscription orders and sticker shipments</p>
+        <p className="text-slate-300">Manage subscription orders and sticker shipments</p>
       </div>
 
       {subscriptions.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground" data-testid="text-no-pending">No pending subscriptions</p>
+            <Package className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+            <p className="text-slate-300" data-testid="text-no-pending">No pending subscriptions</p>
           </CardContent>
         </Card>
       ) : (
@@ -99,15 +99,15 @@ export default function AdminFulfillment() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Stickers to Ship</p>
+                    <p className="text-sm text-slate-400 mb-1">Stickers to Ship</p>
                     <p className="text-2xl font-bold" data-testid={`text-quota-${sub.id}`}>{sub.quotaTotal}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">User ID</p>
+                    <p className="text-sm text-slate-400 mb-1">User ID</p>
                     <p className="text-sm font-mono" data-testid={`text-userid-${sub.id}`}>{sub.userId}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Plan Type</p>
+                    <p className="text-sm text-slate-400 mb-1">Plan Type</p>
                     <p className="text-sm font-medium">{sub.plan.includes('contractor') ? 'Contractor' : 'Homeowner'}</p>
                   </div>
                 </div>
@@ -127,8 +127,8 @@ export default function AdminFulfillment() {
                   </Button>
                 </div>
 
-                <div className="mt-4 p-3 bg-muted rounded-md">
-                  <p className="text-sm text-muted-foreground mb-2">
+                <div className="mt-4 p-3 bg-slate-800/50 rounded-md border border-slate-700/30">
+                  <p className="text-sm text-slate-300 mb-2">
                     <Clock className="inline h-4 w-4 mr-1" />
                     Next Steps
                   </p>

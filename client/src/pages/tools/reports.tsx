@@ -93,7 +93,7 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Home Health Certificate™</h1>
-          <p className="text-muted-foreground">
+          <p className="text-slate-300">
             Generate professional PDF reports with complete property and asset history for inspections, sales, and insurance.
           </p>
         </div>
@@ -134,7 +134,7 @@ export default function ReportsPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-slate-400">
                         {selectedProperty 
                           ? 'Generate report for selected property' 
                           : 'Select a property or generate for your first property'
@@ -163,9 +163,9 @@ export default function ReportsPage() {
                   </>
                 ) : (
                   <div className="text-center py-6">
-                    <Home className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <Home className="h-12 w-12 text-slate-400 mx-auto mb-3" />
                     <h3 className="font-semibold mb-2">No Properties Found</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-sm text-slate-300 mb-4">
                       You need at least one property to generate a report.
                     </p>
                     <Button variant="outline" asChild data-testid="button-create-property">
@@ -218,7 +218,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Property Information</h4>
-                        <p className="text-sm text-muted-foreground">Complete address, ownership details, and master identifier code</p>
+                        <p className="text-sm text-slate-400">Complete address, ownership details, and master identifier code</p>
                       </div>
                     </div>
                     
@@ -226,7 +226,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Asset Inventory</h4>
-                        <p className="text-sm text-muted-foreground">Complete list of tracked assets with installation dates and categories</p>
+                        <p className="text-sm text-slate-400">Complete list of tracked assets with installation dates and categories</p>
                       </div>
                     </div>
                     
@@ -234,7 +234,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Service History</h4>
-                        <p className="text-sm text-muted-foreground">Timeline of installations, maintenance, and service events</p>
+                        <p className="text-sm text-slate-400">Timeline of installations, maintenance, and service events</p>
                       </div>
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Inspection Records</h4>
-                        <p className="text-sm text-muted-foreground">Official inspection results and compliance documentation</p>
+                        <p className="text-sm text-slate-400">Official inspection results and compliance documentation</p>
                       </div>
                     </div>
                     
@@ -252,7 +252,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Document Summary</h4>
-                        <p className="text-sm text-muted-foreground">Count and types of warranties, receipts, and manuals on file</p>
+                        <p className="text-sm text-slate-400">Count and types of warranties, receipts, and manuals on file</p>
                       </div>
                     </div>
                     
@@ -260,7 +260,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <h4 className="font-medium">Professional Formatting</h4>
-                        <p className="text-sm text-muted-foreground">Official letterhead with timestamps and verification codes</p>
+                        <p className="text-sm text-slate-400">Official letterhead with timestamps and verification codes</p>
                       </div>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ export default function ReportsPage() {
                       <Home className="text-blue-400 h-6 w-6" />
                     </div>
                     <h3 className="font-semibold mb-2">Property Sales</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-slate-400">
                       Provide buyers with complete transparency about property condition and maintenance history.
                     </p>
                   </div>
@@ -290,7 +290,7 @@ export default function ReportsPage() {
                       <CheckCircle2 className="text-green-400 h-6 w-6" />
                     </div>
                     <h3 className="font-semibold mb-2">Inspections</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-slate-400">
                       Give inspectors immediate access to all asset information, warranties, and service records.
                     </p>
                   </div>
@@ -300,7 +300,7 @@ export default function ReportsPage() {
                       <FileText className="text-purple-400 h-6 w-6" />
                     </div>
                     <h3 className="font-semibold mb-2">Insurance Claims</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-slate-400">
                       Document asset values, installation dates, and maintenance for insurance purposes.
                     </p>
                   </div>
@@ -320,7 +320,7 @@ export default function ReportsPage() {
                       <h4 className="font-mono text-lg font-bold">ServiceVault — Home Health Certificate™</h4>
                       <Badge variant="outline">PDF</Badge>
                     </div>
-                    <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="space-y-2 text-sm text-slate-400">
                       <p><strong>Property:</strong> Main Residence</p>
                       <p><strong>Owner:</strong> John Doe (john@example.com)</p>
                       <p><strong>Address:</strong> 123 Main Street, Anytown CA 90210</p>
@@ -334,21 +334,21 @@ export default function ReportsPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>• HVAC System [HVAC] - Trane XR16</span>
-                        <span className="text-muted-foreground">Installed: Mar 15, 2024</span>
+                        <span className="text-slate-400">Installed: Mar 15, 2024</span>
                       </div>
                       <div className="flex justify-between">
                         <span>• Water Heater [PLUMBING] - Rheem 50 Gal</span>
-                        <span className="text-muted-foreground">Installed: Jan 20, 2024</span>
+                        <span className="text-slate-400">Installed: Jan 20, 2024</span>
                       </div>
                       <div className="flex justify-between">
                         <span>• Electrical Panel [ELECTRICAL] - Square D 200A</span>
-                        <span className="text-muted-foreground">Installed: Feb 8, 2024</span>
+                        <span className="text-slate-400">Installed: Feb 8, 2024</span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-slate-400">
                       Full reports include complete event timelines, document counts, and professional formatting.
                     </p>
                   </div>
