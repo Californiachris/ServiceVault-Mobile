@@ -76,15 +76,17 @@ export default function LogosPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-6 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign In Required</CardTitle>
-            <CardDescription>
-              Please sign in to manage your logos
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-24">
+        <div className="container mx-auto p-6 max-w-2xl">
+          <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-white">Sign In Required</CardTitle>
+              <CardDescription className="text-slate-300">
+                Please sign in to manage your logos
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -147,7 +149,7 @@ export default function LogosPage() {
       {isLoading && (
         <div className="text-center py-12">
           <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto" />
-          <p className="text-muted-foreground mt-4">Loading your logos...</p>
+          <p className="text-slate-300 mt-4">Loading your logos...</p>
         </div>
       )}
 
@@ -239,15 +241,15 @@ export default function LogosPage() {
                       {/* Logo Details */}
                       <div className="p-4 border-t space-y-3">
                         <div>
-                          <p className="font-medium truncate" title={logo.fileName}>
+                          <p className="font-medium truncate text-white" title={logo.fileName}>
                             {logo.fileName}
                           </p>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground mt-1">
+                          <div className="flex items-center justify-between text-sm text-slate-400 mt-1">
                             <span>{logo.fileType.split('/')[1].toUpperCase()}</span>
                             <span>{formatFileSize(logo.fileSize)}</span>
                           </div>
                           {logo.businessName && (
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="text-sm text-slate-400 mt-1">
                               {logo.businessName}
                             </p>
                           )}
@@ -259,7 +261,7 @@ export default function LogosPage() {
                             onClick={() => handleDownload(logo)}
                             variant="outline"
                             size="sm"
-                            className="flex-1"
+                            className="flex-1 border-slate-600 hover:bg-slate-700/50 text-white hover:border-cyan-500/50 transition-all duration-300 hover:scale-[1.02] transform"
                             data-testid={`button-download-${logo.id}`}
                           >
                             <Download className="h-4 w-4 mr-1" />
@@ -269,6 +271,7 @@ export default function LogosPage() {
                             onClick={() => deleteMutation.mutate(logo.id)}
                             variant="outline"
                             size="sm"
+                            className="border-slate-600 hover:bg-red-500/20 text-white hover:border-red-500/50 transition-all duration-300 hover:scale-[1.02] transform"
                             disabled={deleteMutation.isPending}
                             data-testid={`button-delete-${logo.id}`}
                           >

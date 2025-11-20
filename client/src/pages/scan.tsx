@@ -549,6 +549,7 @@ export default function Scan() {
                     {user?.role !== 'CONTRACTOR' && (
                       <Button 
                         onClick={() => setIsScanning(true)}
+                        className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
                         data-testid="button-start-scanning"
                       >
                         <Camera className="mr-2 h-4 w-4" />
@@ -569,14 +570,14 @@ export default function Scan() {
                 )}
 
                 {/* Manual Code Input */}
-                <div className="mt-4 pt-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground mb-2">Or enter code manually:</p>
+                <div className="mt-6 pt-6 border-t border-slate-700/50">
+                  <p className="text-sm text-slate-300 mb-3 font-medium">Or enter code manually:</p>
                   <div className="flex gap-2">
                     <input
                       ref={manualInputRef}
                       type="text"
                       placeholder="Enter QR code (e.g., FT-HVAC-2024-A7K9)"
-                      className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground placeholder:text-muted-foreground"
+                      className="flex-1 px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 backdrop-blur-xl shadow-lg transition-all duration-200"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           const value = (e.target as HTMLInputElement).value.trim();
@@ -605,28 +606,28 @@ export default function Scan() {
                   {recentScans.map((scan, index) => (
                     <div 
                       key={index}
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-[1.01] cursor-pointer backdrop-blur-sm shadow-sm hover:shadow-md"
+                      className="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700/30 rounded-2xl hover:bg-slate-700/50 hover:border-slate-600/50 transition-all duration-200 hover:scale-[1.01] cursor-pointer backdrop-blur-xl shadow-lg hover:shadow-xl hover:shadow-cyan-500/10"
                       onClick={() => setScannedCode(scan.code)}
                       data-testid={`recent-scan-${index}`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
+                        <div className="p-2 bg-gradient-to-br from-teal-500/20 to-cyan-600/20 rounded-xl border border-teal-500/30 shadow-lg">
                           {scan.type === 'MASTER' ? (
-                            <Home className="h-4 w-4 text-primary" />
+                            <Home className="h-4 w-4 text-teal-400" />
                           ) : (
-                            <Wrench className="h-4 w-4 text-primary" />
+                            <Wrench className="h-4 w-4 text-cyan-400" />
                           )}
                         </div>
                         <div>
-                          <div className="text-sm font-medium">{scan.name}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{scan.code}</div>
+                          <div className="text-sm font-medium text-white">{scan.name}</div>
+                          <div className="text-xs text-slate-400 font-mono">{scan.code}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={scan.claimed ? "default" : "secondary"}>
                           {scan.claimed ? "Claimed" : "Available"}
                         </Badge>
-                        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                        <span className="w-2 h-2 bg-green-400 rounded-full shadow-lg shadow-green-400/50"></span>
                       </div>
                     </div>
                   ))}
@@ -647,20 +648,23 @@ export default function Scan() {
                 </CardHeader>
                 <CardContent>
                   {scanLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                      <p className="text-muted-foreground">Looking up QR code...</p>
+                    <div className="text-center py-12 bg-slate-800/30 border border-slate-700/30 rounded-2xl backdrop-blur-xl shadow-xl">
+                      <div className="animate-spin w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full mx-auto mb-6 shadow-lg shadow-cyan-500/30" />
+                      <p className="text-slate-300 text-lg font-medium">Looking up QR code...</p>
                     </div>
                   ) : scanError ? (
-                    <div className="text-center py-8">
-                      <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">QR Code Not Found</h3>
-                      <p className="text-muted-foreground mb-4">
-                        The scanned QR code "{scannedCode}" was not found in our system.
+                    <div className="text-center py-12 bg-slate-900/80 border border-slate-700/50 rounded-3xl backdrop-blur-xl shadow-2xl shadow-red-500/10">
+                      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-full inline-flex items-center justify-center mb-6 shadow-lg">
+                        <AlertCircle className="h-16 w-16 text-red-400" />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-3 text-white tracking-tight">QR Code Not Found</h3>
+                      <p className="text-slate-300 mb-6 max-w-md mx-auto">
+                        The scanned QR code "<span className="font-mono text-cyan-400">{scannedCode}</span>" was not found in our system.
                       </p>
                       <Button 
                         variant="outline" 
                         onClick={() => setScannedCode(null)}
+                        className="bg-slate-800/50 border-slate-600 hover:bg-slate-700/50 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200"
                         data-testid="button-scan-another"
                       >
                         Scan Another Code
@@ -669,28 +673,30 @@ export default function Scan() {
                   ) : scanResult ? (
                     <div className="space-y-4">
                       {/* Success State */}
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <div className="flex items-center mb-2">
-                          <CheckCircle2 className="text-green-400 mr-2 h-5 w-5" />
-                          <span className="font-medium text-green-400">QR Code Detected</span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Code:</span>
-                            <span className="font-mono">{scanResult.code}</span>
+                      <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl shadow-xl shadow-green-500/10">
+                        <div className="flex items-center mb-4">
+                          <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-xl mr-3 shadow-lg">
+                            <CheckCircle2 className="text-green-400 h-6 w-6" />
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Type:</span>
-                            <Badge variant="outline">
+                          <span className="font-bold text-green-400 text-lg">QR Code Detected</span>
+                        </div>
+                        <div className="space-y-3 text-sm">
+                          <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-700/30">
+                            <span className="text-slate-400 font-medium">Code:</span>
+                            <span className="font-mono text-cyan-400 font-semibold">{scanResult.code}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-700/30">
+                            <span className="text-slate-400 font-medium">Type:</span>
+                            <Badge variant="outline" className="border-teal-500/50 text-teal-400">
                               {scanResult.type === 'HOUSE' ? 'Property Master' : 'Asset'}
                             </Badge>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Brand:</span>
-                            <span>{scanResult.brandLabel || 'ServiceVault'}</span>
+                          <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-700/30">
+                            <span className="text-slate-400 font-medium">Brand:</span>
+                            <span className="text-white font-semibold">{scanResult.brandLabel || 'ServiceVault'}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Status:</span>
+                          <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-700/30">
+                            <span className="text-slate-400 font-medium">Status:</span>
                             <Badge variant={scanResult.claimed ? "default" : "secondary"}>
                               {scanResult.claimed ? 'Claimed' : 'Available'}
                             </Badge>
@@ -1005,30 +1011,32 @@ export default function Scan() {
                             </div>
 
                             {/* Photo Upload Section */}
-                            <div className="space-y-4 pt-4 border-t">
-                              <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <ImageIcon className="h-5 w-5" />
+                            <div className="space-y-4 pt-6 border-t border-slate-700/50">
+                              <h3 className="text-lg font-semibold flex items-center gap-2 text-white">
+                                <div className="p-2 bg-gradient-to-br from-teal-500/20 to-cyan-600/20 rounded-xl">
+                                  <ImageIcon className="h-5 w-5 text-cyan-400" />
+                                </div>
                                 Installation Photos (Optional)
                               </h3>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-slate-300">
                                 Upload up to 5 photos of the installation
                               </p>
 
                               {/* Photo Previews */}
                               {photos.length > 0 && (
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-3 gap-3">
                                   {photos.map((photo) => (
-                                    <div key={photo.id} className="relative group">
+                                    <div key={photo.id} className="relative group bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-xl shadow-lg">
                                       <img
                                         src={photo.preview}
                                         alt="Installation photo"
-                                        className="w-full h-24 object-cover rounded-lg border"
+                                        className="w-full h-24 object-cover"
                                       />
                                       <Button
                                         type="button"
                                         variant="destructive"
                                         size="sm"
-                                        className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-xl shadow-lg backdrop-blur-sm"
                                         onClick={() => removePhoto(photo.id)}
                                         data-testid={`button-remove-photo-${photo.id}`}
                                       >
@@ -1055,7 +1063,7 @@ export default function Scan() {
                                     <Button
                                       type="button"
                                       variant="outline"
-                                      className="w-full"
+                                      className="w-full bg-slate-800/50 border-slate-600 hover:bg-slate-700/50 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200"
                                       onClick={() => document.getElementById('photo-upload')?.click()}
                                       data-testid="button-add-photos"
                                     >
@@ -1085,7 +1093,7 @@ export default function Scan() {
                               </Button>
                               <Button
                                 type="submit"
-                                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                                className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
                                 disabled={claimMutation.isPending}
                                 data-testid="button-submit-install"
                               >
@@ -1111,7 +1119,7 @@ export default function Scan() {
                             <>
                               {isAuthenticated ? (
                                 <Button 
-                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" 
+                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" 
                                   onClick={handleClaimAsset}
                                   data-testid="button-claim-asset"
                                 >
@@ -1120,7 +1128,7 @@ export default function Scan() {
                                 </Button>
                               ) : (
                                 <Button 
-                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" 
+                                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" 
                                   onClick={() => setLocation('/pricing')}
                                   data-testid="button-sign-up"
                                 >
@@ -1134,7 +1142,7 @@ export default function Scan() {
                             {/* Primary Action: View Property or Asset Timeline (for everyone) */}
                             {scanResult.property && scanResult.type === 'HOUSE' ? (
                               <Button 
-                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600" 
+                                className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" 
                                 onClick={() => setLocation(`/property/${scanResult.property!.id}`)}
                                 data-testid="button-view-property"
                               >
@@ -1143,7 +1151,7 @@ export default function Scan() {
                               </Button>
                             ) : scanResult.asset && (
                               <Button 
-                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600" 
+                                className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" 
                                 onClick={() => setLocation(`/asset/${scanResult.asset!.id}`)}
                                 data-testid="button-view-asset"
                               >
@@ -1158,8 +1166,7 @@ export default function Scan() {
                                 {user.role === 'CONTRACTOR' && (
                                   <>
                                     <Button 
-                                      variant="outline"
-                                      className="w-full" 
+                                      className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform" 
                                       onClick={() => setShowServiceEventDialog(true)}
                                       data-testid="button-log-service"
                                     >
@@ -1206,26 +1213,28 @@ export default function Scan() {
                       ) : (
                         /* Success State */
                         <div className="space-y-4">
-                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6 text-center">
-                            <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold mb-2">Installation Complete!</h3>
-                            <p className="text-muted-foreground mb-4">
+                          <div className="bg-slate-900/80 border border-slate-700/50 rounded-3xl p-8 text-center backdrop-blur-xl shadow-2xl shadow-green-500/20">
+                            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-full inline-flex items-center justify-center mb-6 shadow-lg shadow-green-500/30">
+                              <CheckCircle2 className="h-16 w-16 text-green-400" />
+                            </div>
+                            <h3 className="text-2xl font-bold mb-3 text-white tracking-tight">Installation Complete!</h3>
+                            <p className="text-slate-300 mb-6 text-lg">
                               The asset has been successfully claimed and bound to your property.
                             </p>
                             
                             {claimSuccess && (
-                              <div className="bg-muted/30 rounded-lg p-4 text-sm space-y-2 text-left">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Asset:</span>
-                                  <span className="font-medium">{claimSuccess.asset?.name}</span>
+                              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 text-sm space-y-3 text-left backdrop-blur-xl shadow-xl">
+                                <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl">
+                                  <span className="text-slate-400 font-medium">Asset:</span>
+                                  <span className="font-semibold text-white">{claimSuccess.asset?.name}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Property:</span>
-                                  <span className="font-medium">{claimSuccess.property?.name}</span>
+                                <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl">
+                                  <span className="text-slate-400 font-medium">Property:</span>
+                                  <span className="font-semibold text-white">{claimSuccess.property?.name}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Category:</span>
-                                  <Badge variant="outline">{claimSuccess.asset?.category}</Badge>
+                                <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl">
+                                  <span className="text-slate-400 font-medium">Category:</span>
+                                  <Badge variant="outline" className="border-teal-500/50 text-teal-400">{claimSuccess.asset?.category}</Badge>
                                 </div>
                               </div>
                             )}
@@ -1247,7 +1256,7 @@ export default function Scan() {
                               Scan Another
                             </Button>
                             <Button 
-                              className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                              className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
                               onClick={() => {
                                 if (claimSuccess?.asset?.id) {
                                   setLocation(`/tools/assets?id=${claimSuccess.asset.id}`);
@@ -1263,11 +1272,11 @@ export default function Scan() {
                       )}
 
                       {/* Information */}
-                      <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                      <div className="text-sm text-slate-300 p-5 bg-slate-800/50 border border-slate-700/50 rounded-2xl backdrop-blur-xl shadow-xl">
                         {scanResult.type === 'HOUSE' ? (
-                          <p>This is a master property code that provides access to the complete property history, including all infrastructure assets, installation records, and service history.</p>
+                          <p className="leading-relaxed">This is a master property code that provides access to the complete property history, including all infrastructure assets, installation records, and service history.</p>
                         ) : (
-                          <p>This is an asset identifier that tracks the complete lifecycle of a specific item including installation, service, warranties, and transfers.</p>
+                          <p className="leading-relaxed">This is an asset identifier that tracks the complete lifecycle of a specific item including installation, service, warranties, and transfers.</p>
                         )}
                       </div>
                     </div>
@@ -1279,12 +1288,12 @@ export default function Scan() {
             {!scannedCode && (
               <Card className="bg-slate-900/80 border-slate-700/50 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl rounded-3xl">
                 <CardContent className="pt-6">
-                  <div className="text-center py-8">
-                    <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">
-                      <QrCode className="h-12 w-12 text-white" />
+                  <div className="text-center py-12 bg-slate-800/30 border border-slate-700/30 rounded-2xl backdrop-blur-xl shadow-xl">
+                    <div className="p-6 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-6 shadow-2xl shadow-cyan-500/30">
+                      <QrCode className="h-16 w-16 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2 tracking-tight">Ready to Scan</h3>
-                    <p className="text-muted-foreground">
+                    <h3 className="text-2xl font-bold mb-3 tracking-tight text-white">Ready to Scan</h3>
+                    <p className="text-slate-300 text-lg">
                       Scan a QR code using the camera or enter a code manually to get started.
                     </p>
                   </div>
@@ -1297,10 +1306,10 @@ export default function Scan() {
 
       {/* Service Event Dialog */}
       <Dialog open={showServiceEventDialog} onOpenChange={setShowServiceEventDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900/95 border-slate-700/50 backdrop-blur-xl shadow-2xl shadow-cyan-500/20 rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Log Service Event</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-bold text-white tracking-tight">Log Service Event</DialogTitle>
+            <DialogDescription className="text-slate-300 text-base">
               Record a service or repair event for this asset
             </DialogDescription>
           </DialogHeader>
@@ -1357,20 +1366,20 @@ export default function Scan() {
               />
 
               {/* Photos */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Service Photos (optional)</label>
-                <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-4">
+                <label className="text-sm font-semibold text-white">Service Photos (optional)</label>
+                <div className="grid grid-cols-2 gap-3">
                   {servicePhotos.map((photo) => (
-                    <div key={photo.id} className="relative aspect-square">
+                    <div key={photo.id} className="relative aspect-square bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-xl shadow-lg">
                       <img
                         src={photo.preview}
                         alt="Service photo"
-                        className="w-full h-full object-cover rounded-lg border"
+                        className="w-full h-full object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => removeServicePhoto(photo.id)}
-                        className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 rounded-full"
+                        className="absolute top-2 right-2 p-2 bg-red-500/90 hover:bg-red-600 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110"
                         data-testid={`button-remove-service-photo-${photo.id}`}
                       >
                         <X className="h-4 w-4 text-white" />
@@ -1378,7 +1387,7 @@ export default function Scan() {
                     </div>
                   ))}
                   {servicePhotos.length < 5 && (
-                    <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                    <label className="aspect-square border-2 border-dashed border-slate-600 bg-slate-800/30 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-700/50 hover:border-cyan-500/50 transition-all duration-200 backdrop-blur-xl shadow-lg">
                       <Input
                         type="file"
                         accept="image/*"
@@ -1387,12 +1396,12 @@ export default function Scan() {
                         className="hidden"
                         data-testid="input-service-photos"
                       />
-                      <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-xs text-muted-foreground">Add Photo</span>
+                      <ImageIcon className="h-10 w-10 text-slate-400 mb-2" />
+                      <span className="text-sm text-slate-400 font-medium">Add Photo</span>
                     </label>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-slate-400">
                   Upload up to 5 photos ({servicePhotos.length}/5)
                 </p>
               </div>
@@ -1414,7 +1423,7 @@ export default function Scan() {
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white"
+                  className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
                   disabled={serviceEventMutation.isPending}
                   data-testid="button-submit-service-event"
                 >

@@ -83,17 +83,8 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <Button 
-              size="sm"
-              variant="ghost"
-              onClick={() => setLocation("/login/worker")}
-              data-testid="button-worker-login"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Worker Login
-            </Button>
-            <Button 
               size="lg"
-              variant="outline"
+              className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 px-6 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] transform"
               onClick={() => setLocation("/login")}
               data-testid="button-nav-login"
             >

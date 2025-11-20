@@ -55,6 +55,7 @@ import LogosPage from "@/pages/LogosPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import WorkerLogin from "@/pages/worker-login";
 import WorkerDashboard from "@/pages/worker-dashboard";
+import Login from "@/pages/login";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -74,18 +75,8 @@ function Router() {
     );
   }
 
-  // Handle /login route - redirect to backend auth
-  if (location === "/login") {
-    window.location.href = "/api/login";
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
   // Public routes without AppShell (landing, pricing, welcome pages, asset/property views, tenant reports)
-  const publicRoutes = ["/", "/pricing", "/login/worker"];
+  const publicRoutes = ["/", "/pricing", "/login", "/login/worker"];
   const publicContractorRoutes = [
     "/contractor/welcome",
     "/contractor/plans",
@@ -104,6 +95,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/login" component={Login} />
         <Route path="/login/worker" component={WorkerLogin} />
         <Route path="/contractor/welcome" component={ContractorWelcome} />
         <Route path="/contractor/plans" component={ContractorPlanSelection} />

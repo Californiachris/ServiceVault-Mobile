@@ -144,7 +144,7 @@ export default function Navigation() {
               <>
                 <Button 
                   variant="ghost" 
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => setLocation("/login")}
                   data-testid="button-signin"
                 >
                   Sign In
