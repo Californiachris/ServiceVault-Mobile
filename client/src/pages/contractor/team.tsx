@@ -160,11 +160,11 @@ export default function ContractorTeam() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-team">Team</h1>
-            <p className="text-lg text-muted-foreground">See who's on your crew, hours, and installs.</p>
+            <p className="text-lg text-slate-400">See who's on your crew, hours, and installs.</p>
           </div>
           <Dialog open={showAddWorker} onOpenChange={setShowAddWorker}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-add-worker">
+              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]" data-testid="button-add-worker">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Team Member
               </Button>
@@ -240,7 +240,7 @@ export default function ContractorTeam() {
                     <Button type="button" variant="ghost" onClick={() => setShowAddWorker(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={addWorkerMutation.isPending} data-testid="button-submit-worker">
+                    <Button type="submit" disabled={addWorkerMutation.isPending} data-testid="button-submit-worker" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                       {addWorkerMutation.isPending ? "Adding..." : "Add Worker"}
                     </Button>
                   </div>
@@ -255,14 +255,14 @@ export default function ContractorTeam() {
       <div className="mb-6">
         <Dialog open={showAssignTask} onOpenChange={setShowAssignTask}>
           <DialogTrigger asChild>
-            <Card className="border-2 border-dashed border-primary/30 hover:border-primary/50 backdrop-blur-lg bg-gradient-to-br from-teal-500/5 to-cyan-600/5 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer" data-testid="card-schedule-assignments">
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:border-cyan-500/50 hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.01] cursor-pointer" data-testid="card-schedule-assignments">
               <CardContent className="p-8">
                 <div className="text-center">
-                  <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg">
+                  <div className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full inline-flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/50">
                     <CalendarIcon className="h-10 w-10 text-white" />
                   </div>
                   <h2 className="text-2xl font-bold mb-2 tracking-tight">Assign Job to Team Member</h2>
-                  <p className="text-base text-muted-foreground">
+                  <p className="text-base text-slate-400">
                     Schedule tomorrow's tasks and job assignments
                   </p>
                 </div>
@@ -365,7 +365,7 @@ export default function ContractorTeam() {
                   <Button type="button" variant="ghost" onClick={() => setShowAssignTask(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={assignTaskMutation.isPending} data-testid="button-submit-assignment">
+                  <Button type="submit" disabled={assignTaskMutation.isPending} data-testid="button-submit-assignment" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                     {assignTaskMutation.isPending ? "Assigning..." : "Assign Job"}
                   </Button>
                 </div>
@@ -384,11 +384,11 @@ export default function ContractorTeam() {
             <Skeleton className="h-24 w-full" />
           </>
         ) : workers.length === 0 ? (
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
             <CardContent className="py-12 text-center">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">No team members yet</p>
-              <Button onClick={() => setShowAddWorker(true)} data-testid="button-add-first-worker" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white">
+              <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-400 mb-4">No team members yet</p>
+              <Button onClick={() => setShowAddWorker(true)} data-testid="button-add-first-worker" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Team Member
               </Button>
@@ -397,7 +397,7 @@ export default function ContractorTeam() {
         ) : (
           workers.map((worker: any) => (
             <Link key={worker.id} href={`/contractor/workers/${worker.id}`}>
-              <Card className="hover:border-primary/50 transition-all duration-200 cursor-pointer backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl hover:scale-[1.01] group" data-testid={`worker-card-${worker.id}`}>
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:border-cyan-500/50 hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.01] cursor-pointer group" data-testid={`worker-card-${worker.id}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -408,7 +408,7 @@ export default function ContractorTeam() {
                           {worker.status}
                         </Badge>
                       </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
+                      <div className="space-y-1 text-sm text-slate-400">
                         {worker.email && <p>Email: {worker.email}</p>}
                         {worker.phone && <p>Phone: {worker.phone}</p>}
                         <div className="flex items-center gap-4 mt-2">
@@ -423,7 +423,7 @@ export default function ContractorTeam() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" data-testid={`button-view-worker-${worker.id}`} className="group-hover:bg-gradient-to-r group-hover:from-teal-500 group-hover:to-cyan-600 group-hover:text-white group-hover:border-transparent transition-all">
+                    <Button variant="outline" size="sm" data-testid={`button-view-worker-${worker.id}`} className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] border-transparent">
                       View Profile
                     </Button>
                   </div>
@@ -436,25 +436,26 @@ export default function ContractorTeam() {
 
       {/* Worker Credentials Modal */}
       <Dialog open={!!workerCredentials} onOpenChange={() => setWorkerCredentials(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-slate-900/95 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle>Worker Account Created!</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-400">
               Share these login credentials with your worker. They can use these to access their portal.
             </p>
             
             {workerCredentials && (
               <div className="space-y-3">
-                <div className="rounded-lg border p-4 bg-muted/50">
+                <div className="rounded-2xl border border-slate-700/50 p-4 bg-slate-800/50 shadow-lg shadow-cyan-500/10 backdrop-blur-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Username</span>
+                    <span className="text-sm font-medium text-slate-300">Username</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => copyToClipboard(workerCredentials.username, 'username')}
                       data-testid="button-copy-username"
+                      className="hover:bg-gradient-to-r hover:from-teal-500 hover:to-cyan-600 hover:text-white transition-all"
                     >
                       {copiedField === 'username' ? (
                         <Check className="h-4 w-4 text-green-500" />
@@ -468,14 +469,15 @@ export default function ContractorTeam() {
                   </p>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-muted/50">
+                <div className="rounded-2xl border border-slate-700/50 p-4 bg-slate-800/50 shadow-lg shadow-cyan-500/10 backdrop-blur-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Password</span>
+                    <span className="text-sm font-medium text-slate-300">Password</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => copyToClipboard(workerCredentials.password, 'password')}
                       data-testid="button-copy-password"
+                      className="hover:bg-gradient-to-r hover:from-teal-500 hover:to-cyan-600 hover:text-white transition-all"
                     >
                       {copiedField === 'password' ? (
                         <Check className="h-4 w-4 text-green-500" />
@@ -489,14 +491,15 @@ export default function ContractorTeam() {
                   </p>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-primary/5">
+                <div className="rounded-2xl border border-slate-700/50 p-4 bg-slate-800/50 shadow-lg shadow-cyan-500/10 backdrop-blur-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Login URL</span>
+                    <span className="text-sm font-medium text-slate-300">Login URL</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => copyToClipboard(workerCredentials.loginUrl, 'url')}
                       data-testid="button-copy-url"
+                      className="hover:bg-gradient-to-r hover:from-teal-500 hover:to-cyan-600 hover:text-white transition-all"
                     >
                       {copiedField === 'url' ? (
                         <Check className="h-4 w-4 text-green-500" />
@@ -505,7 +508,7 @@ export default function ContractorTeam() {
                       )}
                     </Button>
                   </div>
-                  <p className="text-sm font-mono break-all" data-testid="text-login-url">
+                  <p className="text-sm font-mono break-all text-slate-300" data-testid="text-login-url">
                     {workerCredentials.loginUrl}
                   </p>
                 </div>
@@ -513,7 +516,7 @@ export default function ContractorTeam() {
             )}
 
             <div className="flex justify-end">
-              <Button onClick={() => setWorkerCredentials(null)} data-testid="button-close-credentials">
+              <Button onClick={() => setWorkerCredentials(null)} data-testid="button-close-credentials" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                 Close
               </Button>
             </div>

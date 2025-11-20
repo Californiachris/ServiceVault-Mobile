@@ -138,13 +138,13 @@ export default function ContractorReminders() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-reminders">Reminders</h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-slate-400">
               Stay on top of maintenance for your installed assets.
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/scan">
-              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white" data-testid="button-scan-asset">
+              <Button className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]" data-testid="button-scan-asset">
                 <Package className="h-4 w-4 mr-2" />
                 Scan Asset
               </Button>
@@ -155,7 +155,7 @@ export default function ContractorReminders() {
 
       {/* Filter Tabs - Premium Design */}
       <Tabs defaultValue="all" className="mb-6" onValueChange={setActiveFilter}>
-        <TabsList className="grid w-full grid-cols-4 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-md" data-testid="tabs-filter">
+        <TabsList className="grid w-full grid-cols-4 bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl" data-testid="tabs-filter">
           <TabsTrigger value="all" data-testid="tab-all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">All</TabsTrigger>
           <TabsTrigger value="warranty" data-testid="tab-warranty" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all">Warranty</TabsTrigger>
           <TabsTrigger value="maintenance" data-testid="tab-maintenance" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white transition-all">Maintenance</TabsTrigger>
@@ -167,23 +167,23 @@ export default function ContractorReminders() {
       {isLoading && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground mt-4">Loading reminders...</p>
+          <p className="text-slate-400 mt-4">Loading reminders...</p>
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && filteredReminders.length === 0 && (
-        <Card className="border-dashed backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="empty-state">
+        <Card className="border-dashed bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl" data-testid="empty-state">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="p-4 bg-muted rounded-full mb-4">
-              <BellOff className="h-12 w-12 text-muted-foreground" />
+            <div className="p-4 bg-slate-800/50 rounded-full mb-4">
+              <BellOff className="h-12 w-12 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">No reminders yet</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
+            <p className="text-slate-400 text-center max-w-md mb-6">
               Install assets with warranties or maintenance schedules to receive reminders.
             </p>
             <Link href="/scan">
-              <Button data-testid="button-scan-first-asset" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white">Scan First Asset</Button>
+              <Button data-testid="button-scan-first-asset" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">Scan First Asset</Button>
             </Link>
           </CardContent>
         </Card>
@@ -201,7 +201,7 @@ export default function ContractorReminders() {
               </h2>
               <div className="space-y-3">
                 {overdueReminders.map((reminder: Reminder) => (
-                  <Card key={reminder.id} className="border-red-500/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
+                  <Card key={reminder.id} className="border-red-500/50 bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-3xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
@@ -212,7 +212,7 @@ export default function ContractorReminders() {
                             <h3 className="font-semibold mb-1" data-testid="text-reminder-title">
                               {reminder.title || `${reminder.type.replace(/_/g, " ")}`}
                             </h3>
-                            <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="space-y-1 text-sm text-slate-400">
                               <div className="flex items-center gap-2">
                                 <Package className="h-3 w-3" />
                                 <span>{reminder.assetName || "Unknown Asset"}</span>
@@ -244,7 +244,7 @@ export default function ContractorReminders() {
                           </Button>
                         </Link>
                         <Button
-                          variant="default"
+                          className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                           size="sm"
                           onClick={() => completeReminderMutation.mutate(reminder.id)}
                           disabled={completeReminderMutation.isPending}
@@ -270,7 +270,7 @@ export default function ContractorReminders() {
               </h2>
               <div className="space-y-3">
                 {upcomingReminders.map((reminder: Reminder) => (
-                  <Card key={reminder.id} className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
+                  <Card key={reminder.id} className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-3xl transition-all duration-200 hover:scale-[1.01]" data-testid={`card-reminder-${reminder.id}`}>
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
@@ -281,7 +281,7 @@ export default function ContractorReminders() {
                             <h3 className="font-semibold mb-1" data-testid="text-reminder-title">
                               {reminder.title || `${reminder.type.replace(/_/g, " ")}`}
                             </h3>
-                            <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="space-y-1 text-sm text-slate-400">
                               <div className="flex items-center gap-2">
                                 <Package className="h-3 w-3" />
                                 <span>{reminder.assetName || "Unknown Asset"}</span>
@@ -313,7 +313,7 @@ export default function ContractorReminders() {
                           </Button>
                         </Link>
                         <Button
-                          variant="default"
+                          className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                           size="sm"
                           onClick={() => completeReminderMutation.mutate(reminder.id)}
                           disabled={completeReminderMutation.isPending}

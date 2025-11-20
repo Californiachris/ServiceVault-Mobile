@@ -125,7 +125,7 @@ export default function ContractorDashboard() {
   const activeWorkers = workerStatuses.filter(w => w.isCheckedIn).length;
   
   return (
-    <div className="min-h-screen bg-background p-4 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 pb-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Branded Header */}
         <BrandedHeader 
@@ -137,7 +137,7 @@ export default function ContractorDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Contractor Dashboard</h1>
-            <p className="text-muted-foreground">Manage your team and tasks</p>
+            <p className="text-slate-400">Manage your team and tasks</p>
           </div>
           
           <Dialog open={showCreateTaskDialog} onOpenChange={setShowCreateTaskDialog}>
@@ -249,7 +249,7 @@ export default function ContractorDashboard() {
                     <Button type="button" variant="outline" onClick={() => setShowCreateTaskDialog(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={createTaskMutation.isPending} data-testid="button-submit-task">
+                    <Button type="submit" disabled={createTaskMutation.isPending} data-testid="button-submit-task" className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                       {createTaskMutation.isPending ? "Creating..." : "Create Task"}
                     </Button>
                   </div>
@@ -261,47 +261,47 @@ export default function ContractorDashboard() {
         
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Workers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeWorkers}</div>
-              <p className="text-xs text-muted-foreground">Currently clocked in</p>
+              <p className="text-xs text-slate-400">Currently clocked in</p>
             </CardContent>
           </Card>
           
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Workers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{workers.length}</div>
-              <p className="text-xs text-muted-foreground">In your team</p>
+              <p className="text-xs text-slate-400">In your team</p>
             </CardContent>
           </Card>
           
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <ClipboardList className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{pendingTasks.length}</div>
-              <p className="text-xs text-muted-foreground">Need to be completed</p>
+              <p className="text-xs text-slate-400">Need to be completed</p>
             </CardContent>
           </Card>
           
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed Today</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle2 className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{completedTasks.length}</div>
-              <p className="text-xs text-muted-foreground">Tasks finished</p>
+              <p className="text-xs text-slate-400">Tasks finished</p>
             </CardContent>
           </Card>
         </div>
@@ -312,7 +312,7 @@ export default function ContractorDashboard() {
         </div>
         
         {/* Worker Status Cards */}
-        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+        <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -324,7 +324,7 @@ export default function ContractorDashboard() {
               {workerStatuses.map((status) => (
                 <div 
                   key={status.workerId}
-                  className="p-4 border rounded-lg space-y-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  className="p-4 bg-slate-800/50 border border-slate-700/30 shadow-lg shadow-cyan-500/10 rounded-2xl backdrop-blur-xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02] space-y-2"
                   data-testid={`worker-card-${status.workerId}`}
                 >
                   <div className="flex items-center justify-between">
@@ -334,13 +334,13 @@ export default function ContractorDashboard() {
                     </Badge>
                   </div>
                   {status.isCheckedIn && status.checkInAt && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 text-sm text-slate-400">
                       <Clock className="h-3 w-3" />
                       Since {format(new Date(status.checkInAt), "h:mm a")}
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Tasks:</span>
+                    <span className="text-slate-400">Tasks:</span>
                     <span className="font-medium">{status.activeTasks} active, {status.tasksCompleted} completed</span>
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function ContractorDashboard() {
         </Card>
         
         {/* Tasks List */}
-        <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+        <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
@@ -360,14 +360,14 @@ export default function ContractorDashboard() {
           <CardContent>
             <div className="space-y-3">
               {tasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-slate-400">
                   No tasks yet. Create one to get started!
                 </div>
               ) : (
                 tasks.map((task) => (
                   <div 
                     key={task.id}
-                    className="p-4 border rounded-lg space-y-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                    className="p-4 bg-slate-800/50 border border-slate-700/30 shadow-lg shadow-cyan-500/10 rounded-2xl backdrop-blur-xl hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02] space-y-2"
                     data-testid={`task-card-${task.id}`}
                   >
                     <div className="flex items-start justify-between">
@@ -384,11 +384,11 @@ export default function ContractorDashboard() {
                           </Badge>
                         </div>
                         {task.description && (
-                          <p className="text-sm text-muted-foreground">{task.description}</p>
+                          <p className="text-sm text-slate-400">{task.description}</p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-slate-400">
                       {task.address && (
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -407,7 +407,7 @@ export default function ContractorDashboard() {
                       )}
                     </div>
                     {task.completedAt && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-slate-400">
                         Completed {format(new Date(task.completedAt), "MMM d 'at' h:mm a")}
                       </div>
                     )}
