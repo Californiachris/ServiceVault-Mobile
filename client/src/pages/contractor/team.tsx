@@ -33,7 +33,7 @@ import {
 
 const addWorkerSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  phone: z.string().optional(),
+  phone: z.string().optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
   role: z.enum(["INSTALLER", "FOREMAN", "ADMIN"]),
 });
@@ -108,7 +108,15 @@ export default function ContractorTeam() {
   });
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: AddWorkerData) => apiRequest("POST", "/api/contractor/workers", data),
+    mutationFn: (data: AddWorkerData) => {
+      // Convert empty strings to undefined for optional fields so backend fallback works
+      const payload = {
+        ...data,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+      };
+      return apiRequest("POST", "/api/contractor/workers", payload);
+    },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractor/workers"] });
       toast({ title: "Worker added successfully" });
