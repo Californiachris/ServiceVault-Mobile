@@ -5838,6 +5838,45 @@ Instructions:
     }
   });
 
+  // Update task status (worker marks task complete)
+  app.patch('/api/worker/tasks/:taskId', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { taskId } = req.params;
+      const { status } = req.body;
+      
+      const { contractorTasks } = await import('@shared/schema');
+      
+      // Verify task belongs to this worker before updating
+      const [task] = await db.select().from(contractorTasks)
+        .where(and(
+          eq(contractorTasks.id, taskId),
+          eq(contractorTasks.assignedTo, userId)
+        ))
+        .limit(1);
+      
+      if (!task) {
+        return res.status(404).json({ error: "Task not found or not assigned to you" });
+      }
+      
+      // Update task status and set completedAt if marking as completed
+      const updates: any = { status };
+      if (status === 'COMPLETED') {
+        updates.completedAt = new Date();
+      }
+      
+      const [updatedTask] = await db.update(contractorTasks)
+        .set(updates)
+        .where(eq(contractorTasks.id, taskId))
+        .returning();
+      
+      res.json({ task: updatedTask });
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ error: "Failed to update task" });
+    }
+  });
+
   app.get('/api/worker/visits', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
