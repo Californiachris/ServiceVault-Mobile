@@ -34,15 +34,15 @@ export default function ContractorDashboard() {
       <div className="space-y-8 mt-8">
         {/* Primary: Scan QR - TALL with Premium Styling */}
         <Link href="/scan">
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/30 hover:border-cyan-500/50 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer" data-testid="card-scan-qr">
+          <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 border-t-2 border-t-cyan-600/40 shadow-2xl shadow-cyan-900/20 hover:shadow-cyan-500/30 transition-all duration-200 hover:scale-[1.02] cursor-pointer" data-testid="card-scan-qr">
             <CardContent className="p-12">
               <div className="flex items-center gap-6">
-                <div className="p-6 bg-cyan-500/20 rounded-full shadow-lg group-hover:shadow-cyan-500/50 transition-all">
-                  <Camera className="h-12 w-12 text-cyan-500 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] transition-all" />
+                <div className="p-6 bg-cyan-500/20 rounded-full shadow-lg hover:shadow-cyan-500/50 transition-all">
+                  <Camera className="h-12 w-12 text-cyan-400 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] transition-all" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-3xl font-bold mb-2 tracking-tight">Scan QR</h2>
-                  <p className="text-base text-muted-foreground">
+                  <h2 className="text-3xl font-bold mb-2 tracking-tight text-white">Scan QR</h2>
+                  <p className="text-base text-slate-300">
                     Install assets or clock in with one tap.
                   </p>
                 </div>
