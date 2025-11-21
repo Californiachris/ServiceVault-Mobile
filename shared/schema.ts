@@ -56,6 +56,10 @@ export const users = pgTable("users", {
   phone: varchar("phone"),
   notificationPreference: varchar("notification_preference").default("EMAIL_AND_SMS"), // EMAIL_ONLY, SMS_ONLY, EMAIL_AND_SMS, NONE
   
+  // Authentication
+  emailVerified: boolean("email_verified").default(false),
+  lastLoginAt: timestamp("last_login_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -775,6 +779,32 @@ export const logoPayments = pgTable("logo_payments", {
   sessionIdx: index("idx_logo_payments_session").on(table.stripeSessionId),
 }));
 
+// Password Reset Tokens
+export const passwordResets = pgTable("password_resets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_password_resets_user").on(table.userId),
+  tokenIdx: index("idx_password_resets_token").on(table.token),
+  expiresIdx: index("idx_password_resets_expires").on(table.expiresAt),
+}));
+
+// Email Verification Tokens
+export const emailVerifications = pgTable("email_verifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_email_verifications_user").on(table.userId),
+  tokenIdx: index("idx_email_verifications_token").on(table.token),
+  expiresIdx: index("idx_email_verifications_expires").on(table.expiresAt),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   contractor: one(contractors, {
@@ -1040,6 +1070,16 @@ export const insertLogoPaymentSchema = createInsertSchema(logoPayments).omit({
   createdAt: true,
 });
 
+export const insertPasswordResetSchema = createInsertSchema(passwordResets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmailVerificationSchema = createInsertSchema(emailVerifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -1076,6 +1116,8 @@ export type ContractorWorkerNotification = typeof contractorWorkerNotifications.
 export type Logo = typeof logos.$inferSelect;
 export type LogoGeneration = typeof logoGenerations.$inferSelect;
 export type LogoPayment = typeof logoPayments.$inferSelect;
+export type PasswordReset = typeof passwordResets.$inferSelect;
+export type EmailVerification = typeof emailVerifications.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
@@ -1110,3 +1152,5 @@ export type InsertContractorWorkerNotification = z.infer<typeof insertContractor
 export type InsertLogo = z.infer<typeof insertLogoSchema>;
 export type InsertLogoGeneration = z.infer<typeof insertLogoGenerationSchema>;
 export type InsertLogoPayment = z.infer<typeof insertLogoPaymentSchema>;
+export type InsertPasswordReset = z.infer<typeof insertPasswordResetSchema>;
+export type InsertEmailVerification = z.infer<typeof insertEmailVerificationSchema>;

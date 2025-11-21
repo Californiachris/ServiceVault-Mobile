@@ -775,6 +775,125 @@ ${reminder.description ? `Details: ${reminder.description}\n\n` : ''}Please cont
     }
   }
 
+  async sendEmailVerification(email: string, token: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.resend) {
+      console.warn('Resend not configured - skipping email verification');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const verificationUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/verify-email?token=${token}`;
+
+      await this.resend.emails.send({
+        from: 'ServiceVault <notifications@servicevault.app>',
+        to: email,
+        subject: 'Verify Your Email - ServiceVault',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 12px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Welcome to ServiceVault</h1>
+            </div>
+            
+            <div style="padding: 30px; background: #ffffff; border-radius: 8px; margin-top: 20px;">
+              <h2 style="color: #1a1a1a; margin-top: 0;">Verify Your Email Address</h2>
+              <p style="color: #4a4a4a; line-height: 1.6;">
+                Thank you for signing up! Click the button below to verify your email address and activate your account.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #dc2626 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                  Verify Email Address
+                </a>
+              </div>
+              
+              <p style="color: #888; font-size: 14px; margin-top: 30px;">
+                Or copy and paste this link into your browser:<br>
+                <a href="${verificationUrl}" style="color: #007bff; word-break: break-all;">${verificationUrl}</a>
+              </p>
+              
+              <p style="color: #888; font-size: 12px; margin-top: 30px;">
+                This link will expire in 72 hours. If you didn't create this account, you can safely ignore this email.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+              <p style="color: #888; font-size: 12px; margin: 0;">
+                ServiceVault - Premium Asset Tracking
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      console.log(`Email verification sent to ${email}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Email verification send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async sendPasswordReset(email: string, token: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.resend) {
+      console.warn('Resend not configured - skipping password reset');
+      return { success: false, error: 'Email service not configured' };
+    }
+
+    try {
+      const resetUrl = `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/reset-password?token=${token}`;
+
+      await this.resend.emails.send({
+        from: 'ServiceVault <notifications@servicevault.app>',
+        to: email,
+        subject: 'Reset Your Password - ServiceVault',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 30px; border-radius: 12px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Password Reset Request</h1>
+            </div>
+            
+            <div style="padding: 30px; background: #ffffff; border-radius: 8px; margin-top: 20px;">
+              <h2 style="color: #1a1a1a; margin-top: 0;">Reset Your Password</h2>
+              <p style="color: #4a4a4a; line-height: 1.6;">
+                We received a request to reset your password. Click the button below to create a new password.
+              </p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #dc2626 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                  Reset Password
+                </a>
+              </div>
+              
+              <p style="color: #888; font-size: 14px; margin-top: 30px;">
+                Or copy and paste this link into your browser:<br>
+                <a href="${resetUrl}" style="color: #007bff; word-break: break-all;">${resetUrl}</a>
+              </p>
+              
+              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin: 20px 0; border-radius: 4px;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">
+                  <strong>⚠️ Security Notice:</strong><br>
+                  This link will expire in 24 hours. If you didn't request this reset, please ignore this email and your password will remain unchanged.
+                </p>
+              </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+              <p style="color: #888; font-size: 12px; margin: 0;">
+                ServiceVault - Premium Asset Tracking
+              </p>
+            </div>
+          </div>
+        `,
+      });
+
+      console.log(`Password reset sent to ${email}`);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Password reset send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   isConfigured(): { email: boolean; sms: boolean } {
     return {
       email: !!this.resend,
