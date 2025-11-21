@@ -860,6 +860,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Logo management endpoints
+  app.get('/api/logos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { logos } = await import('@shared/schema');
+      
+      const userLogos = await db.select().from(logos)
+        .where(eq(logos.userId, userId))
+        .orderBy(desc(logos.createdAt));
+      
+      res.json(userLogos);
+    } catch (error) {
+      console.error("Error fetching logos:", error);
+      res.status(500).json({ error: "Failed to fetch logos" });
+    }
+  });
+
+  app.post('/api/logos', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { fileUrl, fileName, fileType, fileSize, type, source, businessName } = req.body;
+      
+      const { logos } = await import('@shared/schema');
+      
+      // Deactivate all other logos for this user
+      await db.update(logos)
+        .set({ isActive: false })
+        .where(eq(logos.userId, userId));
+      
+      // Create new logo as active
+      const [newLogo] = await db.insert(logos).values({
+        userId,
+        type: type || 'UPLOADED',
+        source: source || 'CONTRACTOR',
+        businessName,
+        fileUrl,
+        fileName,
+        fileType,
+        fileSize,
+        isActive: true,
+      }).returning();
+      
+      res.json({ logo: newLogo });
+    } catch (error) {
+      console.error("Error creating logo:", error);
+      res.status(500).json({ error: "Failed to create logo" });
+    }
+  });
+
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
@@ -5638,6 +5687,104 @@ Instructions:
     }
   });
   
+  // Get single contractor worker
+  app.get('/api/contractor/workers/:workerId', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId } = req.params;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers } = await import('@shared/schema');
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(and(eq(contractorWorkers.id, workerId), eq(contractorWorkers.contractorId, contractor.id)))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      res.json({ worker });
+    } catch (error) {
+      console.error("Error fetching worker:", error);
+      res.status(500).json({ error: "Failed to fetch worker" });
+    }
+  });
+
+  // Get worker timesheet
+  app.get('/api/contractor/workers/:workerId/timesheet', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId } = req.params;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers, contractorVisits } = await import('@shared/schema');
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(and(eq(contractorWorkers.id, workerId), eq(contractorWorkers.contractorId, contractor.id)))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      const visits = await db.select().from(contractorVisits)
+        .where(eq(contractorVisits.workerId, workerId))
+        .orderBy(desc(contractorVisits.clockInTime));
+      
+      res.json({ visits });
+    } catch (error) {
+      console.error("Error fetching worker timesheet:", error);
+      res.status(500).json({ error: "Failed to fetch timesheet" });
+    }
+  });
+
+  // Get worker installed assets
+  app.get('/api/contractor/workers/:workerId/assets', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { workerId } = req.params;
+      
+      const [contractor] = await db.select().from(contractors).where(eq(contractors.userId, userId)).limit(1);
+      if (!contractor) {
+        return res.status(404).json({ error: "Contractor profile not found" });
+      }
+      
+      const { contractorWorkers } = await import('@shared/schema');
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(and(eq(contractorWorkers.id, workerId), eq(contractorWorkers.contractorId, contractor.id)))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker not found" });
+      }
+      
+      // Get assets installed by this worker
+      const workerAssets = await db.select({
+        id: assets.id,
+        name: assets.name,
+        category: assets.category,
+        installedAt: assets.installedAt,
+        propertyName: properties.name,
+      })
+      .from(assets)
+      .leftJoin(properties, eq(assets.propertyId, properties.id))
+      .where(eq(assets.installedBy, worker.userId))
+      .orderBy(desc(assets.installedAt));
+      
+      res.json({ assets: workerAssets });
+    } catch (error) {
+      console.error("Error fetching worker assets:", error);
+      res.status(500).json({ error: "Failed to fetch assets" });
+    }
+  });
+
   // Update contractor worker
   app.patch('/api/contractor/workers/:workerId', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
@@ -5664,6 +5811,48 @@ Instructions:
     } catch (error) {
       console.error("Error updating worker:", error);
       res.status(500).json({ error: "Failed to update worker" });
+    }
+  });
+  
+  // Worker endpoints (for logged-in workers)
+  app.get('/api/worker/tasks', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contractorTasks } = await import('@shared/schema');
+      
+      const tasks = await db.select().from(contractorTasks)
+        .where(eq(contractorTasks.assignedTo, userId))
+        .orderBy(desc(contractorTasks.scheduledFor));
+      
+      res.json({ tasks });
+    } catch (error) {
+      console.error("Error fetching worker tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  app.get('/api/worker/visits', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contractorVisits, contractorWorkers } = await import('@shared/schema');
+      
+      // Get worker record
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.json({ visits: [] });
+      }
+      
+      const visits = await db.select().from(contractorVisits)
+        .where(eq(contractorVisits.workerId, worker.id))
+        .orderBy(desc(contractorVisits.clockInTime));
+      
+      res.json({ visits });
+    } catch (error) {
+      console.error("Error fetching worker visits:", error);
+      res.status(500).json({ error: "Failed to fetch visits" });
     }
   });
   

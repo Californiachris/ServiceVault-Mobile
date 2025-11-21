@@ -43,6 +43,7 @@ import ContractorAssets from "@/pages/contractor/assets";
 import ContractorTeam from "@/pages/contractor/team";
 import ContractorReminders from "@/pages/contractor/reminders";
 import NotificationSettings from "@/pages/contractor/notification-settings";
+import WorkerProfile from "@/pages/contractor/worker-profile";
 import HomeownerWelcome from "@/pages/HomeownerWelcome";
 import FleetWelcome from "@/pages/FleetWelcome";
 import PropertyManagerWelcome from "@/pages/PropertyManagerWelcome";
@@ -54,7 +55,7 @@ import AILogoGenerator from "@/pages/AILogoGenerator";
 import LogosPage from "@/pages/LogosPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import WorkerLogin from "@/pages/worker-login";
-import WorkerDashboard from "@/pages/worker-dashboard";
+import WorkerDashboard from "@/pages/dashboards/WorkerDashboard";
 import Login from "@/pages/login";
 
 function Router() {
@@ -148,6 +149,7 @@ function Router() {
           <Route path="/scan" component={Scan} />
           <Route path="/contractor/assets" component={ContractorAssets} />
           <Route path="/contractor/team" component={ContractorTeam} />
+          <Route path="/contractor/workers/:workerId" component={WorkerProfile} />
           <Route path="/contractor/reminders" component={ContractorReminders} />
           <Route path="/contractor/notifications" component={NotificationSettings} />
           <Route path="/settings" component={Settings} />
