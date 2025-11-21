@@ -6248,7 +6248,163 @@ Instructions:
     }
   });
   
-  // PDF: Worker timesheet
+  // PDF: Worker's own timesheet
+  app.get('/api/worker/timesheet/pdf', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contractorWorkers, contractorVisits } = await import('@shared/schema');
+      
+      // Get worker record
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker profile not found" });
+      }
+      
+      // Get contractor info
+      const [contractor] = await db.select().from(contractors)
+        .where(eq(contractors.id, worker.contractorId))
+        .limit(1);
+      
+      const visits = await db.select().from(contractorVisits)
+        .where(eq(contractorVisits.workerId, worker.id))
+        .orderBy(desc(contractorVisits.clockInTime));
+      
+      // Generate PDF
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename = `my_timesheet_${Date.now()}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+      });
+      
+      doc.fontSize(18).text('ServiceVault — My Timesheet', { align: 'center' });
+      doc.moveDown();
+      
+      doc.fontSize(12)
+        .text(`Worker: ${worker.name}`)
+        .text(`Company: ${contractor?.companyName || 'N/A'}`)
+        .text(`Generated: ${new Date().toLocaleDateString()}`);
+      
+      doc.moveDown().text('Time Records:', { underline: true });
+      
+      let totalHours = 0;
+      for (const visit of visits) {
+        if (visit.clockOutTime) {
+          const hours = (new Date(visit.clockOutTime).getTime() - new Date(visit.clockInTime).getTime()) / (1000 * 60 * 60);
+          totalHours += hours;
+          
+          doc.moveDown(0.5)
+            .text(`Date: ${new Date(visit.clockInTime).toLocaleDateString()}`)
+            .text(`In: ${new Date(visit.clockInTime).toLocaleTimeString()} | Out: ${new Date(visit.clockOutTime).toLocaleTimeString()}`)
+            .text(`Hours: ${hours.toFixed(2)}`);
+        }
+      }
+      
+      doc.moveDown();
+      doc.fontSize(14).text(`Total Hours: ${totalHours.toFixed(2)}`, { bold: true });
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating worker timesheet PDF:", error);
+      res.status(500).json({ error: "Failed to generate timesheet" });
+    }
+  });
+  
+  // PDF: Worker's installed assets/jobs
+  app.get('/api/worker/jobs/pdf', isAuthenticated, requireRole('WORKER'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contractorWorkers } = await import('@shared/schema');
+      
+      // Get worker record
+      const [worker] = await db.select().from(contractorWorkers)
+        .where(eq(contractorWorkers.userId, userId))
+        .limit(1);
+      
+      if (!worker) {
+        return res.status(404).json({ error: "Worker profile not found" });
+      }
+      
+      // Get contractor info
+      const [contractor] = await db.select().from(contractors)
+        .where(eq(contractors.id, worker.contractorId))
+        .limit(1);
+      
+      // Get all assets installed by this worker
+      const installedAssets = await db.select({
+        id: assets.id,
+        name: assets.name,
+        category: assets.category,
+        brand: assets.brand,
+        model: assets.model,
+        serialNumber: assets.serialNumber,
+        installedAt: assets.installedAt,
+        propertyName: properties.name,
+        propertyAddress: properties.addressLine1,
+      })
+      .from(assets)
+      .leftJoin(properties, eq(assets.propertyId, properties.id))
+      .where(and(
+        eq(assets.installedBy, userId),
+        eq(assets.contractorId, worker.contractorId)
+      ))
+      .orderBy(desc(assets.installedAt));
+      
+      // Generate PDF
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => {
+        const pdfBuffer = Buffer.concat(chunks);
+        const filename = `my_jobs_${Date.now()}.pdf`;
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+      });
+      
+      doc.fontSize(18).text('ServiceVault — My Jobs', { align: 'center' });
+      doc.moveDown();
+      
+      doc.fontSize(12)
+        .text(`Worker: ${worker.name}`)
+        .text(`Company: ${contractor?.companyName || 'N/A'}`)
+        .text(`Generated: ${new Date().toLocaleDateString()}`)
+        .text(`Total Jobs: ${installedAssets.length}`);
+      
+      doc.moveDown().text('Installed Assets:', { underline: true });
+      
+      for (const asset of installedAssets) {
+        doc.moveDown(0.5)
+          .fontSize(11)
+          .text(`${asset.name}`, { bold: true })
+          .fontSize(10)
+          .text(`Category: ${asset.category}`)
+          .text(`Brand: ${asset.brand || 'N/A'} | Model: ${asset.model || 'N/A'}`)
+          .text(`Serial: ${asset.serialNumber || 'N/A'}`)
+          .text(`Property: ${asset.propertyName || 'N/A'}`)
+          .text(`Address: ${asset.propertyAddress || 'N/A'}`)
+          .text(`Installed: ${asset.installedAt ? new Date(asset.installedAt).toLocaleDateString() : 'N/A'}`);
+      }
+      
+      doc.end();
+    } catch (error) {
+      console.error("Error generating worker jobs PDF:", error);
+      res.status(500).json({ error: "Failed to generate jobs PDF" });
+    }
+  });
+  
+  // PDF: Worker timesheet (contractor view)
   app.get('/api/contractor/workers/:workerId/timesheet/pdf', isAuthenticated, requireRole('CONTRACTOR'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
