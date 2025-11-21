@@ -53,15 +53,15 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Assets Installed */}
         <Link href="/contractor/assets">
-          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-assets-installed">
+          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-assets-installed">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
-                  <Package className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
+                <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
+                  <Package className="h-6 w-6 text-white drop-shadow-md" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-1">Assets Installed</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-lg font-bold mb-1 text-white">Assets Installed</h3>
+                  <p className="text-sm text-white/90">
                     Search and export every asset you've ever tagged.
                   </p>
                 </div>
@@ -72,15 +72,15 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Reminders */}
         <Link href="/contractor/reminders">
-          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-reminders">
+          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-reminders">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
-                  <Bell className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
+                <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
+                  <Bell className="h-6 w-6 text-white drop-shadow-md" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-1">Reminders</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-lg font-bold mb-1 text-white">Reminders</h3>
+                  <p className="text-sm text-white/90">
                     Maintenance, warranty and follow-up jobs in one place.
                   </p>
                 </div>
@@ -91,15 +91,15 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Team & Assignments */}
         <Link href="/contractor/team">
-          <Card className="border-border hover:border-primary/50 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01] cursor-pointer group" data-testid="card-team">
+          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-team">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full group-hover:shadow-lg transition-all">
-                  <Users className="h-6 w-6 text-primary group-hover:drop-shadow-[0_0_6px_rgba(var(--primary),0.6)] transition-all" />
+                <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
+                  <Users className="h-6 w-6 text-white drop-shadow-md" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-1">Team & Assignments</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-lg font-bold mb-1 text-white">Team & Assignments</h3>
+                  <p className="text-sm text-white/90">
                     Add workers, review hours and assign tomorrow's jobs.
                   </p>
                 </div>
