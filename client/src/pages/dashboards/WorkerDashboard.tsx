@@ -193,12 +193,10 @@ export default function WorkerDashboard() {
             onClick={handleDownloadHoursPDF}
             className="w-full mt-4"
             variant="outline"
-            disabled
             data-testid="button-download-hours"
-            title="PDF download coming soon"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download Hours PDF (Coming Soon)
+            Download Hours PDF
           </Button>
         </CardContent>
       </Card>
@@ -216,12 +214,10 @@ export default function WorkerDashboard() {
             onClick={handleDownloadJobsPDF}
             className="w-full"
             variant="outline"
-            disabled
             data-testid="button-download-jobs"
-            title="PDF download coming soon"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download All Jobs PDF (Coming Soon)
+            Download All Jobs PDF
           </Button>
         </CardContent>
       </Card>
