@@ -138,11 +138,25 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', (req, res) => {
-  const user = (req as any).session?.user;
+router.get('/me', async (req, res) => {
+  // Check both session.user (email/password) and req.user (demo mode)
+  const sessionUser = (req as any).session?.user;
+  const demoUser = (req as any).user;
+  
+  const user = sessionUser || demoUser;
+  
   if (!user) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
+  
+  // If it's a demo user with claims format, fetch full user from database
+  if (user.claims && user.claims.sub) {
+    const dbUser = await storage.getUser(user.claims.sub);
+    if (dbUser) {
+      return res.json(dbUser);
+    }
+  }
+  
   res.json(user);
 });
 
