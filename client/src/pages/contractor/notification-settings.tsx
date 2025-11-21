@@ -67,12 +67,12 @@ export default function NotificationSettings() {
           </Link>
         </div>
         <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-notifications">Notification Settings</h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-lg text-slate-300">
           Control how and when you receive updates about your team.
         </p>
       </div>
 
-      <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="card-worker-notifications">
+      <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl" data-testid="card-worker-notifications">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <Bell className="h-6 w-6" />
@@ -83,7 +83,7 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
               <Label htmlFor="check-in" className="text-base font-semibold">Check-In Notifications</Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-400">
                 Get notified when workers clock in for their shifts
               </p>
             </div>
@@ -99,7 +99,7 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
               <Label htmlFor="check-out" className="text-base font-semibold">Check-Out Notifications</Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-400">
                 Get notified when workers complete their shifts
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:border-primary/50 transition-all backdrop-blur-sm">
             <div className="space-y-0.5">
               <Label htmlFor="task-complete" className="text-base font-semibold">Task Completion</Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-slate-400">
                 Get notified when workers mark tasks as complete
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function NotificationSettings() {
         </CardContent>
       </Card>
 
-      <Card className="mt-6 backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg" data-testid="card-notification-method">
+      <Card className="mt-6 bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl" data-testid="card-notification-method">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <MessageSquare className="h-6 w-6" />
@@ -156,7 +156,7 @@ export default function NotificationSettings() {
               </div>
               <div>
                 <div className="font-semibold">Email</div>
-                <div className="text-sm text-muted-foreground">Receive notifications via email</div>
+                <div className="text-sm text-slate-400">Receive notifications via email</div>
               </div>
             </div>
           </label>
@@ -178,7 +178,7 @@ export default function NotificationSettings() {
               </div>
               <div>
                 <div className="font-semibold">SMS</div>
-                <div className="text-sm text-muted-foreground">Receive notifications via text message</div>
+                <div className="text-sm text-slate-400">Receive notifications via text message</div>
               </div>
             </div>
           </label>

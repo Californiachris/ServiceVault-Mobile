@@ -84,7 +84,7 @@ export default function ContractorAssets() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-5xl font-bold mb-2 tracking-tight" data-testid="heading-assets">Assets</h1>
-            <p className="text-lg text-muted-foreground">Every asset you or your team has ever tagged.</p>
+            <p className="text-lg text-slate-300">Every asset you or your team has ever tagged.</p>
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function ContractorAssets() {
       {/* Search & Filters */}
       <div className="mb-6 space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             type="search"
             placeholder="Search by address, customer name, model, serial..."
@@ -105,7 +105,7 @@ export default function ContractorAssets() {
 
         {/* Tabs - Premium Filter Design */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-md backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-md bg-slate-900/80 border border-slate-700/50 shadow-xl shadow-cyan-500/20 backdrop-blur-xl rounded-2xl">
             <TabsTrigger value="all" data-testid="tab-all-assets" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">All Assets</TabsTrigger>
             <TabsTrigger value="mine" data-testid="tab-my-installs" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">My Installs</TabsTrigger>
             <TabsTrigger value="team" data-testid="tab-by-team" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white transition-all">By Team Member</TabsTrigger>
@@ -138,10 +138,10 @@ export default function ContractorAssets() {
             <Skeleton className="h-24 w-full" />
           </>
         ) : filteredAssets.length === 0 ? (
-          <Card className="backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg">
+          <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
             <CardContent className="py-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
+              <Package className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+              <p className="text-slate-300 mb-4">
                 {searchQuery || selectedWorker || activeTab !== "all" 
                   ? "No assets match your filters" 
                   : "No assets found"}
@@ -154,7 +154,7 @@ export default function ContractorAssets() {
         ) : (
           filteredAssets.map((asset: any) => (
             <Link key={asset.id} href={`/asset/${asset.id}`}>
-              <Card className="hover:border-primary/50 transition-all duration-200 cursor-pointer backdrop-blur-lg bg-white/90 dark:bg-gray-900/90 shadow-lg hover:shadow-xl hover:scale-[1.01] group" data-testid={`asset-card-${asset.id}`}>
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group" data-testid={`asset-card-${asset.id}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -167,7 +167,7 @@ export default function ContractorAssets() {
                           </Badge>
                         )}
                       </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
+                      <div className="space-y-1 text-sm text-slate-400">
                         <p data-testid={`asset-property-${asset.id}`}>
                           {asset.propertyAddress || asset.propertyName || 'Unknown location'}
                         </p>
