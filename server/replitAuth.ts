@@ -99,7 +99,11 @@ async function injectDemoUser(req: any, res: any, next: any) {
         firstName: 'Demo',
         lastName: 'User',
         profileImageUrl: null,
-        role: 'HOMEOWNER',
+        role: 'CONTRACTOR',
+        companyName: 'Demo Contracting Co.',
+        licenseNumber: 'DEM-LIC-123456',
+        phone: '(555) 123-4567',
+        industries: ['Construction & Heavy Equipment'],
       });
       
       // Demo data seeding disabled - users should create their own properties
