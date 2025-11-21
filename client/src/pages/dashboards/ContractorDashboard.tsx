@@ -31,7 +31,7 @@ export default function ContractorDashboard() {
       />
 
       {/* Main Action Cards */}
-      <div className="space-y-4 mt-8">
+      <div className="space-y-8 mt-8">
         {/* Primary: Scan QR - TALL with Premium Styling */}
         <Link href="/scan">
           <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/30 hover:border-cyan-500/50 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer" data-testid="card-scan-qr">
@@ -53,7 +53,7 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Assets Installed */}
         <Link href="/contractor/assets">
-          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-assets-installed">
+          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border border-cyan-400/20 border-t-2 border-t-cyan-400/40 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-assets-installed">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
@@ -72,7 +72,7 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Reminders */}
         <Link href="/contractor/reminders">
-          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-reminders">
+          <Card className="bg-gradient-to-r from-cyan-500 to-lime-500 border border-lime-400/20 border-t-2 border-t-lime-400/40 shadow-2xl shadow-lime-500/30 hover:shadow-lime-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-reminders">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
@@ -91,7 +91,7 @@ export default function ContractorDashboard() {
 
         {/* Secondary: Team & Assignments */}
         <Link href="/contractor/team">
-          <Card className="bg-gradient-to-r from-teal-500 to-cyan-600 border-0 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-team">
+          <Card className="bg-gradient-to-r from-cyan-500 to-indigo-600 border border-indigo-400/20 border-t-2 border-t-indigo-400/40 shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group rounded-2xl" data-testid="card-team">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 bg-white/20 rounded-full group-hover:shadow-lg group-hover:bg-white/30 transition-all">
