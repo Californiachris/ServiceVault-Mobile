@@ -72,13 +72,13 @@ export default function InspectionsPage() {
     result: 'PASS',
   });
 
-  const { data: properties, isLoading: propertiesLoading } = useQuery({
+  const { data: properties, isLoading: propertiesLoading } = useQuery<any>({
     queryKey: ["/api/properties"],
     enabled: isAuthenticated,
     retry: false,
   });
 
-  const { data: inspections, isLoading: inspectionsLoading } = useQuery({
+  const { data: inspections, isLoading: inspectionsLoading } = useQuery<any>({
     queryKey: ["/api/inspections", formData.propertyId],
     enabled: isAuthenticated && !!formData.propertyId,
     retry: false,
@@ -198,7 +198,7 @@ export default function InspectionsPage() {
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Property Selection */}
-              <Card>
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Home className="h-5 w-5" />
@@ -253,7 +253,7 @@ export default function InspectionsPage() {
               </Card>
 
               {/* Inspection Checklist */}
-              <Card>
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export default function InspectionsPage() {
                     {INSPECTION_CHECKLIST.map((item) => (
                       <div 
                         key={item.key}
-                        className="flex items-start space-x-3 p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors"
+                        className="flex items-start space-x-3 p-3 border border-slate-700/50 rounded-lg hover:bg-slate-800/60 transition-all duration-200"
                       >
                         <Checkbox
                           id={item.key}
@@ -301,7 +301,7 @@ export default function InspectionsPage() {
               </Card>
 
               {/* Result and Notes */}
-              <Card>
+              <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -358,7 +358,7 @@ export default function InspectionsPage() {
                   <Button 
                     type="submit" 
                     disabled={createInspectionMutation.isPending || !formData.propertyId}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                     data-testid="button-submit-inspection"
                   >
                     {createInspectionMutation.isPending ? (
@@ -381,7 +381,7 @@ export default function InspectionsPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Recent Inspections */}
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
@@ -396,7 +396,7 @@ export default function InspectionsPage() {
                     {inspections.slice(0, 5).map((inspection: any) => (
                       <div 
                         key={inspection.id}
-                        className="p-3 border border-border rounded-lg"
+                        className="p-3 border border-slate-700/50 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 transition-all duration-200"
                         data-testid={`inspection-${inspection.id}`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -443,7 +443,7 @@ export default function InspectionsPage() {
             </Card>
 
             {/* Quick Info */}
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle>Inspection Guidelines</CardTitle>
               </CardHeader>

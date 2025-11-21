@@ -77,19 +77,22 @@ export default function ContractorDashboard() {
   });
   
   // Fetch workers
-  const { data: workers = [] } = useQuery<Worker[]>({
+  const { data: workersData } = useQuery<{ workers: Worker[] }>({
     queryKey: ['/api/contractor/workers'],
   });
+  const workers = workersData?.workers || [];
   
   // Fetch tasks
-  const { data: tasks = [] } = useQuery<Task[]>({
+  const { data: tasksData } = useQuery<{ tasks: Task[] }>({
     queryKey: ['/api/contractor/tasks'],
   });
+  const tasks = tasksData?.tasks || [];
   
   // Fetch worker status
-  const { data: workerStatuses = [] } = useQuery<WorkerStatus[]>({
+  const { data: workerStatusData } = useQuery<{ statuses?: WorkerStatus[] }>({
     queryKey: ['/api/contractor/worker-status'],
   });
+  const workerStatuses = workerStatusData?.statuses || [];
   
   // Create task mutation
   const createTaskMutation = useMutation({

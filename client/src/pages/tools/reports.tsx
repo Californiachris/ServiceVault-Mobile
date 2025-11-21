@@ -26,7 +26,7 @@ export default function ReportsPage() {
   
   const [selectedProperty, setSelectedProperty] = useState<string>('');
 
-  const { data: properties, isLoading: propertiesLoading } = useQuery({
+  const { data: properties, isLoading: propertiesLoading } = useQuery<any>({
     queryKey: ["/api/properties"],
     enabled: isAuthenticated,
     retry: false,
@@ -101,7 +101,7 @@ export default function ReportsPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Report Generation */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileBarChart className="h-5 w-5" />
@@ -145,7 +145,7 @@ export default function ReportsPage() {
                     <Button 
                       onClick={handleGenerateReport}
                       disabled={generateReportMutation.isPending}
-                      className="w-full"
+                      className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                       data-testid="button-generate-report"
                     >
                       {generateReportMutation.isPending ? (
@@ -177,7 +177,7 @@ export default function ReportsPage() {
                 )}
 
                 {/* Report Options */}
-                <div className="space-y-3 pt-4 border-t border-border">
+                <div className="space-y-3 pt-4 border-t border-slate-700/50">
                   <h4 className="text-sm font-medium">Report Options</h4>
                   
                   <div className="space-y-2">
@@ -207,7 +207,7 @@ export default function ReportsPage() {
           {/* Report Preview & Information */}
           <div className="lg:col-span-2 space-y-6">
             {/* What's Included */}
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle>What's Included in Your Certificate</CardTitle>
               </CardHeader>
@@ -269,7 +269,7 @@ export default function ReportsPage() {
             </Card>
 
             {/* Use Cases */}
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle>Perfect For</CardTitle>
               </CardHeader>
@@ -309,13 +309,13 @@ export default function ReportsPage() {
             </Card>
 
             {/* Sample Report Preview */}
-            <Card>
+            <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
               <CardHeader>
                 <CardTitle>Sample Report Structure</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="border border-border rounded-lg p-4 bg-muted/20">
+                  <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-800/40">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-mono text-lg font-bold">ServiceVault — Home Health Certificate™</h4>
                       <Badge variant="outline">PDF</Badge>
@@ -329,7 +329,7 @@ export default function ReportsPage() {
                     </div>
                   </div>
                   
-                  <div className="border border-border rounded-lg p-4">
+                  <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-800/40">
                     <h4 className="font-semibold mb-2">Assets Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">

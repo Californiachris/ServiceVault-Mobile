@@ -21,11 +21,11 @@ export default function ContractorAssets() {
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  const { data: assetsData, isLoading } = useQuery({
+  const { data: assetsData, isLoading } = useQuery<{ assets: any[] }>({
     queryKey: ["/api/contractor/assets"],
   });
 
-  const { data: workersData } = useQuery({
+  const { data: workersData } = useQuery<{ workers: any[] }>({
     queryKey: ["/api/contractor/workers"],
   });
 

@@ -70,7 +70,7 @@ export default function AdminFulfillment() {
       </div>
 
       {subscriptions.length === 0 ? (
-        <Card>
+        <Card className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl">
           <CardContent className="py-12 text-center">
             <Package className="mx-auto h-12 w-12 text-slate-400 mb-4" />
             <p className="text-slate-300" data-testid="text-no-pending">No pending subscriptions</p>
@@ -79,7 +79,7 @@ export default function AdminFulfillment() {
       ) : (
         <div className="grid gap-4">
           {subscriptions.map((sub) => (
-            <Card key={sub.id} data-testid={`card-subscription-${sub.id}`}>
+            <Card key={sub.id} data-testid={`card-subscription-${sub.id}`} className="bg-slate-900/80 border border-slate-700/50 shadow-2xl shadow-cyan-500/20 rounded-3xl backdrop-blur-xl hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-[1.01]">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -117,6 +117,7 @@ export default function AdminFulfillment() {
                     onClick={() => markFulfilledMutation.mutate(sub.id)}
                     disabled={markFulfilledMutation.isPending}
                     data-testid={`button-fulfill-${sub.id}`}
+                    className="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold h-12 rounded-2xl shadow-xl hover:shadow-cyan-500/50 hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]"
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Mark as Fulfilled
