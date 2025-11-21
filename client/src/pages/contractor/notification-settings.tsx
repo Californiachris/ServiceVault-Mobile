@@ -56,7 +56,8 @@ export default function NotificationSettings() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
+    <div className="min-h-screen overflow-y-auto">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-6">
           <Link href="/dashboard">
@@ -184,6 +185,7 @@ export default function NotificationSettings() {
           </label>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
