@@ -108,7 +108,10 @@ export default function ContractorTeam() {
   });
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: AddWorkerData) => apiRequest("/api/contractor/workers", "POST", data),
+    mutationFn: async (data: AddWorkerData) => {
+      const res = await apiRequest("POST", "/api/contractor/workers", data);
+      return res.json();
+    },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractor/workers"] });
       toast({ title: "Worker added successfully" });
@@ -133,7 +136,10 @@ export default function ContractorTeam() {
   };
 
   const assignTaskMutation = useMutation({
-    mutationFn: (data: AssignTaskData) => apiRequest("/api/contractor/tasks", "POST", data),
+    mutationFn: async (data: AssignTaskData) => {
+      const res = await apiRequest("POST", "/api/contractor/tasks", data);
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractor/tasks"] });
       toast({ title: "Task assigned successfully" });
