@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -120,8 +120,11 @@ export default function WorkerDashboard() {
                     <input
                       type="checkbox"
                       checked={task.status === 'COMPLETED'}
-                      className="mt-1"
+                      readOnly
+                      disabled
+                      className="mt-1 cursor-not-allowed opacity-50"
                       data-testid={`checkbox-task-${task.id}`}
+                      title="Task completion coming soon"
                     />
                     <div className="flex-1">
                       <h4 className="font-semibold text-white mb-1">{task.title}</h4>
@@ -159,10 +162,12 @@ export default function WorkerDashboard() {
             onClick={handleDownloadHoursPDF}
             className="w-full mt-4"
             variant="outline"
+            disabled
             data-testid="button-download-hours"
+            title="PDF download coming soon"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download Hours PDF
+            Download Hours PDF (Coming Soon)
           </Button>
         </CardContent>
       </Card>
@@ -180,10 +185,12 @@ export default function WorkerDashboard() {
             onClick={handleDownloadJobsPDF}
             className="w-full"
             variant="outline"
+            disabled
             data-testid="button-download-jobs"
+            title="PDF download coming soon"
           >
             <Download className="h-4 w-4 mr-2" />
-            Download All Jobs PDF
+            Download All Jobs PDF (Coming Soon)
           </Button>
         </CardContent>
       </Card>

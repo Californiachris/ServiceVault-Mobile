@@ -95,9 +95,9 @@ export default function WorkerProfile() {
           <h1 className="text-3xl font-bold text-white">{worker.name}</h1>
           <p className="text-slate-400">{worker.role || 'Worker'}</p>
         </div>
-        <Button onClick={handleDownloadPDF} variant="outline" data-testid="button-download-pdf">
+        <Button onClick={handleDownloadPDF} variant="outline" disabled data-testid="button-download-pdf" title="PDF download coming soon">
           <Download className="h-4 w-4 mr-2" />
-          Download PDF
+          Download PDF (Coming Soon)
         </Button>
       </div>
 

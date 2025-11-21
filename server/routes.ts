@@ -5734,8 +5734,12 @@ Instructions:
         return res.status(404).json({ error: "Worker not found" });
       }
       
+      // Filter visits by both workerId AND contractorId for defense-in-depth
       const visits = await db.select().from(contractorVisits)
-        .where(eq(contractorVisits.workerId, workerId))
+        .where(and(
+          eq(contractorVisits.workerId, workerId),
+          eq(contractorVisits.contractorId, contractor.id)
+        ))
         .orderBy(desc(contractorVisits.clockInTime));
       
       res.json({ visits });
@@ -5765,7 +5769,7 @@ Instructions:
         return res.status(404).json({ error: "Worker not found" });
       }
       
-      // Get assets installed by this worker
+      // Get assets installed by this worker (filter by worker's userId which we verified belongs to this contractor)
       const workerAssets = await db.select({
         id: assets.id,
         name: assets.name,
@@ -5775,7 +5779,10 @@ Instructions:
       })
       .from(assets)
       .leftJoin(properties, eq(assets.propertyId, properties.id))
-      .where(eq(assets.installedBy, worker.userId))
+      .where(and(
+        eq(assets.installedBy, worker.userId),
+        eq(assets.contractorId, contractor.id) // Defense-in-depth: verify contractor owns these assets
+      ))
       .orderBy(desc(assets.installedAt));
       
       res.json({ assets: workerAssets });
