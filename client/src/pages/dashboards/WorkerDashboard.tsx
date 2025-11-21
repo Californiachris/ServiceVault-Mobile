@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Download, Clock, Package, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
   const [scanModalOpen, setScanModalOpen] = useState(false);
+  const { toast } = useToast();
 
   const { data: tasksData } = useQuery({
     queryKey: ["/api/worker/tasks"],
@@ -24,6 +27,35 @@ export default function WorkerDashboard() {
 
   const tasks = tasksData?.tasks || [];
   const visits = visitsData?.visits || [];
+
+  // Mutation to update task status
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
+      return await apiRequest(`/api/worker/tasks/${taskId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/worker/tasks"] });
+      toast({
+        title: "Task updated",
+        description: "Task marked as completed",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTaskCheckbox = (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
+    updateTaskMutation.mutate({ taskId, status: newStatus });
+  };
 
   // Calculate total hours
   const totalMinutes = visits.reduce((sum: number, v: any) => {
@@ -120,11 +152,10 @@ export default function WorkerDashboard() {
                     <input
                       type="checkbox"
                       checked={task.status === 'COMPLETED'}
-                      readOnly
-                      disabled
-                      className="mt-1 cursor-not-allowed opacity-50"
+                      onChange={() => handleTaskCheckbox(task.id, task.status)}
+                      className="mt-1 cursor-pointer h-5 w-5"
                       data-testid={`checkbox-task-${task.id}`}
-                      title="Task completion coming soon"
+                      disabled={updateTaskMutation.isPending}
                     />
                     <div className="flex-1">
                       <h4 className="font-semibold text-white mb-1">{task.title}</h4>
