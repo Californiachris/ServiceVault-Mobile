@@ -481,6 +481,21 @@ export class DatabaseStorage implements IStorage {
       activeSubscriptions: subscriptionsResult.count,
     };
   }
+
+  async getEmailVerificationToken(userId: string): Promise<any | undefined> {
+    const [token] = await db.select().from(require('@shared/schema').emailVerifications).where(eq(require('@shared/schema').emailVerifications.userId, userId));
+    return token;
+  }
+
+  async getPasswordResetToken(userId: string): Promise<any | undefined> {
+    const [token] = await db.select().from(require('@shared/schema').passwordResets).where(eq(require('@shared/schema').passwordResets.userId, userId));
+    return token;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    return user;
+  }
 }
 
 export const storage = new DatabaseStorage();
