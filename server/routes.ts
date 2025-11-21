@@ -5573,6 +5573,16 @@ Instructions:
         return res.status(404).json({ error: "Contractor profile not found" });
       }
       
+      // Check if email already exists (if provided)
+      if (email) {
+        const existingEmail = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        if (existingEmail.length > 0) {
+          return res.status(400).json({ 
+            error: "Email already in use. Please use a different email or leave it blank to auto-generate." 
+          });
+        }
+      }
+      
       // Generate username from name (e.g., "Johnny King" -> "johnny.king")
       const nameParts = name.trim().toLowerCase().split(/\s+/);
       let baseUsername = nameParts.join('.');

@@ -35,7 +35,7 @@ const addWorkerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().optional().or(z.literal("")),
   email: z.string().email().optional().or(z.literal("")),
-  role: z.enum(["INSTALLER", "FOREMAN", "ADMIN"]),
+  role: z.enum(["INSTALLER", "FOREMAN", "ADMIN", "ELECTRICIAN", "PLUMBER", "HVAC_TECH", "CARPENTER", "ROOFER", "PAINTER", "MASON", "HEAVY_EQUIPMENT_OPERATOR", "SITE_SUPERVISOR", "SAFETY_OFFICER"]),
 });
 
 const assignTaskSchema = z.object({
@@ -128,8 +128,9 @@ export default function ContractorTeam() {
         setWorkerCredentials(response.credentials);
       }
     },
-    onError: () => {
-      toast({ title: "Failed to add worker", variant: "destructive" });
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Failed to add worker";
+      toast({ title: errorMessage, variant: "destructive" });
     },
   });
 
@@ -234,10 +235,20 @@ export default function ContractorTeam() {
                               <SelectValue placeholder="Select role" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent position="popper">
+                          <SelectContent position="popper" className="max-h-[200px] overflow-y-auto">
                             <SelectItem value="INSTALLER" data-testid="option-installer">Installer</SelectItem>
                             <SelectItem value="FOREMAN" data-testid="option-foreman">Foreman</SelectItem>
                             <SelectItem value="ADMIN" data-testid="option-admin">Admin</SelectItem>
+                            <SelectItem value="ELECTRICIAN" data-testid="option-electrician">Electrician</SelectItem>
+                            <SelectItem value="PLUMBER" data-testid="option-plumber">Plumber</SelectItem>
+                            <SelectItem value="HVAC_TECH" data-testid="option-hvac-tech">HVAC Tech</SelectItem>
+                            <SelectItem value="CARPENTER" data-testid="option-carpenter">Carpenter</SelectItem>
+                            <SelectItem value="ROOFER" data-testid="option-roofer">Roofer</SelectItem>
+                            <SelectItem value="PAINTER" data-testid="option-painter">Painter</SelectItem>
+                            <SelectItem value="MASON" data-testid="option-mason">Mason</SelectItem>
+                            <SelectItem value="HEAVY_EQUIPMENT_OPERATOR" data-testid="option-heavy-equipment">Heavy Equipment Operator</SelectItem>
+                            <SelectItem value="SITE_SUPERVISOR" data-testid="option-site-supervisor">Site Supervisor</SelectItem>
+                            <SelectItem value="SAFETY_OFFICER" data-testid="option-safety-officer">Safety Officer</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
