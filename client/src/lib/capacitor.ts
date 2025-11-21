@@ -2,6 +2,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 export const isNativeApp = () => {
   return Capacitor.isNativePlatform();
@@ -92,4 +93,49 @@ export function onAppPause(callback: () => void) {
       callback();
     }
   });
+}
+
+// Push Notifications
+export async function registerPushNotifications() {
+  if (!isNativeApp()) return null;
+  
+  try {
+    let permStatus = await PushNotifications.checkPermissions();
+
+    if (permStatus.receive === 'prompt') {
+      permStatus = await PushNotifications.requestPermissions();
+    }
+
+    if (permStatus.receive !== 'granted') {
+      throw new Error('User denied permissions!');
+    }
+
+    await PushNotifications.register();
+    
+    return new Promise((resolve) => {
+      PushNotifications.addListener('registration', (token) => {
+        resolve(token.value);
+      });
+
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('Push registration error:', error);
+        resolve(null);
+      });
+    });
+  } catch (error) {
+    console.error('Error registering push notifications:', error);
+    return null;
+  }
+}
+
+export function onPushNotificationReceived(callback: (notification: any) => void) {
+  if (!isNativeApp()) return;
+  
+  PushNotifications.addListener('pushNotificationReceived', callback);
+}
+
+export function onPushNotificationActionPerformed(callback: (action: any) => void) {
+  if (!isNativeApp()) return;
+  
+  PushNotifications.addListener('pushNotificationActionPerformed', callback);
 }
