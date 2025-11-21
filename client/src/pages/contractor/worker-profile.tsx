@@ -34,16 +34,16 @@ export default function WorkerProfile() {
 
   const hoursByDay = daysOfWeek.map(day => {
     const dayVisits = visits.filter((v: any) => {
-      if (!v.clockInTime) return false;
-      const visitDate = new Date(v.clockInTime);
+      if (!v.checkInAt) return false;
+      const visitDate = new Date(v.checkInAt);
       return format(visitDate, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
     });
 
     const totalMinutes = dayVisits.reduce((sum: number, v: any) => {
-      if (!v.clockInTime) return sum;
-      const clockIn = new Date(v.clockInTime);
-      const clockOut = v.clockOutTime ? new Date(v.clockOutTime) : new Date();
-      return sum + (clockOut.getTime() - clockIn.getTime()) / (1000 * 60);
+      if (!v.checkInAt) return sum;
+      const checkIn = new Date(v.checkInAt);
+      const checkOut = v.checkOutAt ? new Date(v.checkOutAt) : new Date();
+      return sum + (checkOut.getTime() - checkIn.getTime()) / (1000 * 60);
     }, 0);
 
     return {

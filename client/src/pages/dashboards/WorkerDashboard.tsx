@@ -53,16 +53,17 @@ export default function WorkerDashboard() {
   });
 
   const handleTaskCheckbox = (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
-    updateTaskMutation.mutate({ taskId, status: newStatus });
+    // Only allow marking as COMPLETED (one-way)
+    if (currentStatus === 'COMPLETED') return;
+    updateTaskMutation.mutate({ taskId, status: 'COMPLETED' });
   };
 
   // Calculate total hours
   const totalMinutes = visits.reduce((sum: number, v: any) => {
-    if (!v.clockInTime) return sum;
-    const clockIn = new Date(v.clockInTime);
-    const clockOut = v.clockOutTime ? new Date(v.clockOutTime) : new Date();
-    return sum + (clockOut.getTime() - clockIn.getTime()) / (1000 * 60);
+    if (!v.checkInAt) return sum;
+    const checkIn = new Date(v.checkInAt);
+    const checkOut = v.checkOutAt ? new Date(v.checkOutAt) : new Date();
+    return sum + (checkOut.getTime() - checkIn.getTime()) / (1000 * 60);
   }, 0);
   const totalHours = (totalMinutes / 60).toFixed(1);
 
@@ -155,7 +156,7 @@ export default function WorkerDashboard() {
                       onChange={() => handleTaskCheckbox(task.id, task.status)}
                       className="mt-1 cursor-pointer h-5 w-5"
                       data-testid={`checkbox-task-${task.id}`}
-                      disabled={updateTaskMutation.isPending}
+                      disabled={updateTaskMutation.isPending || task.status === 'COMPLETED'}
                     />
                     <div className="flex-1">
                       <h4 className="font-semibold text-white mb-1">{task.title}</h4>

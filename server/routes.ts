@@ -5845,6 +5845,11 @@ Instructions:
       const { taskId } = req.params;
       const { status } = req.body;
       
+      // Only allow marking as COMPLETED (one-way transition for audit trail)
+      if (status !== 'COMPLETED') {
+        return res.status(400).json({ error: "Invalid status. Workers can only mark tasks as COMPLETED" });
+      }
+      
       const { contractorTasks } = await import('@shared/schema');
       
       // Verify task belongs to this worker before updating
@@ -5859,11 +5864,16 @@ Instructions:
         return res.status(404).json({ error: "Task not found or not assigned to you" });
       }
       
-      // Update task status and set completedAt if marking as completed
-      const updates: any = { status };
-      if (status === 'COMPLETED') {
-        updates.completedAt = new Date();
+      // Don't allow re-completing already completed tasks
+      if (task.status === 'COMPLETED') {
+        return res.json({ task }); // Already completed, return as-is
       }
+      
+      // Update task status and set completedAt
+      const updates: any = { 
+        status: 'COMPLETED',
+        completedAt: new Date()
+      };
       
       const [updatedTask] = await db.update(contractorTasks)
         .set(updates)
@@ -5892,8 +5902,11 @@ Instructions:
       }
       
       const visits = await db.select().from(contractorVisits)
-        .where(eq(contractorVisits.workerId, worker.id))
-        .orderBy(desc(contractorVisits.clockInTime));
+        .where(and(
+          eq(contractorVisits.workerId, worker.id),
+          eq(contractorVisits.contractorId, worker.contractorId)
+        ))
+        .orderBy(desc(contractorVisits.checkInAt));
       
       res.json({ visits });
     } catch (error) {
@@ -6268,9 +6281,13 @@ Instructions:
         .where(eq(contractors.id, worker.contractorId))
         .limit(1);
       
+      // SECURITY: Filter visits by both workerId AND contractorId to prevent cross-tenant access
       const visits = await db.select().from(contractorVisits)
-        .where(eq(contractorVisits.workerId, worker.id))
-        .orderBy(desc(contractorVisits.clockInTime));
+        .where(and(
+          eq(contractorVisits.workerId, worker.id),
+          eq(contractorVisits.contractorId, worker.contractorId)
+        ))
+        .orderBy(desc(contractorVisits.checkInAt));
       
       // Generate PDF
       const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
@@ -6298,13 +6315,13 @@ Instructions:
       
       let totalHours = 0;
       for (const visit of visits) {
-        if (visit.clockOutTime) {
-          const hours = (new Date(visit.clockOutTime).getTime() - new Date(visit.clockInTime).getTime()) / (1000 * 60 * 60);
+        if (visit.checkOutAt) {
+          const hours = (new Date(visit.checkOutAt).getTime() - new Date(visit.checkInAt).getTime()) / (1000 * 60 * 60);
           totalHours += hours;
           
           doc.moveDown(0.5)
-            .text(`Date: ${new Date(visit.clockInTime).toLocaleDateString()}`)
-            .text(`In: ${new Date(visit.clockInTime).toLocaleTimeString()} | Out: ${new Date(visit.clockOutTime).toLocaleTimeString()}`)
+            .text(`Date: ${new Date(visit.checkInAt).toLocaleDateString()}`)
+            .text(`In: ${new Date(visit.checkInAt).toLocaleTimeString()} | Out: ${new Date(visit.checkOutAt).toLocaleTimeString()}`)
             .text(`Hours: ${hours.toFixed(2)}`);
         }
       }
