@@ -57,6 +57,14 @@
     @apply border-border;
   }
 
+  html {
+    /* Apply safe area insets for mobile devices - handles status bar and nav buttons */
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: var(--font-sans);
