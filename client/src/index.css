@@ -58,17 +58,21 @@
   }
 
   html {
-    /* Apply safe area insets for mobile devices - handles status bar and nav buttons */
-    padding-top: env(safe-area-inset-top);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
+    /* Safe area padding - injected via native Android bridge in MainActivity */
+    /* CSS env() doesn't work reliably on Android, so native code handles it */
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
     font-family: var(--font-sans);
     line-height: 1.6;
+  }
+  
+  /* Support safe area on the root app element */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 }
 
