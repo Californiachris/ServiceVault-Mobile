@@ -19,9 +19,14 @@ public class MainActivity extends BridgeActivity {
     }
     
     // Setup safe area insets handling after layout is ready
-    View rootView = findViewById(android.R.id.content);
+    final View rootView = findViewById(android.R.id.content);
     if (rootView != null) {
-      rootView.post(() -> applySafeAreaInsets(rootView));
+      rootView.post(new Runnable() {
+        @Override
+        public void run() {
+          applySafeAreaInsets(rootView);
+        }
+      });
     }
   }
   
