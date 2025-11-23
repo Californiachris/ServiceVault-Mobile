@@ -273,13 +273,13 @@ export default function AppShell({ children }: AppShellProps) {
           <aside className="fixed top-0 bottom-16 left-0 w-64 border-r border-border bg-card shadow-xl z-[160] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col min-h-full">
               {/* Mobile Logo */}
-              <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0">
+              <div className="flex items-center gap-2 h-16 px-6 border-b border-border flex-shrink-0" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
                 <img 
                   src={vaultLogo} 
                   alt="ServiceVault Logo" 
-                  className="h-14 w-14 object-contain"
+                  className="h-10 w-10 object-contain flex-shrink-0"
                 />
-                <span className="text-xl font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent">
+                <span className="text-base font-bold tracking-tight whitespace-nowrap bg-gradient-to-r from-cyan-400 via-cyan-300 to-yellow-400 bg-clip-text text-transparent truncate">
                   ServiceVault™
                 </span>
               </div>
@@ -416,12 +416,12 @@ export default function AppShell({ children }: AppShellProps) {
       </div>
 
       {/* Main Content */}
-      <main className="lg:pl-64 pb-20 lg:pb-0">
+      <main className="lg:pl-64 pb-20 lg:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         {children}
       </main>
 
       {/* Mobile Bottom Navigation - Always Visible */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg safe-area-inset-bottom">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[200] border-t border-border bg-card/80 backdrop-blur-lg" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <div className="grid grid-cols-4 h-16">
           {navLinks.slice(0, 4).map((link) => {
             const Icon = link.icon;
@@ -444,7 +444,7 @@ export default function AppShell({ children }: AppShellProps) {
       </nav>
 
       {/* Bottom spacing for mobile nav */}
-      <div className="lg:hidden h-16" />
+      <div className="lg:hidden h-16" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />
 
       {/* Notification Settings Sheet */}
       <Sheet open={notificationSettingsOpen} onOpenChange={setNotificationSettingsOpen}>
