@@ -24,7 +24,24 @@ declare module 'express-session' {
 
 // Public mode: Skip authentication entirely
 const AUTH_MODE = process.env.AUTH_MODE || 'public';
-const DEMO_USER_ID = 'demo-user-public';
+
+// Ephemeral session store - stores temporary user sessions with 15 min TTL
+const ephemeralSessions = new Map<string, { userId: string; createdAt: number; lastActivity: number }>();
+
+// Clean up expired sessions every minute
+setInterval(() => {
+  const now = Date.now();
+  const expiredIds: string[] = [];
+  for (const [sessionId, session] of ephemeralSessions.entries()) {
+    if (now - session.lastActivity > 15 * 60 * 1000) { // 15 minutes
+      expiredIds.push(sessionId);
+    }
+  }
+  expiredIds.forEach(id => ephemeralSessions.delete(id));
+  if (expiredIds.length > 0) {
+    console.log(`Cleaned up ${expiredIds.length} expired sessions`);
+  }
+}, 60 * 1000); // Every minute
 
 if (!process.env.REPLIT_DOMAINS && AUTH_MODE === 'protected') {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -86,39 +103,57 @@ async function upsertUser(
   });
 }
 
-// Middleware to inject demo user in public mode
+// Middleware to inject ephemeral demo user in public mode
 async function injectDemoUser(req: any, res: any, next: any) {
   if (AUTH_MODE === 'public') {
-    // Create or get demo user
-    const existingUser = await storage.getUser(DEMO_USER_ID);
+    // Get or create ephemeral session ID from cookie
+    let sessionId = req.cookies['ephemeral-session-id'];
+    let sessionData = sessionId ? ephemeralSessions.get(sessionId) : null;
     
-    if (!existingUser) {
+    // Create new session if none exists or it's expired
+    if (!sessionData) {
+      const { randomUUID } = await import('crypto');
+      sessionId = randomUUID();
+      const userId = `user-${sessionId}`;
+      sessionData = {
+        userId,
+        createdAt: Date.now(),
+        lastActivity: Date.now()
+      };
+      ephemeralSessions.set(sessionId, sessionData);
+      
+      // Set cookie for 15 minutes
+      res.cookie('ephemeral-session-id', sessionId, {
+        maxAge: 15 * 60 * 1000,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict'
+      });
+      
+      // Create fresh user for this session - NO real email shown
       await storage.upsertUser({
-        id: DEMO_USER_ID,
-        email: 'demo@servicevault.app',
+        id: userId,
+        email: `demo-${sessionId}@servicevault.app`, // Unique, temporary email
         firstName: 'Demo',
         lastName: 'User',
         profileImageUrl: null,
-        role: 'CONTRACTOR',
-        companyName: 'Demo Contracting Co.',
-        licenseNumber: 'DEM-LIC-123456',
-        phone: '(555) 123-4567',
-        industries: ['Construction & Heavy Equipment'],
+        role: 'HOMEOWNER', // Start as homeowner, they choose their role
       });
-      
-      // Demo data seeding disabled - users should create their own properties
-      // await seedDemoData(DEMO_USER_ID);
     }
     
-    // Inject fake user session
+    // Update last activity
+    sessionData.lastActivity = Date.now();
+    
+    // Inject user session
     req.user = {
       claims: {
-        sub: DEMO_USER_ID,
-        email: 'demo@servicevault.app',
+        sub: sessionData.userId,
+        email: `demo-${sessionId}@servicevault.app`,
         first_name: 'Demo',
         last_name: 'User',
       }
     };
+    req.ephemeralSessionId = sessionId;
   }
   next();
 }
@@ -170,9 +205,13 @@ export async function setupAuth(app: Express) {
   app.use(passport.session());
 
   if (AUTH_MODE === 'public') {
+    // Parse cookies for ephemeral session handling
+    const cookieParser = (await import('cookie-parser')).default;
+    app.use(cookieParser());
+    
     // Public mode: Still setup passport for worker login, but inject demo user for regular users
     app.use(injectDemoUser);
-    console.log('🔓 AUTH MODE: PUBLIC - Authentication disabled for regular users, worker login enabled');
+    console.log('🔓 AUTH MODE: PUBLIC - Ephemeral sessions (15 min TTL), unique per visitor');
   } else {
     // Protected mode: Setup Replit OIDC Auth
     const config = await getOidcConfig();
@@ -374,11 +413,12 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 export function requireRole(...allowedRoles: string[]): RequestHandler {
   return async (req: any, res, next) => {
     try {
-      // In public mode, inject demo user as HOMEOWNER
+      // In public mode, use ephemeral user
       if (AUTH_MODE === 'public') {
-        const demoUser = await storage.getUser(DEMO_USER_ID);
-        req.userRole = demoUser?.role || 'HOMEOWNER';
-        req.userRecord = demoUser;
+        const userId = req.user?.claims?.sub;
+        const user = userId ? await storage.getUser(userId) : null;
+        req.userRole = user?.role || 'HOMEOWNER';
+        req.userRecord = user;
         return next();
       }
       

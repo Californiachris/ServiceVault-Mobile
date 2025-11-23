@@ -44,6 +44,9 @@ export default function AppShell({ children }: AppShellProps) {
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
   const { toast } = useToast();
 
+  // Check if user is in onboarding flow
+  const isOnboarding = location.startsWith('/onboarding');
+
   const isActive = (path: string) => {
     if (path === '/' && location === '/') return true;
     if (path !== '/' && location.startsWith(path)) return true;
@@ -128,6 +131,11 @@ export default function AppShell({ children }: AppShellProps) {
   const handleMethodToggle = (method: string) => {
     updatePrefsMutation.mutate({ notificationMethod: method });
   };
+
+  // Don't show navigation during onboarding
+  if (isOnboarding) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
