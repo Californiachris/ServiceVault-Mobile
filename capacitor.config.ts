@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 // Use production URL for mobile app
 const getServerUrl = () => {
-  return 'https://ServiceVault.replit.app';
+  return 'https://servicevault.app';
 };
 
 const config: CapacitorConfig = {

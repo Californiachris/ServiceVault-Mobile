@@ -24,7 +24,7 @@ jobs:
       - name: Build web assets
         run: npm run build
         env:
-          VITE_API_URL: https://ServiceVault.replit.app
+          VITE_API_URL: https://servicevault.app
 
       - name: Sync Capacitor
         run: npx cap sync android
