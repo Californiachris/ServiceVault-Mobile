@@ -416,7 +416,7 @@ export default function AppShell({ children }: AppShellProps) {
       </div>
 
       {/* Main Content */}
-      <main className="lg:pl-64 pb-20 lg:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <main className="lg:pl-64 pb-20 lg:pb-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(5rem, env(safe-area-inset-bottom))' }}>
         {children}
       </main>
 
