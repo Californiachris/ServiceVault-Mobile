@@ -120,7 +120,7 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
       <div className="flex items-start gap-3 md:gap-6">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-white dark:bg-gray-900 shadow-lg border flex items-center justify-center p-2 md:p-3">
+          <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-card border border-primary/30 shadow-lg flex items-center justify-center p-2 md:p-3">
             <img 
               src={activeLogo.fileUrl} 
               alt="Company Logo" 
