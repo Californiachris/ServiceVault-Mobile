@@ -100,7 +100,20 @@ export function ContractorOnboardingForm({
       : ["notificationPreference"];
     
     const isValid = await form.trigger(fields as any);
-    if (isValid) setStep(step + 1);
+    if (isValid) {
+      setStep(step + 1);
+    } else {
+      // Log validation errors for debugging
+      const errors = form.formState.errors;
+      console.error("Form validation failed on step", step, "Errors:", errors);
+      
+      // Show first error as a toast if available
+      const firstErrorField = fields.find(f => errors[f as keyof typeof errors]);
+      if (firstErrorField) {
+        const errorMsg = errors[firstErrorField as keyof typeof errors]?.message;
+        console.error(`${firstErrorField}: ${errorMsg}`);
+      }
+    }
   };
 
   return (
