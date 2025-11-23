@@ -1,13 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// Use production URL if available, otherwise fallback to development
+// Use production URL for mobile app
 const getServerUrl = () => {
-  // For development builds, use localhost or Replit preview URL
-  if (process.env.NODE_ENV === 'development') {
-    return undefined; // Capacitor will use default (file:// protocol)
-  }
-  // Production builds should use the actual deployed URL
-  return process.env.VITE_API_URL || undefined;
+  return 'https://ServiceVault.replit.app';
 };
 
 const config: CapacitorConfig = {
