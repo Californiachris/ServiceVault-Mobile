@@ -82,21 +82,25 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
   // If no logo, show minimal branded header
   if (!activeLogo) {
     return (
-      <div className={`rounded-xl bg-gradient-to-r ${config.bgGradient} border p-6 mb-6`} data-testid="branded-header">
-        <div className="flex items-center gap-4">
-          <div className="rounded-lg bg-background/80 backdrop-blur-sm p-3">
-            <Icon className={`h-8 w-8 ${config.iconColor}`} />
+      <div 
+        className={`rounded-lg md:rounded-xl bg-gradient-to-r ${config.bgGradient} border p-4 md:p-6 mb-4 md:mb-6`}
+        style={{ paddingTop: 'max(1rem, calc(1rem + env(safe-area-inset-top)))' }}
+        data-testid="branded-header"
+      >
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex-shrink-0 rounded-lg bg-background/80 backdrop-blur-sm p-2 md:p-3">
+            <Icon className={`h-6 w-6 md:h-8 md:w-8 ${config.iconColor}`} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 
-              className="text-2xl md:text-4xl font-extrabold tracking-tight leading-none"
+              className="text-xl md:text-4xl font-extrabold tracking-tight leading-tight text-white"
               style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}
               data-testid="text-company-name"
             >
               {displayName}
             </h2>
             {subtitle && (
-              <p className="text-sm md:text-base text-muted-foreground mt-1 font-medium">
+              <p className="text-xs md:text-base text-white/70 mt-1 font-medium truncate">
                 {subtitle}
               </p>
             )}
@@ -109,13 +113,14 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
   // Show full branded header with logo
   return (
     <div 
-      className="rounded-xl bg-gradient-to-r from-background to-muted/30 border-2 shadow-lg p-8 mb-8" 
+      className="rounded-lg md:rounded-xl bg-gradient-to-r from-background to-muted/30 border shadow-lg p-4 md:p-8 mb-4 md:mb-8"
+      style={{ paddingTop: 'max(1rem, calc(1rem + env(safe-area-inset-top)))' }}
       data-testid="branded-header"
     >
-      <div className="flex items-center gap-6">
+      <div className="flex items-start gap-3 md:gap-6">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white dark:bg-gray-900 shadow-xl border-2 flex items-center justify-center p-3">
+          <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-white dark:bg-gray-900 shadow-lg border flex items-center justify-center p-2 md:p-3">
             <img 
               src={activeLogo.fileUrl} 
               alt="Company Logo" 
@@ -126,22 +131,22 @@ export default function BrandedHeader({ sector, companyName, subtitle }: Branded
         </div>
 
         {/* Company Name & Subtitle */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pt-1">
           <h1 
-            className="text-3xl md:text-5xl font-extrabold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-50 to-cyan-100 dark:from-white dark:via-cyan-50 dark:to-cyan-100 mb-2"
+            className="text-lg md:text-5xl font-extrabold tracking-tight leading-tight text-white mb-1 md:mb-2"
             style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontWeight: 800, letterSpacing: '-0.02em' }}
             data-testid="text-company-name"
           >
             {displayName}
           </h1>
           {subtitle && (
-            <p className="text-base md:text-lg text-muted-foreground font-medium">
+            <p className="text-xs md:text-lg text-white/70 font-medium">
               {subtitle}
             </p>
           )}
           <div className="flex items-center gap-2 mt-2">
-            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/30 rounded-full"></div>
-            <div className="h-1 w-8 bg-gradient-to-r from-primary/30 to-transparent rounded-full"></div>
+            <div className="h-1 w-8 md:w-12 bg-gradient-to-r from-cyan-400 to-cyan-400/30 rounded-full"></div>
+            <div className="h-1 w-6 md:w-8 bg-gradient-to-r from-cyan-400/30 to-transparent rounded-full"></div>
           </div>
         </div>
       </div>
